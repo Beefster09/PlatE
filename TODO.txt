@@ -1,0 +1,25 @@
+Up next:
+[ ] Data model for sprites with hitboxes
+[ ] Display hitboxes on screen
+[ ] Hitbox-hitbox collision
+[ ] Velocity
+[ ] Gravity
+[ ] Line collision
+[ ] Slope following
+
+High-Level Features
+[ ] Hitboxes: Rectangle, Line, Circle Collision types
+  [ ] Fast collision detection
+[ ] Data-oriented sprite framework (Similar to a particle system)
+[ ] Gravity
+[ ] Slopes
+[ ] Moving Platforms
+[ ] Ledge Grabbing
+[ ] High-level checks
+  [ ] On ground / in air
+  [ ] Touching wall
+[ ] Collision events
+[ ] JSON-based assets
+  [ ] Baking JSON assets into binary assets
+  [ ] (Maybe) compiler flags for JSON-free builds
+[ ] Basic editor

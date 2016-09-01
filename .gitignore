@@ -1,0 +1,11 @@
+**.exe
+/lib
+/.vs
+/build
+ipch
+/*.opendb
+/*.db
+Debug
+x64
+/bin/*.ilk
+/PlatE.vcxproj.user
