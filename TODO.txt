@@ -1,6 +1,8 @@
 Up next:
-[ ] Data model for sprites with hitboxes
+[X] Set up VS project and basic SDL setup
+[X] Data model for sprites with hitboxes
 [ ] Display hitboxes on screen
+[ ] JSON Sprites
 [ ] Hitbox-hitbox collision
 [ ] Velocity
 [ ] Gravity
