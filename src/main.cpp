@@ -1,4 +1,5 @@
 
+#include "gameloop.h"
 #include "constants.h"
 #include "sprite.h"
 #include "display.h"
@@ -18,7 +19,7 @@ int main(int argc, char* argv[]) {
 		//SDL_StartTextInput();
 
 		// Make a simple sprite frame with some hitboxes...
-		Frame test;
+		FrameData test;
 
 		test.n_hitboxes = 4;
 		test.hitboxes = new Hitbox[4];
@@ -46,13 +47,29 @@ int main(int argc, char* argv[]) {
 		SDL_RenderPresent(context);
 
 		SDL_Event curEvent;
-		while (SDL_WaitEvent(&curEvent)) {
-			switch (curEvent.type) {
-			case SDL_QUIT:
-				SDL_Quit();
-				return EXIT_SUCCESS;
-			default: break;
+		uint32_t lastTime = 0;
+		while (true) {
+			// process events
+			while (SDL_PollEvent(&curEvent)) {
+				if (curEvent.type == SDL_QUIT) {
+					SDL_Quit();
+					return EXIT_SUCCESS;
+				}
+				event(curEvent);
 			}
+
+			// update... TODO: choose delta time or static FPS
+			uint32_t updateTime = SDL_GetTicks();
+			update(updateTime - lastTime);
+
+			// render
+			render(context);
+
+			int delay = 16 - (SDL_GetTicks() - lastTime);
+			delay = (delay < 0) ? 0 : delay;
+			SDL_Delay(delay);
+			printf("Delaying %dms.\n", delay);
+			lastTime = SDL_GetTicks();
 		}
 
 		return EXIT_SDL_EVENT_FAIL;

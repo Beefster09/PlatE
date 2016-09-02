@@ -9,3 +9,4 @@ Debug
 x64
 /bin/*.ilk
 /PlatE.vcxproj.user
+/bin/*.pdb

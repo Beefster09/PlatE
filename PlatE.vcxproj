@@ -164,12 +164,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\display.cpp" />
+    <ClCompile Include="src\gameloop.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\sprite.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\constants.h" />
     <ClInclude Include="src\display.h" />
+    <ClInclude Include="src\gameloop.h" />
     <ClInclude Include="src\hitbox.h" />
     <ClInclude Include="src\sprite.h" />
   </ItemGroup>

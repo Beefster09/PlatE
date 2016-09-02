@@ -1,7 +1,7 @@
 
 #include "display.h"
 
-void render_hitboxes(SDL_Renderer* context, SDL_Point origin, const Frame& framedata) {
+void render_hitboxes(SDL_Renderer* context, SDL_Point origin, const FrameData& framedata) {
 	SDL_Rect* rects = getAbsoluteRects(origin, framedata);
 
 	for (int i = 0; i < framedata.n_hitboxes; ++i) {

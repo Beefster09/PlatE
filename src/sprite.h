@@ -2,10 +2,11 @@
 #define PLATE_SPRITE_H
 
 // Sprites contain only the metadata required to display things on screen and provide collision information.
-// This data is intended to be immutable.
+// This data is intended to be immutable when loaded.
 
 #include "hitbox.h"
-#include "SDL2\SDL_rect.h"
+#include <SDL2/SDL_render.h>
+#include <SDL2/SDL_rect.h>
 
 typedef struct {
 	short x, y;
@@ -19,6 +20,11 @@ typedef struct {
 	FrameOffset* offsets; // Other offsets that might be of interest
 	int n_hitboxes;
 	Hitbox* hitboxes;
+} FrameData;
+
+typedef struct {
+	float delay;
+	FrameData* data;
 } Frame;
 
 typedef struct {
@@ -29,11 +35,15 @@ typedef struct {
 
 typedef struct {
 	char* name;
-	void* texture;
+	SDL_Texture* texture;
 	int n_animations;
 	Animation* animations;
 } Sprite;
 
-SDL_Rect* getAbsoluteRects(SDL_Point, const Frame&);
+SDL_Rect* getAbsoluteRects(SDL_Point, const FrameData&);
+
+Sprite* load_sprite(char* filename);
+void dump_sprite(Sprite* sprite, char* filename);
+Sprite* load_sprite_json(char* filename);
 
 #endif

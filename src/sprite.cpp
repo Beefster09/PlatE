@@ -1,7 +1,7 @@
 
 #include "sprite.h"
 
-SDL_Rect* getAbsoluteRects (SDL_Point origin, const Frame& framedata) {
+SDL_Rect* getAbsoluteRects (SDL_Point origin, const FrameData& framedata) {
 	SDL_Rect* result = new SDL_Rect[framedata.n_hitboxes];
 
 	for (int i = 0; i < framedata.n_hitboxes; ++i) {

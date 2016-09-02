@@ -1,12 +1,13 @@
 Up next:
 [X] Set up VS project and basic SDL setup
 [X] Data model for sprites with hitboxes
-[ ] Display hitboxes on screen
+[X] Display hitboxes on screen
 [ ] JSON Sprites
-[ ] Hitbox-hitbox collision
 [ ] Velocity
 [ ] Gravity
+[ ] Rect collision
 [ ] Line collision
+[ ] Solidity
 [ ] Slope following
 
 High-Level Features
@@ -24,4 +25,5 @@ High-Level Features
 [ ] JSON-based assets
   [ ] Baking JSON assets into binary assets
   [ ] (Maybe) compiler flags for JSON-free builds
+[ ] Scripting
 [ ] Basic editor

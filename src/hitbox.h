@@ -32,8 +32,9 @@ const uint32_t HITBOX_COLORS[] = {
 // Indices for various data values
 #define HITBOX_ONEWAY_DATA_DIRECTION 0
 #define HITBOX_BLOCK_DATA_DIRECTION 0
-#define HITBOX_DAMAGE_DATA_ID 0
+#define HITBOX_DAMAGE_DATA_GROUP 0
 #define HITBOX_DAMAGE_DATA_PRIORITY 1
+#define HITBOX_AREA_DATA_PRIORITY 0
 
 typedef struct {
 	HitboxShape shape;
