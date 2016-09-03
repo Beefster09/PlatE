@@ -1,0 +1,144 @@
+{
+	"name": "Test Json Sprite",
+	"spritesheet": "O_O.png",
+	"clips": [
+		{"x": 0,   "y": 0,   "w": 128, "h": 128},
+		{"x": 128, "y": 0,   "w": 128, "h": 128},
+		{"x": 0,   "y": 128, "w": 128, "h": 128},
+		{"x": 128, "y": 128, "w": 128, "h": 128}
+	],
+	"frames": [
+		{
+			"clip": 0,
+			"display": {"x": -64, "y": -64},
+			"foot":    {"x": 0,   "y": 64},
+			"offsets": [],
+			"collision": [
+				{
+					"type": "solid",
+					"hitboxes": [
+						{"shape": "box", "x": -64, "y": -64, "w": 128, "h": 128}
+					],
+					"flags": 255
+				},
+				{
+					"type": "hurtbox",
+					"hitboxes": [
+						{"shape": "box", "x": -48, "y": -48, "w": 96, "h": 96}
+					],
+					"flags": 255
+				},
+				{
+					"type": "damage",
+					"hitboxes": [
+						{"shape": "box", "x": -64, "y": -32, "w": 32, "h": 64},
+						{"shape": "box", "x": 32, "y": -32, "w": 32, "h": 64}
+					],
+					"flags": 255
+				}
+				
+			]
+		},
+		{
+			"clip": 1,
+			"display": {"x": -64, "y": -64},
+			"foot":    {"x": 0,   "y": 64},
+			"offsets": [],
+			"collision": [
+				{
+					"type": "solid",
+					"hitboxes": [
+						{"shape": "box", "x": -64, "y": -64, "w": 128, "h": 128}
+					],
+					"flags": 255
+				},
+				{
+					"type": "hurtbox",
+					"hitboxes": [
+						{"shape": "box", "x": -32, "y": -32, "w": 64, "h": 64}
+					],
+					"flags": 255
+				},
+				{
+					"type": "damage",
+					"hitboxes": [
+						{"shape": "box", "x": -48, "y": -24, "w": 24, "h": 48},
+						{"shape": "box", "x": 16, "y": -24, "w": 24, "h": 48}
+					],
+					"flags": 255
+				}
+				
+			]
+		},
+		{
+			"clip": 2,
+			"display": {"x": -64, "y": -64},
+			"foot":    {"x": 0,   "y": 64},
+			"offsets": [],
+			"collision": [
+				{
+					"type": "solid",
+					"hitboxes": [
+						{"shape": "box", "x": -64, "y": -64, "w": 128, "h": 128}
+					],
+					"flags": 255
+				},
+				{
+					"type": "hurtbox",
+					"hitboxes": [
+						{"shape": "box", "x": -48, "y": -48, "w": 96, "h": 96}
+					],
+					"flags": 255
+				},
+				{
+					"type": "damage",
+					"hitboxes": [
+						{"shape": "box", "x": -32, "y": -64, "w": 64, "h": 32},
+						{"shape": "box", "x": -32, "y": 32, "w": 64, "h": 32}
+					],
+					"flags": 255
+				}
+				
+			]
+		},
+		{
+			"clip": 3,
+			"display": {"x": -64, "y": -64},
+			"foot":    {"x": 0,   "y": 64},
+			"offsets": [],
+			"collision": [
+				{
+					"type": "solid",
+					"hitboxes": [
+						{"shape": "box", "x": -64, "y": -64, "w": 128, "h": 128}
+					],
+					"flags": 255
+				},
+				{
+					"type": "hurtbox",
+					"hitboxes": [
+						{"shape": "box", "x": -48, "y": -48, "w": 96, "h": 96}
+					],
+					"flags": 255
+				}
+				
+			]
+		}
+	],
+	"animations": [
+		{
+			"name": "standing",
+			"frames": [
+				{"duration": 0.0, "frame": 3}
+			]
+		},
+		{
+			"name": "wat",
+			"frames": [
+				{"duration": 0.5, "frame": 0},
+				{"duration": 0.25, "frame": 1},
+				{"duration": 0.25, "frame": 2}
+			]
+		}
+	]
+}

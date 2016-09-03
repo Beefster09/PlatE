@@ -2,7 +2,7 @@ Up next:
 [X] Set up VS project and basic SDL setup
 [X] Data model for sprites with hitboxes
 [X] Display hitboxes on screen
-[ ] JSON Sprites
+[X] JSON Sprites
 [ ] Velocity
 [ ] Gravity
 [ ] Rect collision

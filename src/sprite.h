@@ -2,9 +2,11 @@
 #define PLATE_SPRITE_H
 
 // Sprites contain only the metadata required to display things on screen and provide collision information.
-// This data is intended to be immutable when loaded.
+// This data is immutable when loaded.
 
 #include "hitbox.h"
+#include "either.h"
+#include "error.h"
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_rect.h>
 
@@ -13,37 +15,44 @@ typedef struct {
 } FrameOffset;
 
 typedef struct {
-	unsigned short textureX, textureY, textureW, textureH; // Bounding box to display from the texture
+	const SDL_Rect* texture_region; // Points to the same data as the toplevel sprite's texture regions
 	FrameOffset display; // Relative position of the upper-left corner of the texture from the origin
 	FrameOffset foot; // Relative position of the "foot" coordinate which is used to follow slopes.
 	int n_offsets;
-	FrameOffset* offsets; // Other offsets that might be of interest
+	const FrameOffset* offsets; // Other offsets that might be of interest
 	int n_hitboxes;
-	Hitbox* hitboxes;
-} FrameData;
-
-typedef struct {
-	float delay;
-	FrameData* data;
+	HitboxGroup* hitbox_groups;
 } Frame;
 
 typedef struct {
-	char* name;
+	float delay;
+	const Frame* frame;
+} FrameTiming;
+
+typedef struct {
+	const char* name;
 	int n_frames;
-	Frame* frames;
+	const FrameTiming *frames;
 } Animation;
 
 typedef struct {
-	char* name;
-	SDL_Texture* texture;
+	const char* name;
+	const SDL_Texture* texture;
+	int n_regions; // frame regions
+	const SDL_Rect* regions;
+	int n_frames;
+	const Frame* framedata;
 	int n_animations;
-	Animation* animations;
+	const Animation* animations;
 } Sprite;
 
-SDL_Rect* getAbsoluteRects(SDL_Point, const FrameData&);
+#define ERROR_LOADSPRITE_NOTFOUND -1
+#define ERROR_LOADSPRITE_JSONPARSE 1 
+#define ERROR_LOADSPRITE_JSONVALIDATION 2
 
-Sprite* load_sprite(char* filename);
-void dump_sprite(Sprite* sprite, char* filename);
-Sprite* load_sprite_json(char* filename);
+const Either<Error, const Sprite*> load_sprite_json(char* filename);
+
+const Sprite* load_sprite(char* filename); // load from "compiled" format
+void unload_sprite(Sprite* sprite); // deallocates all associated resources
 
 #endif
