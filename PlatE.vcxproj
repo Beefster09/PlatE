@@ -73,21 +73,25 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>bin\</OutDir>
     <SourcePath>$(VC_SourcePath);src/</SourcePath>
+    <IntDir>build/</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>bin\</OutDir>
     <SourcePath>$(VC_SourcePath);src/</SourcePath>
+    <IntDir>build/</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>bin\</OutDir>
     <SourcePath>$(VC_SourcePath);src/</SourcePath>
+    <IntDir>build/</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>bin\</OutDir>
     <SourcePath>$(VC_SourcePath);src/</SourcePath>
+    <IntDir>build/</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -176,6 +180,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\display.cpp" />
+    <ClCompile Include="src\entity.cpp" />
     <ClCompile Include="src\gameloop.cpp" />
     <ClCompile Include="src\hitbox.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -185,6 +190,7 @@
     <ClInclude Include="src\constants.h" />
     <ClInclude Include="src\display.h" />
     <ClInclude Include="src\either.h" />
+    <ClInclude Include="src\entity.h" />
     <ClInclude Include="src\error.h" />
     <ClInclude Include="src\gameloop.h" />
     <ClInclude Include="src\hitbox.h" />

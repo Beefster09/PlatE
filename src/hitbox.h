@@ -59,7 +59,7 @@ typedef struct {
 	};
 } HitboxGroup;
 
-HitboxType hitbox_type_from_string(const char* name);
+HitboxType hitbox_type_by_name(const char* name);
 SDL_Color get_hitbox_color(HitboxType type, int flags = 0);
 SDL_Rect* get_hitbox_rects_relative_to(const HitboxGroup&, SDL_Point);
 

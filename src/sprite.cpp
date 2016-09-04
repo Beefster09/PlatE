@@ -1,5 +1,6 @@
 
 #include "sprite.h"
+#include "error.h"
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/error/en.h"
@@ -34,7 +35,7 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 	{
 		FILE* fp = fopen(filename, "rb");
 		if (fp == 0) {
-			return ERROR(ERROR_LOADSPRITE_NOTFOUND, strerror(errno));
+			return Errors::FileNotFound;
 		}
 		char readbuffer[65536];
 		// Streaming JSON just in case the JSON is somehow larger than 64 KiB...
@@ -45,12 +46,13 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 
 	if (json.HasParseError()) {
 		const char* message = GetParseError_En(json.GetParseError());
-		return ERROR(ERROR_LOADSPRITE_JSONPARSE, message);
+		return Errors::InvalidJson;
 	}
 
 	auto validation = validate_sprite_json(json);
 	if (validation.isLeft) {
-		return ERROR(ERROR_LOADSPRITE_JSONVALIDATION, validation.left);
+		printf("%s", validation.left);
+		return Errors::SpriteLoadJsonInvalid;
 	}
 
 	// TODO: Determine size needed for everything (use pool allocation)
@@ -123,7 +125,7 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 			}
 
 			collision[j] = {
-				hitbox_type_from_string(hitboxGroupJson["type"].GetString()),
+				hitbox_type_by_name(hitboxGroupJson["type"].GetString()),
 				n_hitboxes,
 				hitboxes,
 				(uint64_t)hitboxGroupJson["flags"].GetInt64(),

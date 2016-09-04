@@ -10,6 +10,11 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_rect.h>
 
+namespace Errors {
+	error_data
+		SpriteLoadJsonInvalid = { 201, "Json does not match the expected schema for Sprite" };
+}
+
 typedef struct {
 	short x, y;
 } FrameOffset;
@@ -45,10 +50,6 @@ typedef struct {
 	int n_animations;
 	const Animation* animations;
 } Sprite;
-
-#define ERROR_LOADSPRITE_NOTFOUND -1
-#define ERROR_LOADSPRITE_JSONPARSE 1 
-#define ERROR_LOADSPRITE_JSONVALIDATION 2
 
 const Either<Error, const Sprite*> load_sprite_json(char* filename);
 

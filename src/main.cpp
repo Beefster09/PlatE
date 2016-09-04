@@ -3,6 +3,8 @@
 #include "constants.h"
 #include "sprite.h"
 #include "display.h"
+#include "entity.h"
+#include "either.h"
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
@@ -14,6 +16,11 @@ using namespace GlobalGameLoop;
 
 int main(int argc, char* argv[]) {
 	if (SDL_Init(SDL_INIT_EVERYTHING) >= 0) {
+		SDL_Window* window = SDL_CreateWindow("PlatE", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 480, 0);
+		SDL_Renderer* context = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+		SDL_SetRenderDrawBlendMode(context, SDL_BLENDMODE_BLEND);
+
+		// test display
 
 		auto test = load_sprite_json("data/test.json");
 		if (test.isLeft) {
@@ -23,17 +30,11 @@ int main(int argc, char* argv[]) {
 			return 1;
 		}
 
-		SDL_Window* window = SDL_CreateWindow("PlatE", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 480, 0);
-		SDL_Renderer* context = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-		SDL_SetRenderDrawBlendMode(context, SDL_BLENDMODE_BLEND);
-
-		// test display
-
 		SDL_RenderClear(context);
-		render_hitboxes(context, { 100, 100 }, test.right->framedata[0]);
-		render_hitboxes(context, { 300, 100 }, test.right->framedata[1]);
-		render_hitboxes(context, { 100, 300 }, test.right->framedata[2]);
-		render_hitboxes(context, { 300, 300 }, test.right->framedata[3]);
+		render_hitboxes(context, { 100, 100 }, &test.right->framedata[0]);
+		render_hitboxes(context, { 300, 100 }, &test.right->framedata[1]);
+		render_hitboxes(context, { 100, 300 }, &test.right->framedata[2]);
+		render_hitboxes(context, { 300, 300 }, &test.right->framedata[3]);
 		SDL_RenderPresent(context);
 
 		SDL_Event curEvent;

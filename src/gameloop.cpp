@@ -1,5 +1,6 @@
 
 #include "gameloop.h"
+#include "entity.h"
 
 void GlobalGameLoop::update(int delta_time) {
 

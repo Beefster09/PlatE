@@ -4,7 +4,7 @@
 #include <cstring>
 #include <cassert>
 
-HitboxType hitbox_type_from_string(const char* name) {
+HitboxType hitbox_type_by_name(const char* name) {
 	char namebuf[32];
 	if (strlen(name) >= 31) return HitboxType::UNKNOWN;
 	strcpy(namebuf, name);
