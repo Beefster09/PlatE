@@ -2,7 +2,7 @@
 #include "gameloop.h"
 #include "constants.h"
 #include "sprite.h"
-#include "display.h"
+#include "hitbox.h"
 #include "entity.h"
 #include "either.h"
 #include <stdio.h>
@@ -12,7 +12,7 @@
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_timer.h>
 
-using namespace GlobalGameLoop;
+using namespace PlatE;
 
 int main(int argc, char* argv[]) {
 	if (SDL_Init(SDL_INIT_EVERYTHING) >= 0) {
@@ -30,15 +30,36 @@ int main(int argc, char* argv[]) {
 			return 1;
 		}
 
-		SDL_RenderClear(context);
-		render_hitboxes(context, { 100, 100 }, &test.right->framedata[0]);
-		render_hitboxes(context, { 300, 100 }, &test.right->framedata[1]);
-		render_hitboxes(context, { 100, 300 }, &test.right->framedata[2]);
-		render_hitboxes(context, { 300, 300 }, &test.right->framedata[3]);
-		SDL_RenderPresent(context);
+		//SDL_RenderClear(context);
+		//render_hitboxes(context, { 100, 100 }, &test.right->framedata[0]);
+		//render_hitboxes(context, { 300, 100 }, &test.right->framedata[1]);
+		//render_hitboxes(context, { 100, 300 }, &test.right->framedata[2]);
+		//render_hitboxes(context, { 300, 300 }, &test.right->framedata[3]);
+		//SDL_RenderPresent(context);
+
+		Engine engine;
+
+		auto es1 = engine.add_entity_system(20);
+		if (!es1.isLeft) {
+			EntitySystem* system = es1.right;
+
+			Entity temp{
+				0, 0,
+				{200, 400},
+				{200, -1000},
+				{0, 1000},
+				test.right,
+				&test.right->animations[0],
+				0,
+				0.0,
+				&test.right->framedata[0]
+			};
+
+			add_entity(system, temp);
+		}
 
 		SDL_Event curEvent;
-		uint32_t lastTime = 0;
+		uint32_t lastTime = SDL_GetTicks();
 		while (true) {
 			// process events
 			while (SDL_PollEvent(&curEvent)) {
@@ -46,21 +67,25 @@ int main(int argc, char* argv[]) {
 					SDL_Quit();
 					return EXIT_SUCCESS;
 				}
-				event(curEvent);
+				engine.event(curEvent);
 			}
 
 			// update... TODO: ability to choose delta time or static FPS
 			uint32_t updateTime = SDL_GetTicks();
-			update(updateTime - lastTime);
+			engine.update(updateTime - lastTime);
 
 			// render
-			render(context);
+			SDL_SetRenderDrawColor(context, 0, 0, 0, 255);
+			SDL_RenderClear(context);
+
+			engine.render(context);
+
+			SDL_RenderPresent(context);
 
 			int delay = 16 - (SDL_GetTicks() - lastTime);
 			delay = (delay < 0) ? 0 : delay;
-			SDL_Delay(delay);
-			printf("Delaying %dms.\n", delay);
 			lastTime = SDL_GetTicks();
+			SDL_Delay(delay);
 		}
 
 		return EXIT_SDL_EVENT_FAIL;

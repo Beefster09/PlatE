@@ -28,6 +28,13 @@ static FrameOffset frame_offset_json(Value& json) {
 	};
 }
 
+template<class T>
+static T* pool_alloc(void* pool, size_t& offset, size_t quantity) {
+	T* pointer = (T*)pool + offset;
+	offset += quantity * sizeof(T);
+	return pointer;
+}
+
 const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 	Document json;
 
@@ -51,8 +58,7 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 
 	auto validation = validate_sprite_json(json);
 	if (validation.isLeft) {
-		printf("%s", validation.left);
-		return Errors::SpriteLoadJsonInvalid;
+		return DetailedError(Errors::SpriteLoadJsonInvalid, "%s\n", validation.left);
 	}
 
 	// TODO: Determine size needed for everything (use pool allocation)
@@ -73,8 +79,7 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 
 	int n_clipRects = clipJson.Size();
 
-	SDL_Rect* clipRects = (SDL_Rect*)pool + nextAllocOffset;
-	nextAllocOffset += n_clipRects * sizeof(SDL_Rect);
+	SDL_Rect* clipRects = pool_alloc<SDL_Rect>(pool, nextAllocOffset, n_clipRects);
 
 	for (int i = 0; i < n_clipRects; ++i) {
 		auto rectJson = clipJson[i].GetObject();
@@ -91,8 +96,7 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 
 	int n_frames = framesJson.Size();
 
-	Frame* frames = (Frame*)pool + nextAllocOffset;
-	nextAllocOffset += n_frames * sizeof(Frame);
+	Frame* frames = pool_alloc<Frame>(pool, nextAllocOffset, n_frames);
 
 	for (int i = 0; i < n_frames; ++i) {
 		auto frameJson = framesJson[i].GetObject();
@@ -100,8 +104,7 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 		// Hitbox Groups
 		auto collisionJson = frameJson["collision"].GetArray();
 		int n_hitboxGroups = collisionJson.Size();
-		HitboxGroup* collision = (HitboxGroup*)pool + nextAllocOffset;
-		nextAllocOffset += n_hitboxGroups * sizeof(HitboxGroup);
+		HitboxGroup* collision = pool_alloc<HitboxGroup>(pool, nextAllocOffset, n_hitboxGroups);
 
 		for (int j = 0; j < n_hitboxGroups; ++j) {
 			auto hitboxGroupJson = collisionJson[j].GetObject();
@@ -109,8 +112,7 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 			// Hitboxes
 			auto hitboxesJson = hitboxGroupJson["hitboxes"].GetArray();
 			int n_hitboxes = hitboxesJson.Size();
-			Hitbox* hitboxes = (Hitbox*)pool + nextAllocOffset;
-			nextAllocOffset += n_hitboxes * sizeof(Hitbox);
+			Hitbox* hitboxes = pool_alloc<Hitbox>(pool, nextAllocOffset, n_hitboxes);
 
 			for (int k = 0; k < n_hitboxes; ++k) {
 				auto hitboxJson = hitboxesJson[k].GetObject();
@@ -149,18 +151,15 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 
 	auto animationsJson = json["animations"].GetArray();
 	int n_animations = animationsJson.Size();
-	Animation* animations = (Animation*)pool + nextAllocOffset;
-	nextAllocOffset += n_animations * sizeof(Animation);
+	Animation* animations = pool_alloc<Animation>(pool, nextAllocOffset, n_animations);
 
 	for (int i = 0; i < n_animations; ++i) {
 		auto animationJson = animationsJson[i].GetObject();
 
 		auto sequenceJson = animationJson["frames"].GetArray();
 		int n_entries = sequenceJson.Size();
-		FrameTiming* sequence = (FrameTiming*)pool + nextAllocOffset;
-		nextAllocOffset += n_entries * sizeof(FrameTiming);
+		FrameTiming* sequence = pool_alloc<FrameTiming>(pool, nextAllocOffset, n_entries);
 
-		// PROBLEM IS IN THIS FOR LOOP
 		for (int j = 0; j < n_entries; ++j) {
 			auto timingJson = sequenceJson[j].GetObject();
 			sequence[j] = {

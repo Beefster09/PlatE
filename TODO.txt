@@ -3,8 +3,8 @@ Up next:
 [X] Data model for sprites with hitboxes
 [X] Display hitboxes on screen
 [X] JSON Sprites
-[ ] Entities, Velocity
-[ ] Gravity
+[X] Entities, Velocity
+[X] Gravity
 [ ] Rect collision
 [ ] Line collision
 [ ] Solidity

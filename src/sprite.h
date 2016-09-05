@@ -11,7 +11,7 @@
 #include <SDL2/SDL_rect.h>
 
 namespace Errors {
-	error_data
+	const error_data
 		SpriteLoadJsonInvalid = { 201, "Json does not match the expected schema for Sprite" };
 }
 
@@ -55,5 +55,7 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename);
 
 const Sprite* load_sprite(char* filename); // load from "compiled" format
 void unload_sprite(Sprite* sprite); // deallocates all associated resources
+
+void render_hitboxes(SDL_Renderer* context, SDL_Point origin, const Frame* framedata);
 
 #endif

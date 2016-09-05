@@ -1,4 +1,5 @@
 
+#include "sprite.h"
 #include "hitbox.h"
 #include <SDL2/SDL_rect.h>
 #include <cstring>
@@ -20,17 +21,15 @@ HitboxType hitbox_type_by_name(const char* name) {
 	return HitboxType::UNKNOWN;
 }
 
-SDL_Rect* get_hitbox_rects_relative_to(const HitboxGroup& hitboxes, SDL_Point origin) {
-	SDL_Rect* result = new SDL_Rect[hitboxes.n_hitboxes];
-
+void get_hitbox_rects_relative_to(SDL_Rect* rects, const HitboxGroup& hitboxes, SDL_Point origin) {
 	for (int i = 0; i < hitboxes.n_hitboxes; ++i) {
-		result[i].x = origin.x + hitboxes.hitboxes[i].box.x;
-		result[i].y = origin.y + hitboxes.hitboxes[i].box.y;
-		result[i].w = hitboxes.hitboxes[i].box.w;
-		result[i].h = hitboxes.hitboxes[i].box.h;
+		rects[i] = {
+			origin.x + hitboxes.hitboxes[i].box.x,
+			origin.y + hitboxes.hitboxes[i].box.y,
+			hitboxes.hitboxes[i].box.w,
+			hitboxes.hitboxes[i].box.h
+		};
 	}
-
-	return result;
 }
 
 SDL_Color get_hitbox_color(HitboxType type, int flags) {
@@ -42,6 +41,18 @@ SDL_Color get_hitbox_color(HitboxType type, int flags) {
 		case HitboxType::DAMAGE:  return { 255,   0,   0, 255 };
 		case HitboxType::BLOCK:   return { 160,   0, 255, 255 };
 		case HitboxType::TRIGGER: return {   0, 255,   0, 255 };
-		default: return{ 0,0,0,0 };
+		default: return { 0, 0, 0, 0 };
+	}
+}
+
+void render_hitboxes(SDL_Renderer* context, SDL_Point origin, const Frame* framedata) {
+	SDL_Rect rects[32];
+	for (int i = 0; i < framedata->n_hitboxes; ++i) {
+		SDL_Color color = get_hitbox_color(framedata->hitbox_groups[i].type);
+		get_hitbox_rects_relative_to(rects, framedata->hitbox_groups[i], origin);
+		SDL_SetRenderDrawColor(context, color.r, color.g, color.b, 63); // fill
+		SDL_RenderFillRects(context, rects, framedata->n_hitboxes);
+		SDL_SetRenderDrawColor(context, color.r, color.g, color.b, 192); // outline
+		SDL_RenderDrawRects(context, rects, framedata->n_hitboxes);
 	}
 }

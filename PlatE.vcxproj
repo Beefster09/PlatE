@@ -179,7 +179,6 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\display.cpp" />
     <ClCompile Include="src\entity.cpp" />
     <ClCompile Include="src\gameloop.cpp" />
     <ClCompile Include="src\hitbox.cpp" />
@@ -188,12 +187,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\constants.h" />
-    <ClInclude Include="src\display.h" />
     <ClInclude Include="src\either.h" />
     <ClInclude Include="src\entity.h" />
     <ClInclude Include="src\error.h" />
     <ClInclude Include="src\gameloop.h" />
     <ClInclude Include="src\hitbox.h" />
+    <ClInclude Include="src\pixelunit.h" />
     <ClInclude Include="src\sprite.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

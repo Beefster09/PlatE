@@ -1,58 +1,52 @@
 
 #include "entity.h"
 #include "error.h"
-#include "display.h"
 
-Either<Error, EntitySystem> create_entity_system(size_t capacity) {
+Either<Error, EntitySystem*> create_entity_system(size_t capacity) {
 	// This will probably get more complex later
-	return EntitySystem {
+	return new EntitySystem {
 		new Entity[capacity],
-		0,
+		1,
 		0,
 		capacity
 	};
 }
 
-Error dispose_entity_system(EntitySystem& system) {
+Error dispose_entity_system(EntitySystem* system) {
 	// Will probably get more complex later...
-	delete system.entities;
-	system.entities = nullptr;
-	system.nextId = 0;
-	system.max_entities = 0;
-	system.n_entities = 0;
+	delete system->entities;
+	delete system;
 	return SUCCESS;
 }
 
-Error add_entity(EntitySystem& system, const Entity& entity) {
-	if (system.n_entities >= system.max_entities) {
+Error add_entity(EntitySystem* system, const Entity& entity) {
+	if (system->n_entities >= system->max_entities) {
 		return Errors::EntitySystemCapacityReached;
 	}
 
-	system.entities[++system.n_entities] = entity;
+	int index = system->n_entities++;
+	system->entities[index] = entity;
+	system->entities[index].index = index;
+	system->entities[index].id = system->nextId++;
+
 	return SUCCESS;
 }
 
-void process_entities(EntitySystem& system) {
+void process_entities(const int delta_time, EntitySystem* system) {
+	const float dt = ((float) delta_time) / 1000.0f;
 	// Apply velocity and acceleration
-	for (int i = 0; i < system.n_entities; ++i) {
-		Entity* e = &system.entities[i];
-		float moveX, moveY;
-		moveX = e->acceleration.x / 2;
-		moveX += e->velocity.x;
-		e->position.x += moveX;
-		e->velocity.x += e->acceleration.x;
-
-		moveY += e->velocity.y;
-		moveY = e->acceleration.y / 2;
-		e->position.y+= moveY;
-		e->velocity.y += e->acceleration.y;
+	for (int i = 0; i < system->n_entities; ++i) {
+		Entity* e = &system->entities[i];
+		e->position.x += dt * (e->acceleration.x / 2.0f + e->velocity.x);
+		e->velocity.x += dt * e->acceleration.x;
+		e->position.y += dt * (e->acceleration.y / 2.0f + e->velocity.y);
+		e->velocity.y += dt * e->acceleration.y;
 	}
 }
 
-void render_entities(SDL_Renderer* context, const EntitySystem& system) {
-	for (int i = 0; i < system.n_entities; ++i) {
-		Entity* e = &system.entities[i];
-		SDL_Point p = { e->position.x, e->position.y };
-		render_hitboxes(context, p, e->curFrame);
+void render_entities(SDL_Renderer* context, const EntitySystem* system) {
+	for (int i = 0; i < system->n_entities; ++i) {
+		Entity* e = &system->entities[i];
+		render_hitboxes(context, { e->position.x, e->position.y }, e->curFrame);
 	}
 }

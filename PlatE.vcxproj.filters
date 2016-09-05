@@ -24,9 +24,6 @@
     <ClCompile Include="src\sprite.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\display.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\hitbox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -47,9 +44,6 @@
     <ClInclude Include="src\hitbox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\display.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\gameloop.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -60,6 +54,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\entity.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pixelunit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
