@@ -43,19 +43,18 @@ int main(int argc, char* argv[]) {
 		if (!es1.isLeft) {
 			EntitySystem* system = es1.right;
 
-			Entity temp{
-				0, 0,
-				{200, 400},
-				{200, -1000},
-				{0, 1000},
+			const EntityClass* temp_class = new EntityClass {
+				"LOLOLOLOL",
 				test.right,
-				&test.right->animations[0],
-				0,
-				0.0,
-				&test.right->framedata[0]
+				0
 			};
 
-			add_entity(system, temp);
+			auto blah = spawn_entity(system, temp_class, {100, 400});
+
+			if (!blah.isLeft) {
+				blah.right->velocity = { 300, -1000 };
+				blah.right->acceleration = { 0, 1500 };
+			}
 		}
 
 		SDL_Event curEvent;

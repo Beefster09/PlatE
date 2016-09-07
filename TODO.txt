@@ -10,22 +10,31 @@ Up next:
 [ ] Solidity
 [ ] Slope following
 
-High-Level Features
-[ ] Hitboxes: Rectangle, Line, Circle Collision types
-  [ ] Fast collision detection
+High-Level 1.0 Features
+[ ] Fast collision detection
+  [ ] Rectangle, Line, Circle Collision types
+  [ ] Tunnelling prevention
+  [ ] Gravity
+  [ ] Slopes
+  [ ] Moving Platforms, conveyor belts?
+  [ ] High-level checks
+    [ ] On ground / in air
+    [ ] Touching wall
 [ ] Data-oriented sprite/entity framework (Similar to a particle system)
   [ ] Parallel processing
-[ ] Gravity
-[ ] Slopes
-[ ] Moving Platforms
-[ ] Ledge Grabbing
-[ ] High-level checks
-  [ ] On ground / in air
-  [ ] Touching wall
+[ ] Particle system for effects
+  [ ] Textured particles (for sparkles, smoke, etc...)
 [ ] Event system
 [ ] JSON-based assets
   [ ] Baking JSON assets into binary assets
   [ ] (Maybe) compiler flags for JSON-free builds
 [ ] Resolution independence
-[ ] Scripting
-[ ] Basic editor
+[ ] GUI framework
+[ ] Automatic asset management (quasi-GC on Sprites, EntityClasses, etc...)
+[ ] Scripting - probably Lua
+  [ ] Thread-safe! (using one Lua interpreter per core and disallowing coroutines)
+    [ ] Per-frame entities updates limit scope to ONLY the currently processed entity
+    [ ] Event updates allow access to all entities involved
+  [ ] Saving system that is easy to use and implement.
+    [ ] Persistent data stores at both global scope and map scope.
+[ ] Basic editor (probably in a different language)

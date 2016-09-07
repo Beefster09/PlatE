@@ -12,24 +12,50 @@
 
 namespace Errors {
 	const error_data
-		EntitySystemCapacityReached = { 300, "Entity system has reached its maximum entity count" };
+		EntitySystemInvalidSize = { 300, "Entity system must have at least 1 max entity" },
+		EntitySystemCapacityReached = { 301, "Entity system has reached its maximum entity count" },
+		EntitySystemInvalidState = { 499, "Entity system has been corrupted or tampered with!" };
 }
 
+typedef struct pixel_pos {
+	PixelUnit x, y;
+} PixelPosition;
+
+typedef struct vector2 {
+	float x, y;
+} Vector2;
+
+struct entity;
+
+// Classes of entities. Should be const when loaded.
+// Contains metadata about behavior and initialization.
+typedef struct entity_class {
+	const char* name;
+	const Sprite* initial_sprite;
+	size_t initial_animation;
+
+	//  \- BEHAVIOR -/
+	// void* init_script
+	// void* update_script
+	// void* event_handlers
+} EntityClass;
+
+// Instances of entities
 typedef struct entity {
-	size_t index;
 	uint32_t id;
+	const EntityClass* e_class;
 
-	struct {
-		PixelUnit x, y;
-	} position;
+	PixelPosition position;
 
-	struct {
-		float x, y;
-	} velocity;
+	Vector2 velocity;
+	Vector2 acceleration;
 
-	struct { // Not sure if this is how I should do gravity...
-		float x, y;
-	} acceleration;
+	// Needed for tunnelling prevention and effects such as motion blur.
+	PixelPosition last_pos;
+	float last_dt;
+
+	int z_order; // needed for drawing
+	float rotation; // will be needed later
 
 	const Sprite* sprite;
 	const Animation* curAnimation;
@@ -39,16 +65,20 @@ typedef struct entity {
 
 	// Scripting / Events
 	/*
-	void* script; // not sure what type this should be...
 	int32_t scriptSlots[16];
-	void* callbacks; // event callback struct (LATER)
 	*/
 } Entity;
 
 typedef struct entity_system {
+	// Sparse allocation
 	Entity* entities;
+	bool* has_entity; // TODO: turn into dynamic bitarray that isn't a vector<bool>
 
-	uint32_t nextId;
+	// Densely allocated
+	Entity** z_ordered_entities;
+
+	uint32_t next_id;
+	size_t next_index;
 	size_t n_entities;
 	size_t max_entities;
 } EntitySystem;
@@ -56,10 +86,10 @@ typedef struct entity_system {
 Either<Error, EntitySystem*> create_entity_system(size_t capacity = ENTITY_SYSTEM_DEFAULT_SIZE);
 Error dispose_entity_system(EntitySystem* system);
 
-Error add_entity(EntitySystem* system, const Entity& entity);
-Error remove_entity(EntitySystem* system, uint32_t id);
+Either<Error, Entity*> spawn_entity(EntitySystem* system, const EntityClass* e_class, PixelPosition position);
+Error destroy_entity(EntitySystem* system, uint32_t id);
 
-// TODO/later: allow interactions across multiple entity systems and level data
+// TODO/later: allow interactions between entity systems and level collision data
 // Things to think about:
 //  * Is this where physics/collision detection are calculated?
 //    - Or is it done on another pass?
