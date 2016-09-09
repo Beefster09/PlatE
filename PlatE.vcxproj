@@ -180,6 +180,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\entity.cpp" />
+    <ClCompile Include="src\event.cpp" />
     <ClCompile Include="src\gameloop.cpp" />
     <ClCompile Include="src\hitbox.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -190,6 +191,7 @@
     <ClInclude Include="src\either.h" />
     <ClInclude Include="src\entity.h" />
     <ClInclude Include="src\error.h" />
+    <ClInclude Include="src\event.h" />
     <ClInclude Include="src\gameloop.h" />
     <ClInclude Include="src\hitbox.h" />
     <ClInclude Include="src\pixelunit.h" />

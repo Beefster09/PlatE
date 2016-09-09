@@ -60,7 +60,14 @@ typedef struct {
 } HitboxGroup;
 
 HitboxType hitbox_type_by_name(const char* name);
+const char* name_of(HitboxType type);
 SDL_Color get_hitbox_color(HitboxType type, int flags = 0);
+bool hitbox_types_collide(HitboxType a, HitboxType b);
+bool hitbox_types_order(HitboxType a, HitboxType b); // Returns true if a and b are in the correct order
+
 void get_hitbox_rects_relative_to(SDL_Rect* rects, const HitboxGroup& hitboxes, SDL_Point origin);
+
+// Collision detection :O
+bool hitboxes_overlap(const Hitbox* a, int ax, int ay, const Hitbox* b, int bx, int by);
 
 #endif

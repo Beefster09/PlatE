@@ -7,6 +7,7 @@
 #include "hitbox.h"
 #include "either.h"
 #include "pixelunit.h"
+#include "event.h"
 
 #define ENTITY_SYSTEM_DEFAULT_SIZE 256
 
@@ -54,6 +55,12 @@ typedef struct entity {
 	PixelPosition last_pos;
 	float last_dt;
 
+	// Other movement stuffs
+	Vector2 max_speed; // Maximum speed on each axis
+	Vector2 gravity;   // Additional acceleration to apply when in midair
+
+	bool onGround; // This will probably change type to a pointer later
+
 	int z_order; // needed for drawing
 	float rotation; // will be needed later
 
@@ -69,6 +76,10 @@ typedef struct entity {
 	*/
 } Entity;
 
+// Things to think about:
+//  * How is this supposed to interact with players?
+//    - probably scripts
+//  * Should particles and bullets be managed by an entity systems?
 typedef struct entity_system {
 	// Sparse allocation
 	Entity* entities;
@@ -76,6 +87,8 @@ typedef struct entity_system {
 
 	// Densely allocated
 	Entity** z_ordered_entities;
+
+	EventBuffer* event_buffer;
 
 	uint32_t next_id;
 	size_t next_index;
@@ -90,13 +103,6 @@ Either<Error, Entity*> spawn_entity(EntitySystem* system, const EntityClass* e_c
 Error destroy_entity(EntitySystem* system, uint32_t id);
 
 // TODO/later: allow interactions between entity systems and level collision data
-// Things to think about:
-//  * Is this where physics/collision detection are calculated?
-//    - Or is it done on another pass?
-//  * Are events processed at this time?
-//    - Are events synchronous or asynchronous (which would require some sort of queue structure...)
-//    - Is the events queue shared or individual?
-//  * How is this supposed to interact with players?
 void process_entities(int delta_time, EntitySystem* system);
 
 // self-explanatory

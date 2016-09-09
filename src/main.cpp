@@ -55,6 +55,8 @@ int main(int argc, char* argv[]) {
 				blah.right->velocity = { 300, -1000 };
 				blah.right->acceleration = { 0, 1500 };
 			}
+
+			spawn_entity(system, temp_class, { 400, 400 });
 		}
 
 		SDL_Event curEvent;

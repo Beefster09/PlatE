@@ -5,9 +5,10 @@ Up next:
 [X] JSON Sprites
 [X] Entities, Velocity
 [X] Gravity
-[ ] Rect collision
-[ ] Line collision
+[X] Rect collision
 [ ] Solidity
+[ ] "On Ground"
+[ ] Line collision
 [ ] Slope following
 
 High-Level 1.0 Features
