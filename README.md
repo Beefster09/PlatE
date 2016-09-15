@@ -10,11 +10,12 @@ Of course. The selling point. Other than the obvious of being open-source MIT-li
     * Well except for the hitbox system, which is inspired by fighting games.
     * Unity, Unreal, Cocos2dx, and others use more sophisticated rigid body physics. While that will be the right tool for some games, it can often be unwieldy overkill when it comes to 2D platformers. Not to mention that those engines struggle with some of the simple things we expect out of platformers, such as slopes. So often with those engines, you end up implementing your own physics to get the feel that is right for your game.
   + The entity system is data-oriented (think particle systems), making it fast and parallelizable.
-    * This helps avoid using certain tricks commonly used in other engines such as object pooling.
+    * This helps avoid using certain tricks commonly used in other engines such as object pooling, as it is essentially an object pool in itself.
 	* Memory allocation in general is minimized, leading to far less memory fragmentation.
   + Specialized: Limited, yet flexible
     * They say limitation is the mother of creativity.
 	* It's better to have something that does a 95% job at 15% of tasks than to have something that does a 15% job at 95% of tasks. Most other game engines are so nebulously multi-purpose that you end up re-inventing the wheel or spend hours trying to comprehend basic things about the system.
+	* There _will_ be a scripting system. At this point, it's unclear to me whether this will be something like Lua or a simpler VM-based homebrew scripting language. I want the scripting engine to be parallelizable somehow, sandboxed, and fast.
   + It will be easy to implement game saves. (Hopefully as mindlessly as Zelda Classic)
   
 ## Influences and inspiration
@@ -27,9 +28,13 @@ Sonic and Freedom Planet acted as inspiration. I want to make it possible at som
 Lastly, Zelda Classic and RPG Maker are sort of my yardsticks when it comes to the engine and editor usability (which will come later and will probably be written in a different language since performance is not so critical there). Making a playable 1st iteration prototype of a game should be simple and fast if you have the assets.
 	
 ## Will it be multiplatform?
-At some point, yes, though I'm currently doing all my development in Visual Studio. No guarantees it will compile everywhere at this point.
+At some point, yes, though I'm currently doing all my development in Visual Studio using 64-bit SDL. No guarantees it will compile everywhere at this point.
 
 I'm a big fan of Linux, so you guys will definitely be 100% supported by version 1.0.
+
+And yes, Mac OS will get support too... Though I will need a community to be able to help with that.
+
+Console ports will probably be possible without too much effort, but they are very low priority.
 	
 ## What does PlatE stand for?
 **Plat**former **E**ngine

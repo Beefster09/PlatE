@@ -1,5 +1,5 @@
 
-#include "gameloop.h"
+#include "engine.h"
 #include "constants.h"
 #include "sprite.h"
 #include "hitbox.h"
@@ -30,23 +30,17 @@ int main(int argc, char* argv[]) {
 			return 1;
 		}
 
-		//SDL_RenderClear(context);
-		//render_hitboxes(context, { 100, 100 }, &test.right->framedata[0]);
-		//render_hitboxes(context, { 300, 100 }, &test.right->framedata[1]);
-		//render_hitboxes(context, { 100, 300 }, &test.right->framedata[2]);
-		//render_hitboxes(context, { 300, 300 }, &test.right->framedata[3]);
-		//SDL_RenderPresent(context);
-
 		Engine engine;
 
 		auto es1 = engine.add_entity_system(20);
 		if (!es1.isLeft) {
 			EntitySystem* system = es1.right;
 
-			const EntityClass* temp_class = new EntityClass {
+			const EntityClass* temp_class = new EntityClass{
 				"LOLOLOLOL",
 				test.right,
-				0
+				0,
+				true
 			};
 
 			auto blah = spawn_entity(system, temp_class, {100, 400});
@@ -56,7 +50,12 @@ int main(int argc, char* argv[]) {
 				blah.right->acceleration = { 0, 1500 };
 			}
 
-			spawn_entity(system, temp_class, { 400, 400 });
+			auto blah2 = spawn_entity(system, temp_class, { 400, 350 });
+
+			if (!blah2.isLeft) {
+				blah2.right->velocity = { 25, -10 };
+				blah2.right->acceleration = { 0, 20 };
+			}
 		}
 
 		SDL_Event curEvent;

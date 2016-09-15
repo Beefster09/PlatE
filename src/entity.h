@@ -6,8 +6,8 @@
 #include "sprite.h"
 #include "hitbox.h"
 #include "either.h"
-#include "pixelunit.h"
 #include "event.h"
+#include "vectors.h"
 
 #define ENTITY_SYSTEM_DEFAULT_SIZE 256
 
@@ -18,41 +18,35 @@ namespace Errors {
 		EntitySystemInvalidState = { 499, "Entity system has been corrupted or tampered with!" };
 }
 
-typedef struct pixel_pos {
-	PixelUnit x, y;
-} PixelPosition;
-
-typedef struct vector2 {
-	float x, y;
-} Vector2;
-
-struct entity;
-
 // Classes of entities. Should be const when loaded.
 // Contains metadata about behavior and initialization.
-typedef struct entity_class {
+struct EntityClass {
 	const char* name;
 	const Sprite* initial_sprite;
 	size_t initial_animation;
+
+	bool self_colliding: 1; // instances of this entity class collide with other instances of the same class
 
 	//  \- BEHAVIOR -/
 	// void* init_script
 	// void* update_script
 	// void* event_handlers
-} EntityClass;
+};
+
+typedef uint32_t EntityId;
 
 // Instances of entities
-typedef struct entity {
-	uint32_t id;
+struct Entity {
+	EntityId id;
 	const EntityClass* e_class;
 
-	PixelPosition position;
+	Point2 position;
 
 	Vector2 velocity;
 	Vector2 acceleration;
 
 	// Needed for tunnelling prevention and effects such as motion blur.
-	PixelPosition last_pos;
+	Point2 last_pos;
 	float last_dt;
 
 	// Other movement stuffs
@@ -74,13 +68,14 @@ typedef struct entity {
 	/*
 	int32_t scriptSlots[16];
 	*/
-} Entity;
+};
 
 // Things to think about:
 //  * How is this supposed to interact with players?
 //    - probably scripts
 //  * Should particles and bullets be managed by an entity systems?
-typedef struct entity_system {
+//  * Should they be fixed-size or expandable?
+struct EntitySystem {
 	// Sparse allocation
 	Entity* entities;
 	bool* has_entity; // TODO: turn into dynamic bitarray that isn't a vector<bool>
@@ -90,17 +85,17 @@ typedef struct entity_system {
 
 	EventBuffer* event_buffer;
 
-	uint32_t next_id;
+	EntityId next_id;
 	size_t next_index;
 	size_t n_entities;
 	size_t max_entities;
-} EntitySystem;
+};
 
 Either<Error, EntitySystem*> create_entity_system(size_t capacity = ENTITY_SYSTEM_DEFAULT_SIZE);
 Error dispose_entity_system(EntitySystem* system);
 
-Either<Error, Entity*> spawn_entity(EntitySystem* system, const EntityClass* e_class, PixelPosition position);
-Error destroy_entity(EntitySystem* system, uint32_t id);
+Either<Error, Entity*> spawn_entity(EntitySystem* system, const EntityClass* e_class, Point2 position);
+Error destroy_entity(EntitySystem* system, EntityId id);
 
 // TODO/later: allow interactions between entity systems and level collision data
 void process_entities(int delta_time, EntitySystem* system);

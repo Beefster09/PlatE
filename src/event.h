@@ -4,6 +4,7 @@
 #include "error.h"
 #include "hitbox.h"
 #include <SDL2/SDL_mutex.h>
+#include <deque>
 
 namespace Errors {
 	const error_data
@@ -11,36 +12,32 @@ namespace Errors {
 		EventQueueCannotLockMutex = { -501, "SDL failed to lock mutex" },
 		EventQueueCannotUnlockMutex = { -502, "SDL failed to unlock mutex" },
 		EventQueueInitError = { 500, "Event queue could not be initialized" },
-		EventQueueFull = { 501, "Event queue is full" };
+		EventQueueFull = { 501, "Event queue is full" },
+		EventQueueEmpty = { 502, "Event queue is empty" };
 }
 
-struct entity;
+struct Entity;
 
-enum class EventType {
-	Collision
-};
-
-typedef struct event_t {
-	EventType type;
+struct Event {
+	enum : char {
+		Collision
+	} type;
 
 	union {
 		struct {
-			HitboxType typeA, typeB;
-			entity *entityA, *entityB;
+			const HitboxGroup *hitboxA, *hitboxB;
+			Entity *entityA, *entityB;
 		} collision;
 	};
-} Event;
+};
 
 // A "queue" that is either being emptied or filled, not both
-typedef struct event_buffer {
+struct EventBuffer {
 	SDL_mutex* lock;
-	Event* events;
-	size_t capacity;
-	size_t size;
-	size_t next_pop;
-} EventBuffer;
+	std::deque<Event> events;
+};
 
-Either<Error, EventBuffer*> create_EventBuffer(size_t capacity);
+Either<Error, EventBuffer*> create_EventBuffer();
 Error destroy_EventBuffer(EventBuffer* buffer);
 Error push_event(EventBuffer* buffer, Event &ev);
 Either<Error, Event> pop_event(EventBuffer* buffer);

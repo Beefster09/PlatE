@@ -27,13 +27,19 @@
     <ClCompile Include="src\hitbox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\gameloop.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\entity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\event.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\direction.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\engine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\vectors.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -47,9 +53,6 @@
     <ClInclude Include="src\hitbox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\gameloop.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\either.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -59,10 +62,16 @@
     <ClInclude Include="src\entity.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\pixelunit.h">
+    <ClInclude Include="src\event.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\event.h">
+    <ClInclude Include="src\direction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\vectors.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

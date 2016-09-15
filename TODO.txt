@@ -1,13 +1,11 @@
 Up next:
-[X] Set up VS project and basic SDL setup
-[X] Data model for sprites with hitboxes
-[X] Display hitboxes on screen
-[X] JSON Sprites
+[X] JSON Sprites (basic)
 [X] Entities, Velocity
 [X] Gravity
 [X] Rect collision
-[ ] Solidity
+[X] Solidity
 [ ] "On Ground"
+[ ] Level data
 [ ] Line collision
 [ ] Slope following
 
@@ -15,7 +13,7 @@ High-Level 1.0 Features
 [ ] Fast collision detection
   [ ] Rectangle, Line, Circle Collision types
   [ ] Tunnelling prevention
-  [ ] Gravity
+  [X] Gravity
   [ ] Slopes
   [ ] Moving Platforms, conveyor belts?
   [ ] High-level checks
@@ -25,6 +23,7 @@ High-Level 1.0 Features
   [ ] Parallel processing
 [ ] Particle system for effects
   [ ] Textured particles (for sparkles, smoke, etc...)
+  [ ] Collision? (maybe environment only)
 [ ] Event system
 [ ] JSON-based assets
   [ ] Baking JSON assets into binary assets
@@ -38,4 +37,5 @@ High-Level 1.0 Features
     [ ] Event updates allow access to all entities involved
   [ ] Saving system that is easy to use and implement.
     [ ] Persistent data stores at both global scope and map scope.
+    [ ] Forwards-compatible data structure (probably a hash table)
 [ ] Basic editor (probably in a different language)

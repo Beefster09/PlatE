@@ -77,11 +77,12 @@
 			"offsets": [],
 			"collision": [
 				{
-					"type": "solid",
+					"type": "oneway",
 					"hitboxes": [
 						{"shape": "box", "x": -64, "y": -64, "w": 128, "h": 128}
 					],
-					"flags": 255
+					"flags": 255,
+					"direction": "up"
 				},
 				{
 					"type": "hurtbox",
@@ -98,7 +99,6 @@
 					],
 					"flags": 255
 				}
-				
 			]
 		},
 		{
@@ -135,9 +135,14 @@
 		{
 			"name": "wat",
 			"frames": [
+				{"duration": 0.0, "frame": 2}
+			]
+		},
+		{
+			"name": "wat2",
+			"frames": [
 				{"duration": 0.5, "frame": 0},
-				{"duration": 0.25, "frame": 1},
-				{"duration": 0.25, "frame": 2}
+				{"duration": 0.25, "frame": 1}
 			]
 		}
 	]

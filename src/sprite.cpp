@@ -118,7 +118,7 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 				auto hitboxJson = hitboxesJson[k].GetObject();
 				// TODO: Circle, Line collision
 				hitboxes[k] = {
-					HitboxShape::BOX,
+					Hitbox::BOX,
 					(short) hitboxJson["x"].GetInt(),
 					(short) hitboxJson["y"].GetInt(),
 					(short) hitboxJson["w"].GetInt(),
@@ -128,10 +128,10 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 
 			collision[j] = {
 				hitbox_type_by_name(hitboxGroupJson["type"].GetString()),
-				n_hitboxes,
-				hitboxes,
+				{},
 				(uint64_t)hitboxGroupJson["flags"].GetInt64(),
-				0
+				n_hitboxes,
+				hitboxes
 			};
 			// TODO: special data
 		}

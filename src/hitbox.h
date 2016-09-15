@@ -4,66 +4,85 @@
 #include <cstdint>
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_pixels.h>
+#include "direction.h"
+#include "either.h"
+#include "vectors.h"
 
-enum class HitboxShape {
-	BOX = 1,   // Axis-aligned bounding box
-	LINE,
-	CIRCLE
-};
+struct Hitbox {
+	enum : char {
+		BOX,	// Sprite-aligned bounding box
+		CIRCLE, // Hit-bubble
+		LINE,   // Line
+		ONEWAY  // Line that only collides from one side. Only works for solid collisions
+		        //   Solid side is the top side for left-to-right horizontal lines
+		// PIXELPERFECT ?
+	} shape;
 
-typedef struct {
-	HitboxShape shape;
 	union {
+		SDL_Rect box;
 		struct {
-			short x, y, w, h;
-		} box;
-		struct {
-			short x1, y1, x2, y2;
+			int x1, y1, x2, y2;
 		} line;
 		struct {
-			short x, y;
+			int x1, y1, x2, y2;
+		} oneway;
+		struct {
+			int x, y;
 			float radius;
 		} circle;
 	};
-} Hitbox;
-
-enum class HitboxType {
-	UNKNOWN = -1,
-	SOLID = 0,  // Collides with other solid hitboxes
-	ONEWAY,     // Collides with solid hitboxes from one side
-	HURTBOX,    // Reports events when hit by damage hitboxes
-	BLOCK,		// Disables damage hitboxes that touch this. Takes priority over hurtboxes. Might not work from all sides.
-	DAMAGE,     // Reports an event when hitting a hurtbox or block, then stops colliding its group until refreshed
-	TRIGGER,	// Reports an event when initially colliding with a solid hitbox
-	AREA        // Reports events when solid hitboxes overlap at least 50% with this
 };
 
-typedef struct {
-	HitboxType type;
-	int n_hitboxes;
-	const Hitbox* hitboxes;
-	uint64_t flags; // Only collides groups with at least one flag matching
+enum class HitboxType {
+	UNKNOWN,  // because reasons
+	SOLID,        // Collides with other solid hitboxes
+	TRIGGER,	  // Reports an event when initially colliding with a solid hitbox
+	HURTBOX,      // Reports events when hit by damage hitboxes
+	BLOCK,		  // Disables damage hitboxes that touch this. Takes priority over hurtboxes. Might not work from all sides.
+	DAMAGE,       // Reports an event when hitting a hurtbox or block, then stops colliding its group until refreshed
+	AREA          // Reports events when solid hitboxes overlap at least 50% with this
+};
+
+struct HitboxGroup {
+	HitboxType type; // determines what this collides with and what data is passed in events
 	union {
+		struct {} solid;
+		struct {} trigger;
 		struct {
-			int direction;
-		} oneway;
+			int priority;
+		} hurtbox;
 		struct {
-			int direction;
+			int priority;
 		} block;
 		struct {
 			int priority;
 		} damage;
 		struct {
 			int priority;
+			float minimum_containing;
 		} area;
 	};
-} HitboxGroup;
+
+	uint64_t flags;
+	// HitboxGroups will only collide if their types are compatible and at least one flag matches
+	// I'm not exactly sure how this will look on the user-facing side...
+
+	int n_hitboxes;
+	const Hitbox* hitboxes;
+};
+
+struct CollisionData {
+	float radius_squared;    // Used for sweep and prune checks
+
+	int n_groups;
+	const HitboxGroup* groups;
+};
 
 HitboxType hitbox_type_by_name(const char* name);
 const char* name_of(HitboxType type);
 SDL_Color get_hitbox_color(HitboxType type, int flags = 0);
 bool hitbox_types_collide(HitboxType a, HitboxType b);
-bool hitbox_types_order(HitboxType a, HitboxType b); // Returns true if a and b are in the correct order
+bool hitbox_acts_on (HitboxType a, HitboxType b); // Returns true if a and b are in the correct order
 
 void get_hitbox_rects_relative_to(SDL_Rect* rects, const HitboxGroup& hitboxes, SDL_Point origin);
 

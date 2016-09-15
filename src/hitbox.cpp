@@ -12,7 +12,6 @@ HitboxType hitbox_type_by_name(const char* name) {
 	strlwr(namebuf);
 
 	if (strcmp(namebuf, "solid") == 0) return HitboxType::SOLID;
-	if (strcmp(namebuf, "oneway") == 0) return HitboxType::ONEWAY;
 	if (strcmp(namebuf, "hurtbox") == 0) return HitboxType::HURTBOX;
 	if (strcmp(namebuf, "damage") == 0) return HitboxType::DAMAGE;
 	if (strcmp(namebuf, "area") == 0) return HitboxType::AREA;
@@ -24,7 +23,6 @@ HitboxType hitbox_type_by_name(const char* name) {
 const char* name_of(HitboxType type) {
 	switch (type) {
 	case HitboxType::SOLID:   return "Solid";
-	case HitboxType::ONEWAY:  return "One-way";
 	case HitboxType::AREA:    return "Area";
 	case HitboxType::HURTBOX: return "Hurtbox";
 	case HitboxType::DAMAGE:  return "Damage";
@@ -48,7 +46,6 @@ void get_hitbox_rects_relative_to(SDL_Rect* rects, const HitboxGroup& hitboxes, 
 SDL_Color get_hitbox_color(HitboxType type, int flags) {
 	switch (type) {
 		case HitboxType::SOLID:   return { 160, 160, 160, 255 };
-		case HitboxType::ONEWAY:  return { 100, 100, 100, 255 };
 		case HitboxType::AREA:    return {   0,  80, 255, 255 };
 		case HitboxType::HURTBOX: return { 255, 255,   0, 255 };
 		case HitboxType::DAMAGE:  return { 255,   0,   0, 255 };
@@ -73,11 +70,9 @@ void render_hitboxes(SDL_Renderer* context, SDL_Point origin, const Frame* frame
 bool hitbox_types_collide(HitboxType a, HitboxType b) {
 	switch (a) {
 	case HitboxType::SOLID:
-		return b == HitboxType::ONEWAY
-			|| b == HitboxType::SOLID
+		return b == HitboxType::SOLID
 			|| b == HitboxType::AREA
 			|| b == HitboxType::TRIGGER;
-	case HitboxType::ONEWAY:
 	case HitboxType::AREA:
 	case HitboxType::TRIGGER:
 		return b == HitboxType::SOLID;
@@ -92,7 +87,7 @@ bool hitbox_types_collide(HitboxType a, HitboxType b) {
 	}
 }
 
-bool hitbox_types_order(HitboxType a, HitboxType b) {
+bool hitbox_acts_on(HitboxType a, HitboxType b) {
 	switch (b) {
 	case HitboxType::SOLID:
 		return a == HitboxType::SOLID
@@ -102,7 +97,6 @@ bool hitbox_types_order(HitboxType a, HitboxType b) {
 		return false;
 	case HitboxType::HURTBOX:
 	case HitboxType::BLOCK:
-	case HitboxType::ONEWAY:
 	case HitboxType::AREA:
 	default:
 		return true;
@@ -110,33 +104,100 @@ bool hitbox_types_order(HitboxType a, HitboxType b) {
 }
 
 bool hitboxes_overlap(const Hitbox* a, int ax, int ay, const Hitbox* b, int bx, int by) {
-	switch (a->shape) {
-	case HitboxShape::BOX:
-		switch (b->shape) {
-		case HitboxShape::BOX:
-			{
-			int aLeft = ax + a->box.x;
-			int aRight = aLeft + a->box.w;
-			int aTop = ay + a->box.y;
-			int aBottom = aTop + a->box.h;
+	if (a->shape == Hitbox::BOX) {
+		if (b->shape == Hitbox::BOX) {
+			float aLeft = ax + a->box.x;
+			float aRight = aLeft + a->box.w;
+			float aTop = ay + a->box.y;
+			float aBottom = aTop + a->box.h;
 
-			int bLeft = bx + b->box.x;
-			int bRight = bLeft + b->box.w;
-			int bTop = by + b->box.y;
-			int bBottom = bTop + b->box.h;
+			float bLeft = bx + b->box.x;
+			float bRight = bLeft + b->box.w;
+			float bTop = by + b->box.y;
+			float bBottom = bTop + b->box.h;
 
 			return (
-				aLeft < bRight && aRight > bLeft && 
-				aTop < bBottom && aBottom > bTop 
-			);
-			}
-		default:
-			break;
+				aLeft < bRight && aRight > bLeft &&
+				aTop < bBottom && aBottom > bTop
+				);
 		}
-		break;
-	default:
-		break;
+		else if (b->shape == Hitbox::CIRCLE) {
+			float left = ax + a->box.x;
+			float right = left + a->box.w;
+			float top = ay + a->box.y;
+			float bottom = top + a->box.h;
+
+			float cx = bx + b->circle.x;
+			float cy = by + b->circle.y;
+			float r = b->circle.radius;
+
+			if (cx < left) {
+				// center is left of box
+				if (cy < top) {
+					// in top-left corner
+					float dx = cx - left;
+					float dy = cy - top;
+					return dx * dx + dy * dy < r * r;
+				}
+				else if (cy > bottom) {
+					// in bottom-left corner
+					float dx = cx - left;
+					float dy = cy - bottom;
+					return dx * dx + dy * dy < r * r;
+				}
+				else {
+					// just to the left
+					return cx < left - r;
+				}
+			}
+			else if (cx > right) {
+				// center is left of box
+				if (cy < top) {
+					// in top-right corner
+					float dx = cx - right;
+					float dy = cy - top;
+					return dx * dx + dy * dy < r * r;
+				}
+				else if (cy > bottom) {
+					// in bottom-right corner
+					float dx = cx - right;
+					float dy = cy - bottom;
+					return dx * dx + dy * dy < r * r;
+				}
+				else {
+					// just to the right
+					return cx > right + r;
+				}
+			}
+			else {
+				if (cy < top) {
+					// above
+					return cy < top - r;
+				}
+				else if (cy > bottom) {
+					// below
+					return cy > bottom + r;
+				}
+				else {
+					// center is inside box
+					return true;
+				}
+			}
+		}
+	} else if (a->shape == Hitbox::CIRCLE) {
+		if (b->shape == Hitbox::CIRCLE) {
+			float dx = (ax + a->circle.x) - (bx + b->circle.x);
+			float dy = (ay + a->circle.y) - (by + b->circle.y);
+			float dist = a->circle.radius + b->circle.radius;
+
+			return dx * dx + dy * dy < dist * dist;
+		}
+		else if (b->shape == Hitbox::BOX) {
+			return hitboxes_overlap(b, bx, by, a, ax, ay);
+		}
 	}
-	printf("WARNING: Reached default case of hitboxes_overlap(...)\n");
-	return false;
+	else {
+		printf("WARNING: Reached default case of hitboxes_overlap(...)\n");
+		return false;
+	}
 }
