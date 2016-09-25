@@ -1,6 +1,6 @@
 
 #include "engine.h"
-#include "constants.h"
+#include "macros.h"
 #include "sprite.h"
 #include "hitbox.h"
 #include "entity.h"
@@ -47,14 +47,14 @@ int main(int argc, char* argv[]) {
 
 			if (!blah.isLeft) {
 				blah.right->velocity = { 300, -1000 };
-				blah.right->acceleration = { 0, 1500 };
+				blah.right->gravity = { 0, 1500 };
 			}
 
 			auto blah2 = spawn_entity(system, temp_class, { 400, 350 });
 
 			if (!blah2.isLeft) {
 				blah2.right->velocity = { 25, -10 };
-				blah2.right->acceleration = { 0, 20 };
+				blah2.right->gravity = { 0, 20 };
 			}
 		}
 

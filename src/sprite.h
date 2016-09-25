@@ -4,6 +4,7 @@
 // Sprites contain only the metadata required to display things on screen and provide collision information.
 // This data is immutable when loaded.
 
+#include "storage.h"
 #include "hitbox.h"
 #include "either.h"
 #include "error.h"
@@ -15,47 +16,39 @@ namespace Errors {
 		SpriteLoadJsonInvalid = { 201, "Json does not match the expected schema for Sprite" };
 }
 
-typedef struct {
-	short x, y;
-} FrameOffset;
+struct FrameOffset {
+	int x, y;
+};
 
-typedef struct {
+struct Frame {
 	const SDL_Rect* texture_region; // Points to the same data as the toplevel sprite's texture regions
 	FrameOffset display; // Relative position of the upper-left corner of the texture from the origin
 	FrameOffset foot; // Relative position of the "foot" coordinate which is used to follow slopes.
-	int n_offsets;
-	const FrameOffset* offsets; // Other offsets that might be of interest
-	int n_hitboxes;
-	HitboxGroup* hitbox_groups;
-} Frame;
+	Array<const FrameOffset> offsets; // Other offsets that might be of interest
+	CollisionData collision;
+};
 
-typedef struct {
+struct FrameTiming {
 	float delay;
 	const Frame* frame;
-} FrameTiming;
+};
 
-typedef struct {
+struct Animation {
 	const char* name;
-	int n_frames;
-	const FrameTiming *frames;
-} Animation;
+	Array<const FrameTiming> frames;
+};
 
-typedef struct {
+struct Sprite {
 	const char* name;
 	const SDL_Texture* texture;
-	int n_regions; // frame regions
-	const SDL_Rect* regions;
-	int n_frames;
-	const Frame* framedata;
-	int n_animations;
-	const Animation* animations;
-} Sprite;
+	Array<const SDL_Rect> regions;
+	Array<const Frame> framedata;
+	Array<const Animation> animations;
+};
 
 const Either<Error, const Sprite*> load_sprite_json(char* filename);
 
 const Sprite* load_sprite(char* filename); // load from "compiled" format
 void unload_sprite(Sprite* sprite); // deallocates all associated resources
-
-void render_hitboxes(SDL_Renderer* context, SDL_Point origin, const Frame* framedata);
 
 #endif

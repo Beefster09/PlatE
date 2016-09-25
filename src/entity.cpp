@@ -9,17 +9,14 @@ static bool check_hitbox_groups(
 	const HitboxGroup* a,
 	const HitboxGroup* b) 
 {
-	int ax = entA->position.x;
-	int ay = entA->position.y;
-	int bx = entB->position.x;
-	int by = entB->position.y;
+	Point2 apos = entA->position;
+	Point2 bpos = entB->position;
+	float arot = entA->rotation;
+	float brot = entB->rotation;
 
-	for (int i = 0; i < a->n_hitboxes; ++i) {
-		const Hitbox* hitboxA = &a->hitboxes[i];
-		for (int j = 0; j < b->n_hitboxes; ++j) {
-			const Hitbox* hitboxB = &b->hitboxes[j];
-
-			if (hitboxes_overlap(hitboxA, ax, ay, hitboxB, bx, by)) {
+	for (const Hitbox& hitboxA : a->hitboxes) {
+		for (const Hitbox& hitboxB : b->hitboxes) {
+			if (hitboxes_overlap(&hitboxA, apos, arot, &hitboxB, bpos, brot)) {
 				return true;
 			}
 		}
@@ -32,22 +29,23 @@ static void detect_collisions(Entity* a, Entity* b, EventBuffer* eventBuffer) {
 
 	// Do not collide entities that don't self-collide
 	if (a->e_class == b->e_class && !a->e_class->self_colliding) return;
+	// Ground-linked entities do not collide
+	if (a->ground.type == Entity::GroundLink::ENTITY && a->ground.entity == b) return;
+	if (b->ground.type == Entity::GroundLink::ENTITY && b->ground.entity == a) return;
 
-	for (int i = 0; i < a->curFrame->n_hitboxes; ++i) {
-		const HitboxGroup* collisionA = &a->curFrame->hitbox_groups[i];
-		for (int j = 0; j < b->curFrame->n_hitboxes; ++j) {
-			const HitboxGroup* collisionB = &b->curFrame->hitbox_groups[j];
+	for (const HitboxGroup& collisionA : a->curFrame->collision.groups) {
+		for (const HitboxGroup& collisionB : b->curFrame->collision.groups) {
 
 			// If no flags match, do not check collision
-			if (collisionA->flags & collisionB->flags == 0) continue;
-			if (!hitbox_types_collide(collisionA->type, collisionB->type)) continue;
+			if (collisionA.flags & collisionB.flags == 0) continue;
+			if (!hitbox_types_collide(collisionA.type, collisionB.type)) continue;
 
 			bool wasCollision;
-			if (hitbox_acts_on(collisionA->type, collisionB->type)) {
-				wasCollision = check_hitbox_groups(a, b, collisionA, collisionB);
+			if (hitbox_acts_on(collisionA.type, collisionB.type)) {
+				wasCollision = check_hitbox_groups(a, b, &collisionA, &collisionB);
 			}
 			else {  // reversed
-				wasCollision = check_hitbox_groups(b, a, collisionB, collisionA);
+				wasCollision = check_hitbox_groups(b, a, &collisionB, &collisionA);
 			}
 			if (wasCollision) {
 				// TODO: priority (where applicable)
@@ -55,7 +53,7 @@ static void detect_collisions(Entity* a, Entity* b, EventBuffer* eventBuffer) {
 					Event ev;
 					ev.type = Event::Collision;
 					ev.collision = {
-						collisionA, collisionB, a, b
+						&collisionA, &collisionB, a, b
 					};
 					push_event(eventBuffer, ev);
 				}
@@ -133,6 +131,35 @@ static void move_to_contact_position(
 	}
 
 	// TODO: if this is a vertical collision (how to detect?), set the ground entity for the higher entity.
+	Vector2 diff = a->position - b->position;
+	if (diff.y < 0) {
+		// a is above b
+		//TODO: more checks
+		float foot_x = a->position.x + a->curFrame->foot.x;
+		float foot_y = a->position.y + a->curFrame->foot.y;
+
+		a->ground.type = Entity::GroundLink::ENTITY;
+		a->ground.entity = b;
+		a->ground.foot_pos = {
+			foot_x - b->position.x,
+			foot_y - b->position.y
+		};
+		a->velocity.y = 0.f;
+	}
+	else {
+		// b is above a
+		// TODO: more checks
+		float foot_x = b->position.x + b->curFrame->foot.x;
+		float foot_y = b->position.y + b->curFrame->foot.y;
+
+		b->ground.type = Entity::GroundLink::ENTITY;
+		b->ground.entity = a;
+		a->ground.foot_pos = {
+			foot_x - a->position.x,
+			foot_y - a->position.y
+		};
+		b->velocity.y = 0.f;
+	}
 
 	// CONSIDER: 3 solid entities collide at the same time... How should that be resolved?
 }
@@ -145,39 +172,26 @@ Either<Error, EntitySystem*> create_entity_system(size_t capacity) {
 	auto eBuffer = create_EventBuffer();
 	if (eBuffer.isLeft) return eBuffer.left;
 
-	bool* has_entity = new bool[capacity];
-	for (int i = 0; i < capacity; ++i) has_entity[i] = false;
-
 	return new EntitySystem {
-		new Entity[capacity],
-		has_entity,
+		SparseBucket<Entity>(capacity),
 		new Entity*[capacity],
 		eBuffer.right,
-		1,
-		0,
-		0,
-		capacity
+		1
 	};
 }
 
 Error dispose_entity_system(EntitySystem* system) {
 	// Will probably get more complex later...
-	delete[] system->entities;
-	delete[] system->has_entity;
 	delete[] system->z_ordered_entities;
 	delete system;
+	// Entity bucket gets cleaned up because RAII
 	return SUCCESS;
 }
 
 Either<Error, Entity*> spawn_entity(EntitySystem* system, const EntityClass* entity_class, Point2 position) {
-	if (system->n_entities >= system->max_entities) {
-		return Errors::EntitySystemCapacityReached;
-	}
-
-	int index = system->next_index++;
 	const Sprite* initial_sprite = entity_class->initial_sprite;
 	const Animation* initial_animation = &initial_sprite->animations[entity_class->initial_animation];
-	system->entities[index] = {
+	return system->entities.add(Entity{
 		system->next_id++,
 		entity_class,
 		position,
@@ -186,30 +200,27 @@ Either<Error, Entity*> spawn_entity(EntitySystem* system, const EntityClass* ent
 		position, 0,
 		{ INFINITY, INFINITY },
 		{ 0.0f, 0.0f },
-		false,
+		{ Entity::GroundLink::MIDAIR },
 		0,
 		0.0f,
 		initial_sprite,
 		initial_animation,
 		0, 0.0f,
 		initial_animation->frames[0].frame
-	};
-	system->has_entity[index] = true;
-	++system->n_entities;
+	});
+}
 
-	// TODO/eventually: run init script
+Option<Error> destroy_entity(EntitySystem* system, Entity* ent) {
+	return system->entities.remove(ent);
+}
 
-	if (system->n_entities < system->max_entities) { // there must be an open slot!
-		while (system->has_entity[system->next_index]) { // Search for the next available slot
-			system->next_index = (system->next_index + 1) % system->max_entities;
-			if (system->next_index == index) {
-				return DetailedError(Errors::EntitySystemInvalidState,
-					"INVALID ENTITY SYSTEM STATE: There should be an available index, but there isn't one!\n");
-			}
+Option<Error> destroy_entity(EntitySystem* system, EntityId id) {
+	for (Entity& e : system->entities) {
+		if (e.id == id) {
+			return system->entities.remove(&e);
 		}
 	}
-
-	return &system->entities[index];
+	return Errors::NoSuchEntity;
 }
 
 // High level algorithm:
@@ -224,53 +235,71 @@ void process_entities(const int delta_time, EntitySystem* system) {
 
 	// Update step: position & frame
 	size_t processed = 0;
-	for (int i = 0; i < system->max_entities; ++i) {
-		if (!system->has_entity[i]) continue;
-
-		Entity* e = &system->entities[i];
-		e->last_pos = e->position;
-		e->last_dt = dt;
+	for (Entity& e : system->entities) {
+		e.last_pos = e.position;
+		e.last_dt = dt;
 
 		// Apply velocity and acceleration
-		float actualAccelX = e->acceleration.x + (e->onGround ? 0.f : e->gravity.x);
-		float actualAccelY = e->acceleration.y + (e->onGround ? 0.f : e->gravity.y);
-		if (fabs(e->velocity.x + actualAccelX) > e->max_speed.x) {
-			actualAccelX = copysign(e->max_speed.x, e->velocity.x) - e->velocity.x;
+		Vector2 actualAccel = e.acceleration +
+			(e.ground.type == Entity::GroundLink::MIDAIR ? e.gravity : Vector2{0.f, 0.f});
+
+		if (fabs(e.velocity.x + actualAccel.x) > e.max_speed.x) {
+			actualAccel.x = copysign(e.max_speed.x, e.velocity.x) - e.velocity.x;
 		}
-		if (fabs(e->velocity.y + actualAccelY) > e->max_speed.y) {
-			actualAccelX = copysign(e->max_speed.y, e->velocity.y) - e->velocity.y;
+		if (fabs(e.velocity.y + actualAccel.y) > e.max_speed.y) {
+			actualAccel.y = copysign(e.max_speed.y, e.velocity.y) - e.velocity.y;
 		}
 
-		e->position.x += dt * (dt * actualAccelX * 0.5f + e->velocity.x);
-		e->velocity.x += dt * actualAccelX;
-		e->position.y += dt * (dt * actualAccelY * 0.5f + e->velocity.y);
-		e->velocity.y += dt * actualAccelY;
+		e.position += dt * (dt * actualAccel * 0.5f + e.velocity);
+		e.velocity += dt * actualAccel;
 
 		// TODO animations
 
 		// Now that we know no new entities will be spawned, get the entities ready to sort.
-		system->z_ordered_entities[processed] = e;
-
-		if (++processed >= system->n_entities) break;
+		system->z_ordered_entities[processed++] = &e;
 	}
 
 	// Sort the entities for display purposes
-	std::stable_sort(system->z_ordered_entities, system->z_ordered_entities + system->n_entities,
+	int n_entities = system->entities.size();
+	std::stable_sort(system->z_ordered_entities, system->z_ordered_entities + n_entities,
 		[](Entity* a, Entity* b) -> bool {return a->z_order < b->z_order;}
 	);
 
+	// Move grounded entities relative to their grounds
+
+	for (int i = 0; i < n_entities; ++i) {
+		Entity* e = system->z_ordered_entities[i];
+
+		if (e->ground.type == Entity::GroundLink::ENTITY) {
+			// TODO: following slopes and lines
+
+			// Set the position by its foot coordinate
+			float dx = e->position.x - e->last_pos.x;
+			e->ground.foot_pos.x += dx;
+			e->position = e->ground.entity->position + e->ground.foot_pos;
+			e->position.y -= 0.1f;
+
+			//printf("Entity %d is now following entity %d as ground...\n", e->id, e->ground.entity->id);
+			//printf("    It moved %f pixels in the x direction and is being adjusted...\n", dx);
+			//printf("    Adjusting new position to (%f, %f)\n", e->position.x, e->position.y);
+
+			// TODO: check if you've gone off the edge... somehow.
+		}
+	}
+
 	// COLLISION DETECTION O_O
 	// TODO: parallelize!
-	for (int i = 0; i < system->n_entities; ++i) {
+	for (int i = 0; i < n_entities; ++i) {
 		Entity* a = system->z_ordered_entities[i];
 
-		for (int j = i + 1; j < system->n_entities; ++j) {
+		for (int j = i + 1; j < n_entities; ++j) {
 			Entity* b = system->z_ordered_entities[j];
 
 			detect_collisions(a, b, system->event_buffer);
 		}
 	}
 
+	// Process events in the order they arrived
 	while (has_events(system->event_buffer)) {
 		auto poss_ev = pop_event(system->event_buffer);
 		if (poss_ev.isLeft) {
@@ -284,11 +313,11 @@ void process_entities(const int delta_time, EntitySystem* system) {
 			const HitboxGroup *hitA = ev.collision.hitboxA;
 			const HitboxGroup *hitB = ev.collision.hitboxB;
 
-			printf("COLLISION between entities %d and %d (%s -> %s)\n",
-				a, b,
-				name_of(hitA->type),
-				name_of(hitB->type)
-			);
+			//printf("COLLISION between entities %d and %d (%s -> %s)\n",
+			//	a->id, b,
+			//	name_of(hitA->type),
+			//	name_of(hitB->type)
+			//);
 
 			if (hitA->type == HitboxType::SOLID &&
 				hitB->type == HitboxType::SOLID) {
@@ -303,9 +332,10 @@ void process_entities(const int delta_time, EntitySystem* system) {
 }
 
 void render_entities(SDL_Renderer* context, const EntitySystem* system) {
-	for (int i = 0; i < system->n_entities; ++i) {
+	int n_entities = system->entities.size();
+	for (int i = 0; i < n_entities; ++i) {
 		Entity* e = system->z_ordered_entities[i];
 
-		render_hitboxes(context, { (int) e->position.x, (int) e->position.y }, e->curFrame);
+		render_hitboxes(context, { (int) e->position.x, (int) e->position.y }, e->curFrame->collision);
 	}
 }

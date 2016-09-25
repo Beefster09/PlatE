@@ -1,4 +1,5 @@
 
+#include "storage.h"
 #include "sprite.h"
 #include "error.h"
 #include "rapidjson/document.h"
@@ -28,13 +29,6 @@ static FrameOffset frame_offset_json(Value& json) {
 	};
 }
 
-template<class T>
-static T* pool_alloc(void* pool, size_t& offset, size_t quantity) {
-	T* pointer = (T*)pool + offset;
-	offset += quantity * sizeof(T);
-	return pointer;
-}
-
 const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 	Document json;
 
@@ -61,25 +55,17 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 		return DetailedError(Errors::SpriteLoadJsonInvalid, "%s\n", validation.left);
 	}
 
-	// TODO: Determine size needed for everything (use pool allocation)
+	// TODO: Determine size needed for everything
 
-	// WARNING: SERIOUS POINTER-FU AHEAD
-	void* pool = malloc(65536); // TEMP
-	size_t nextAllocOffset = sizeof(Sprite);
-
-	auto allocString = [pool, &nextAllocOffset](const char* str) mutable -> char * {
-		char* result = (char*)pool + nextAllocOffset;
-		strcpy(result, str);
-		nextAllocOffset += strlen(str) + 1;
-		return result;
-	};
+	auto pool = MemoryPool(65536); // size is temporary
+	Sprite* result = pool.alloc<Sprite>();
 
 	// Clips
 	auto clipJson = json["clips"].GetArray();
 
 	int n_clipRects = clipJson.Size();
 
-	SDL_Rect* clipRects = pool_alloc<SDL_Rect>(pool, nextAllocOffset, n_clipRects);
+	SDL_Rect* clipRects = pool.alloc<SDL_Rect>(n_clipRects);
 
 	for (int i = 0; i < n_clipRects; ++i) {
 		auto rectJson = clipJson[i].GetObject();
@@ -96,7 +82,7 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 
 	int n_frames = framesJson.Size();
 
-	Frame* frames = pool_alloc<Frame>(pool, nextAllocOffset, n_frames);
+	Frame* frames = pool.alloc<Frame>(n_frames);
 
 	for (int i = 0; i < n_frames; ++i) {
 		auto frameJson = framesJson[i].GetObject();
@@ -104,7 +90,7 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 		// Hitbox Groups
 		auto collisionJson = frameJson["collision"].GetArray();
 		int n_hitboxGroups = collisionJson.Size();
-		HitboxGroup* collision = pool_alloc<HitboxGroup>(pool, nextAllocOffset, n_hitboxGroups);
+		HitboxGroup* collision = pool.alloc<HitboxGroup>(n_hitboxGroups);
 
 		for (int j = 0; j < n_hitboxGroups; ++j) {
 			auto hitboxGroupJson = collisionJson[j].GetObject();
@@ -112,17 +98,17 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 			// Hitboxes
 			auto hitboxesJson = hitboxGroupJson["hitboxes"].GetArray();
 			int n_hitboxes = hitboxesJson.Size();
-			Hitbox* hitboxes = pool_alloc<Hitbox>(pool, nextAllocOffset, n_hitboxes);
+			Hitbox* hitboxes = pool.alloc<Hitbox>(n_hitboxes);
 
 			for (int k = 0; k < n_hitboxes; ++k) {
 				auto hitboxJson = hitboxesJson[k].GetObject();
 				// TODO: Circle, Line collision
 				hitboxes[k] = {
 					Hitbox::BOX,
-					(short) hitboxJson["x"].GetInt(),
-					(short) hitboxJson["y"].GetInt(),
-					(short) hitboxJson["w"].GetInt(),
-					(short) hitboxJson["h"].GetInt()
+					hitboxJson["x"].GetInt(),
+					hitboxJson["y"].GetInt(),
+					hitboxJson["w"].GetInt(),
+					hitboxJson["h"].GetInt()
 				};
 			}
 
@@ -130,8 +116,7 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 				hitbox_type_by_name(hitboxGroupJson["type"].GetString()),
 				{},
 				(uint64_t)hitboxGroupJson["flags"].GetInt64(),
-				n_hitboxes,
-				hitboxes
+				Array<const Hitbox>(hitboxes, n_hitboxes)
 			};
 			// TODO: special data
 		}
@@ -140,10 +125,11 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 			&clipRects[frameJson["clip"].GetInt()],
 			frame_offset_json(frameJson["display"]),
 			frame_offset_json(frameJson["foot"]),
-			0, // TODO: alt offsets
-			nullptr,
-			n_hitboxGroups,
-			collision
+			Array<const FrameOffset>(nullptr, 0),
+			CollisionData{
+				0.f,
+				Array<const HitboxGroup>(collision, n_hitboxGroups)
+			}
 		};
 	}
 
@@ -151,14 +137,14 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 
 	auto animationsJson = json["animations"].GetArray();
 	int n_animations = animationsJson.Size();
-	Animation* animations = pool_alloc<Animation>(pool, nextAllocOffset, n_animations);
+	Animation* animations = pool.alloc<Animation>(n_animations);
 
 	for (int i = 0; i < n_animations; ++i) {
 		auto animationJson = animationsJson[i].GetObject();
 
 		auto sequenceJson = animationJson["frames"].GetArray();
 		int n_entries = sequenceJson.Size();
-		FrameTiming* sequence = pool_alloc<FrameTiming>(pool, nextAllocOffset, n_entries);
+		FrameTiming* sequence = pool.alloc<FrameTiming>(n_entries);
 
 		for (int j = 0; j < n_entries; ++j) {
 			auto timingJson = sequenceJson[j].GetObject();
@@ -169,26 +155,22 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 		}
 
 		animations[i] = {
-			allocString(animationJson["name"].GetString()),
-			n_entries,
-			sequence
+			pool.alloc_str(animationJson["name"].GetString()),
+			Array<const FrameTiming>(sequence, n_entries)
 		};
 	}
 
 	// Now to put it all together!
 
-	*(Sprite*)pool = {
-		allocString(json["name"].GetString()),
+	*result = {
+		pool.alloc_str(json["name"].GetString()),
 		nullptr,
-		n_clipRects,
-		clipRects,
-		n_frames,
-		frames,
-		n_animations,
-		animations
+		Array<const SDL_Rect>(clipRects, n_clipRects),
+		Array<const Frame>(frames, n_frames),
+		Array<const Animation>(animations, n_animations)
 	};
 
 	// json is RAII; no need to free
 	// return sprite pointer
-	return (Sprite*)pool;
+	return result;
 }

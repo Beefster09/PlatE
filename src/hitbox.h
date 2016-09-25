@@ -4,9 +4,11 @@
 #include <cstdint>
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_pixels.h>
+#include <SDL2/SDL_render.h>
 #include "direction.h"
 #include "either.h"
 #include "vectors.h"
+#include "storage.h"
 
 struct Hitbox {
 	enum : char {
@@ -67,15 +69,13 @@ struct HitboxGroup {
 	// HitboxGroups will only collide if their types are compatible and at least one flag matches
 	// I'm not exactly sure how this will look on the user-facing side...
 
-	int n_hitboxes;
-	const Hitbox* hitboxes;
+	Array<const Hitbox> hitboxes;
 };
 
 struct CollisionData {
 	float radius_squared;    // Used for sweep and prune checks
 
-	int n_groups;
-	const HitboxGroup* groups;
+	Array<const HitboxGroup> groups;
 };
 
 HitboxType hitbox_type_by_name(const char* name);
@@ -86,7 +86,9 @@ bool hitbox_acts_on (HitboxType a, HitboxType b); // Returns true if a and b are
 
 void get_hitbox_rects_relative_to(SDL_Rect* rects, const HitboxGroup& hitboxes, SDL_Point origin);
 
+void render_hitboxes(SDL_Renderer* context, SDL_Point origin, const CollisionData& collision);
+
 // Collision detection :O
-bool hitboxes_overlap(const Hitbox* a, int ax, int ay, const Hitbox* b, int bx, int by);
+bool hitboxes_overlap(const Hitbox* a, const Point2& apos, float arot, const Hitbox* b, const Point2& bpos, float brot);
 
 #endif

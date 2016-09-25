@@ -33,12 +33,13 @@ const char* name_of(HitboxType type) {
 }
 
 void get_hitbox_rects_relative_to(SDL_Rect* rects, const HitboxGroup& hitboxes, SDL_Point origin) {
-	for (int i = 0; i < hitboxes.n_hitboxes; ++i) {
-		rects[i] = {
-			origin.x + hitboxes.hitboxes[i].box.x,
-			origin.y + hitboxes.hitboxes[i].box.y,
-			hitboxes.hitboxes[i].box.w,
-			hitboxes.hitboxes[i].box.h
+	int i = 0;
+	for (const Hitbox& hitbox : hitboxes.hitboxes) {
+		rects[i++] = {
+			origin.x + hitbox.box.x,
+			origin.y + hitbox.box.y,
+			hitbox.box.w,
+			hitbox.box.h
 		};
 	}
 }
@@ -55,15 +56,15 @@ SDL_Color get_hitbox_color(HitboxType type, int flags) {
 	}
 }
 
-void render_hitboxes(SDL_Renderer* context, SDL_Point origin, const Frame* framedata) {
+void render_hitboxes(SDL_Renderer* context, SDL_Point origin, const CollisionData& collision) {
 	SDL_Rect rects[32];
-	for (int i = 0; i < framedata->n_hitboxes; ++i) {
-		SDL_Color color = get_hitbox_color(framedata->hitbox_groups[i].type);
-		get_hitbox_rects_relative_to(rects, framedata->hitbox_groups[i], origin);
+	for (const HitboxGroup& group: collision.groups) {
+		SDL_Color color = get_hitbox_color(group.type);
+		get_hitbox_rects_relative_to(rects, group, origin);
 		SDL_SetRenderDrawColor(context, color.r, color.g, color.b, 63); // fill
-		SDL_RenderFillRects(context, rects, framedata->n_hitboxes);
+		SDL_RenderFillRects(context, rects, group.hitboxes.size());
 		SDL_SetRenderDrawColor(context, color.r, color.g, color.b, 192); // outline
-		SDL_RenderDrawRects(context, rects, framedata->n_hitboxes);
+		SDL_RenderDrawRects(context, rects, group.hitboxes.size());
 	}
 }
 
@@ -103,17 +104,22 @@ bool hitbox_acts_on(HitboxType a, HitboxType b) {
 	}
 }
 
-bool hitboxes_overlap(const Hitbox* a, int ax, int ay, const Hitbox* b, int bx, int by) {
+bool hitboxes_overlap(const Hitbox* a, const Point2& apos, float arot, const Hitbox* b, const Point2& bpos, float brot) {
+	if (a->shape == Hitbox::ONEWAY) {
+		if (b->shape == Hitbox::ONEWAY) return false; // One-ways don't collide
+		else return hitboxes_overlap(b, bpos, brot, a, apos, arot); // And they can only be acted upon
+	}
 	if (a->shape == Hitbox::BOX) {
 		if (b->shape == Hitbox::BOX) {
-			float aLeft = ax + a->box.x;
+
+			float aLeft = apos.x + a->box.x;
 			float aRight = aLeft + a->box.w;
-			float aTop = ay + a->box.y;
+			float aTop = apos.y + a->box.y;
 			float aBottom = aTop + a->box.h;
 
-			float bLeft = bx + b->box.x;
+			float bLeft = bpos.x + b->box.x;
 			float bRight = bLeft + b->box.w;
-			float bTop = by + b->box.y;
+			float bTop = bpos.y + b->box.y;
 			float bBottom = bTop + b->box.h;
 
 			return (
@@ -122,13 +128,13 @@ bool hitboxes_overlap(const Hitbox* a, int ax, int ay, const Hitbox* b, int bx, 
 				);
 		}
 		else if (b->shape == Hitbox::CIRCLE) {
-			float left = ax + a->box.x;
+			float left = apos.x + a->box.x;
 			float right = left + a->box.w;
-			float top = ay + a->box.y;
+			float top = apos.y + a->box.y;
 			float bottom = top + a->box.h;
 
-			float cx = bx + b->circle.x;
-			float cy = by + b->circle.y;
+			float cx = bpos.x + b->circle.x;
+			float cy = bpos.y + b->circle.y;
 			float r = b->circle.radius;
 
 			if (cx < left) {
@@ -184,20 +190,57 @@ bool hitboxes_overlap(const Hitbox* a, int ax, int ay, const Hitbox* b, int bx, 
 				}
 			}
 		}
-	} else if (a->shape == Hitbox::CIRCLE) {
+		else if (b->shape == Hitbox::LINE || b->shape == Hitbox::ONEWAY) {
+
+		}
+	}
+	else if (a->shape == Hitbox::CIRCLE) {
 		if (b->shape == Hitbox::CIRCLE) {
-			float dx = (ax + a->circle.x) - (bx + b->circle.x);
-			float dy = (ay + a->circle.y) - (by + b->circle.y);
+			float dx = (apos.x + a->circle.x) - (bpos.x + b->circle.x);
+			float dy = (apos.y + a->circle.y) - (bpos.y + b->circle.y);
 			float dist = a->circle.radius + b->circle.radius;
 
 			return dx * dx + dy * dy < dist * dist;
 		}
+		else if (b->shape == Hitbox::LINE || b->shape == Hitbox::ONEWAY) {
+			// distance from point to a line
+			Vector2 parallel = {
+				(float) b->line.x2 - b->line.x1,
+				(float) b->line.y2 - b->line.y1
+			};
+			float parlen = parallel.magnitude();
+			parallel /= parlen;
+			Vector2 to_circle = {
+				(apos.x + a->circle.x) - (bpos.x + b->line.x1),
+				(apos.y + a->circle.y) - (bpos.y + b->line.y1)
+			};
+			// project center onto line
+			float projpos = to_circle.dot(parallel);
+			if (projpos < 0) { // outside the line on the first point side
+				float dx = (apos.x + a->circle.x) - (bpos.x + b->line.x1);
+				float dy = (apos.y + a->circle.y) - (bpos.y + b->line.y1);
+				// distance to endpoint
+				return dx * dx + dy * dy < b->circle.radius * b->circle.radius;
+			}
+			else if (projpos > parlen) { // outside the line on the second point side
+				float dx = (apos.x + a->circle.x) - (bpos.x + b->line.x2);
+				float dy = (apos.y + a->circle.y) - (bpos.y + b->line.y2);
+				// distance to endpoint
+				return dx * dx + dy * dy < b->circle.radius * b->circle.radius;
+			}
+			// TODO: velocity is needed here for oneway collisions
+			return fabs(to_circle.cross(parallel)) < a->circle.radius;
+		}
 		else if (b->shape == Hitbox::BOX) {
-			return hitboxes_overlap(b, bx, by, a, ax, ay);
+			return hitboxes_overlap(b, bpos, brot, a, apos, arot);
 		}
 	}
-	else {
-		printf("WARNING: Reached default case of hitboxes_overlap(...)\n");
-		return false;
+	else if (a->shape == Hitbox::LINE) {
+		if (b->shape == Hitbox::LINE) {
+			// line intersection test
+		}
+		else return hitboxes_overlap(b, bpos, brot, a, apos, arot);
 	}
+	printf("WARNING: Reached default case of hitboxes_overlap(...)\n");
+	return false;
 }

@@ -186,10 +186,11 @@
     <ClCompile Include="src\hitbox.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\sprite.cpp" />
+    <ClCompile Include="src\storage.cpp" />
     <ClCompile Include="src\vectors.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\constants.h" />
+    <ClInclude Include="src\macros.h" />
     <ClInclude Include="src\direction.h" />
     <ClInclude Include="src\either.h" />
     <ClInclude Include="src\entity.h" />
@@ -198,6 +199,7 @@
     <ClInclude Include="src\engine.h" />
     <ClInclude Include="src\hitbox.h" />
     <ClInclude Include="src\sprite.h" />
+    <ClInclude Include="src\storage.h" />
     <ClInclude Include="src\vectors.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

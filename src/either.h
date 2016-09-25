@@ -30,5 +30,5 @@ struct Option {
 
 	Option(T val) : isDefined(true), value(val) {}
 	Option(nullptr_t null) : isDefined(false), _empty_() {}
-	static const Option<T> None = Option<T>(nullptr);
+	Option() : isDefined(false), _empty_() {}
 };

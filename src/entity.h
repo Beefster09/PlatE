@@ -8,6 +8,7 @@
 #include "either.h"
 #include "event.h"
 #include "vectors.h"
+#include "storage.h"
 
 #define ENTITY_SYSTEM_DEFAULT_SIZE 256
 
@@ -15,7 +16,8 @@ namespace Errors {
 	const error_data
 		EntitySystemInvalidSize = { 300, "Entity system must have at least 1 max entity" },
 		EntitySystemCapacityReached = { 301, "Entity system has reached its maximum entity count" },
-		EntitySystemInvalidState = { 499, "Entity system has been corrupted or tampered with!" };
+		EntitySystemInvalidState = { 499, "Entity system has been corrupted or tampered with!" },
+		NoSuchEntity = { 310, "Entity does not exist in this system!" };
 }
 
 // Classes of entities. Should be const when loaded.
@@ -53,7 +55,19 @@ struct Entity {
 	Vector2 max_speed; // Maximum speed on each axis
 	Vector2 gravity;   // Additional acceleration to apply when in midair
 
-	bool onGround; // This will probably change type to a pointer later
+	struct GroundLink {
+		enum : char {
+			MIDAIR = 'm',
+			ENTITY = 'e',
+			LEVEL = 'l'
+		} type;
+		union {
+			Entity* entity;
+			void* level;
+		};
+		// Where this entity's foot position is relative to the linked origin.
+		Vector2 foot_pos;
+	} ground;
 
 	int z_order; // needed for drawing
 	float rotation; // will be needed later
@@ -73,29 +87,25 @@ struct Entity {
 // Things to think about:
 //  * How is this supposed to interact with players?
 //    - probably scripts
-//  * Should particles and bullets be managed by an entity systems?
+//  * Should particles and bullets be managed by an entity system?
 //  * Should they be fixed-size or expandable?
 struct EntitySystem {
-	// Sparse allocation
-	Entity* entities;
-	bool* has_entity; // TODO: turn into dynamic bitarray that isn't a vector<bool>
+	SparseBucket<Entity> entities;
 
 	// Densely allocated
 	Entity** z_ordered_entities;
 
 	EventBuffer* event_buffer;
 
-	EntityId next_id;
-	size_t next_index;
-	size_t n_entities;
-	size_t max_entities;
+	uint32_t next_id;
 };
 
 Either<Error, EntitySystem*> create_entity_system(size_t capacity = ENTITY_SYSTEM_DEFAULT_SIZE);
 Error dispose_entity_system(EntitySystem* system);
 
 Either<Error, Entity*> spawn_entity(EntitySystem* system, const EntityClass* e_class, Point2 position);
-Error destroy_entity(EntitySystem* system, EntityId id);
+Option<Error> destroy_entity(EntitySystem* system, EntityId id);
+Option<Error> destroy_entity(EntitySystem* system, Entity* ent);
 
 // TODO/later: allow interactions between entity systems and level collision data
 void process_entities(int delta_time, EntitySystem* system);
