@@ -1,26 +1,6 @@
 
 #include "vectors.h"
 
-void Point2::operator += (const Vector2& other) {
-	x += other.x; y += other.y;
-}
-
-void Point2::operator -= (const Vector2& other) {
-	x -= other.x; y -= other.y;
-}
-
-Point2 operator + (const Point2 &pt, const Vector2 &vec) {
-	return{ pt.x + vec.x, pt.y + vec.y };
-}
-
-Point2 operator - (const Point2 &pt, const Vector2 &vec) {
-	return{ pt.x - vec.x, pt.y - vec.y };
-}
-
-Vector2 operator - (const Point2 &a, const Point2 &b) {
-	return{ a.x - b.x, a.y - b.y };
-}
-
 Vector2 Vector2::operator + (const Vector2 &that) const {
 	return{ x + that.x, y + that.y };
 }

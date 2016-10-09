@@ -2,19 +2,6 @@
 
 #include <cmath>
 
-struct Vector2;
-
-struct Point2 {
-	float x, y;
-
-	void operator += (const Vector2&);
-	void operator -= (const Vector2&);
-};
-
-Point2 operator + (const Point2 &pt, const Vector2 &vec);
-Point2 operator - (const Point2 &pt, const Vector2 &vec);
-Vector2 operator - (const Point2 &a, const Point2 &b);
-
 struct Vector2 {
 	float x, y;
 
@@ -48,3 +35,5 @@ struct Vector2 {
 };
 
 __forceinline Vector2 operator * (float scalar, const Vector2 &vec) { return vec * scalar; }
+
+typedef Vector2 Point2;

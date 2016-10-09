@@ -1,6 +1,7 @@
 
 #include "entity.h"
 #include "error.h"
+#include "transform.h"
 
 #include <algorithm>
 
@@ -203,6 +204,8 @@ Either<Error, Entity*> spawn_entity(EntitySystem* system, const EntityClass* ent
 		{ Entity::GroundLink::MIDAIR },
 		0,
 		0.0f,
+		{ 1.f, 1.f },
+		Transform::identity,
 		initial_sprite,
 		initial_animation,
 		0, 0.0f,
@@ -257,6 +260,8 @@ void process_entities(const int delta_time, EntitySystem* system) {
 
 		// Now that we know no new entities will be spawned, get the entities ready to sort.
 		system->z_ordered_entities[processed++] = &e;
+
+		e.transform_matrix = Transform::scal_rot_trans(e.scale, e.rotation, e.position);
 	}
 
 	// Sort the entities for display purposes
@@ -277,7 +282,6 @@ void process_entities(const int delta_time, EntitySystem* system) {
 			float dx = e->position.x - e->last_pos.x;
 			e->ground.foot_pos.x += dx;
 			e->position = e->ground.entity->position + e->ground.foot_pos;
-			e->position.y -= 0.1f;
 
 			//printf("Entity %d is now following entity %d as ground...\n", e->id, e->ground.entity->id);
 			//printf("    It moved %f pixels in the x direction and is being adjusted...\n", dx);
@@ -327,6 +331,9 @@ void process_entities(const int delta_time, EntitySystem* system) {
 				float b_dy = b->position.y - b->last_pos.y;
 				move_to_contact_position(a, b, hitA, hitB);
 			}
+
+			a->transform_matrix = Transform::scal_rot_trans(a->scale, a->rotation, a->position);
+			b->transform_matrix = Transform::scal_rot_trans(b->scale, b->rotation, b->position);
 		}
 	}
 }

@@ -9,6 +9,7 @@
 #include "event.h"
 #include "vectors.h"
 #include "storage.h"
+#include "transform.h"
 
 #define ENTITY_SYSTEM_DEFAULT_SIZE 256
 
@@ -30,18 +31,21 @@ struct EntityClass {
 	bool self_colliding: 1; // instances of this entity class collide with other instances of the same class
 
 	//  \- BEHAVIOR -/
-	// void* init_script
-	// void* update_script
-	// void* event_handlers
+	// Script* init_script;
+	// Script* update_script;
+	// Script* event_handlers;
+	// Array<Parameter> spawn_params;
 };
 
 typedef uint32_t EntityId;
 
 // Instances of entities
 struct Entity {
+// === Metadata ===
 	EntityId id;
 	const EntityClass* e_class;
 
+// === Physics Data ===
 	Point2 position;
 
 	Vector2 velocity;
@@ -70,8 +74,15 @@ struct Entity {
 	} ground;
 
 	int z_order; // needed for drawing
-	float rotation; // will be needed later
 
+// === Transform Data ===
+	float rotation;
+	Vector2 scale;
+
+	// Cached transformation matrix. Calculated during physics/movement step and after update.
+	Transform transform_matrix;
+
+// === Sprite Data ===
 	const Sprite* sprite;
 	const Animation* curAnimation;
 	uint32_t curAnimFrame;
@@ -79,9 +90,7 @@ struct Entity {
 	const Frame* curFrame;
 
 	// Scripting / Events
-	/*
-	int32_t scriptSlots[16];
-	*/
+	// Data for storing
 };
 
 // Things to think about:

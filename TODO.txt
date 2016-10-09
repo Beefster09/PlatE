@@ -4,8 +4,9 @@ Up next:
 [X] Gravity
 [X] Rect collision
 [X] Solidity
-[ ] "On Ground"
-[ ] Level data
+[ ] Level data (basic)
+  [X] Data structures
+  [ ] Parse from JSON
 [ ] Line collision
 [ ] Slope following
 
@@ -13,6 +14,8 @@ High-Level 1.0 Features
 [ ] Fast collision detection
   [ ] Rectangle, Line, Circle Collision types
   [ ] Tunnelling prevention
+  [ ] Spacial indexing for level collision data
+  [ ] Entity offscreen culling
   [X] Gravity
   [ ] Slopes
   [ ] Moving Platforms, conveyor belts?
