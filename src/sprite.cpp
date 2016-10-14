@@ -21,12 +21,71 @@ static Either<const char*, bool> validate_sprite_json(Document& json) {
 	return true;
 }
 
-static FrameOffset frame_offset_json(Value& json) {
+static Vector2 vector_json(Value& json) {
 	auto offsetJson = json.GetObject();
 	return{
-		(short)offsetJson["x"].GetInt(),
-		(short)offsetJson["y"].GetInt()
+		offsetJson["x"].GetFloat(),
+		offsetJson["y"].GetFloat()
 	};
+}
+
+static Hitbox hitbox_json(Value& val, MemoryPool& pool) {
+	Hitbox result;
+	auto json = val.GetObject();
+	const char* type = json["type"].GetString();
+
+	if (strcmp(type, "box") == 0) {
+		result.type = Hitbox::BOX;
+		result.box = {
+			json["left"].GetFloat(),
+			json["right"].GetFloat(),
+			json["top"].GetFloat(),
+			json["bottom"].GetFloat()
+		};
+	}
+	else if (strcmp(type, "circle") == 0) {
+		result.type = Hitbox::CIRCLE;
+		result.circle = {
+			vector_json(json["center"]),
+			json["radius"].GetFloat()
+		};
+	}
+	else if (strcmp(type, "line") == 0) {
+		result.type = Hitbox::LINE;
+		result.line = {
+			vector_json(json["p1"]),
+			vector_json(json["p2"])
+		};
+	}
+	else if (strcmp(type, "oneway") == 0) {
+		result.type = Hitbox::ONEWAY;
+		result.line = {
+			vector_json(json["p1"]),
+			vector_json(json["p2"])
+		};
+	}
+	else if (strcmp(type, "polygon") == 0) {
+		result.type = Hitbox::POLYGON;
+		// TODO
+	}
+	else if (strcmp(type, "composite") == 0) {
+		result.type = Hitbox::COMPOSITE;
+		auto subs_json = json["hitboxes"].GetArray();
+		int n_subs = subs_json.Size();
+		Hitbox* subHits = pool.alloc<Hitbox>(n_subs);
+		for (int i = 0; i < n_subs; ++i) {
+			subHits[i] = hitbox_json(subs_json[i], pool);
+		}
+		// TODO: generate AABB
+	}
+	else {
+		//return Error
+	}
+	return result;
+}
+
+static bool bool_json(Value& json) {
+	return json.IsBool() && json.IsTrue();
 }
 
 const Either<Error, const Sprite*> load_sprite_json(char* filename) {
@@ -57,7 +116,7 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 
 	// TODO: Determine size needed for everything
 
-	auto pool = MemoryPool(65536); // size is temporary
+	MemoryPool pool(65536); // size is temporary
 	Sprite* result = pool.alloc<Sprite>();
 
 	// Clips
@@ -87,49 +146,28 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 	for (int i = 0; i < n_frames; ++i) {
 		auto frameJson = framesJson[i].GetObject();
 
-		// Hitbox Groups
+		// colliders
 		auto collisionJson = frameJson["collision"].GetArray();
-		int n_hitboxGroups = collisionJson.Size();
-		HitboxGroup* collision = pool.alloc<HitboxGroup>(n_hitboxGroups);
+		int n_colliders = collisionJson.Size();
+		Collider* collision = pool.alloc<Collider>(n_colliders);
 
-		for (int j = 0; j < n_hitboxGroups; ++j) {
-			auto hitboxGroupJson = collisionJson[j].GetObject();
-
-			// Hitboxes
-			auto hitboxesJson = hitboxGroupJson["hitboxes"].GetArray();
-			int n_hitboxes = hitboxesJson.Size();
-			Hitbox* hitboxes = pool.alloc<Hitbox>(n_hitboxes);
-
-			for (int k = 0; k < n_hitboxes; ++k) {
-				auto hitboxJson = hitboxesJson[k].GetObject();
-				// TODO: Circle, Line collision
-				hitboxes[k] = {
-					Hitbox::BOX,
-					hitboxJson["x"].GetInt(),
-					hitboxJson["y"].GetInt(),
-					hitboxJson["w"].GetInt(),
-					hitboxJson["h"].GetInt()
-				};
-			}
+		for (int j = 0; j < n_colliders; ++j) {
+			auto colliderJson = collisionJson[j].GetObject();
 
 			collision[j] = {
-				hitbox_type_by_name(hitboxGroupJson["type"].GetString()),
-				{},
-				(uint64_t)hitboxGroupJson["flags"].GetInt64(),
-				Array<const Hitbox>(hitboxes, n_hitboxes)
+				CollisionType::by_name(colliderJson["type"].GetString()),
+				hitbox_json(colliderJson["hitbox"], pool),
+				bool_json(colliderJson["solid"]),
+				bool_json(colliderJson["ccd"])
 			};
-			// TODO: special data
 		}
 
 		frames[i] = {
 			&clipRects[frameJson["clip"].GetInt()],
-			frame_offset_json(frameJson["display"]),
-			frame_offset_json(frameJson["foot"]),
+			vector_json(frameJson["display"]),
+			vector_json(frameJson["foot"]),
 			Array<const FrameOffset>(nullptr, 0),
-			CollisionData{
-				0.f,
-				Array<const HitboxGroup>(collision, n_hitboxGroups)
-			}
+			Array<const Collider>(collision, n_colliders)
 		};
 	}
 

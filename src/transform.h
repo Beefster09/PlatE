@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include "vectors.h"
+#include "macros.h"
 
 /// 3x3 Transformation matrix that assumes homogeneous column vectors and a [0 0 1] bottom row.
 // This will be vital to collision detection and rendering logic.
@@ -10,7 +11,7 @@ struct Transform {
 	float _21, _22, _23;
 	//     0    0    1
 
-	static const Transform identity;
+	static const Transform identity, invalid;
 
 	// For completeness' sake:
 	static const float _31, _32, _33;
@@ -88,11 +89,57 @@ struct Transform {
 	// apply translation to vector
 	friend Vector2 operator * (const Transform& transform, const Vector2& vector);
 
+	// apply translation to a AABB... Sort of. Gives the minimum aabb of the enclosed rectangle
+	friend AABB operator * (const Transform& transform, const AABB& aabb);
+
+	// apply translation to a circle... Sort of. Gives the minimum aabb of the enclosed ellipse
+	friend Circle operator * (const Transform& transform, const Circle& circle);
+
+	// apply translation to a line
+	friend Line operator * (const Transform& transform, const Line& line);
+
+	void transform_all(Array<Vector2> vecs) const;
+
 	// inverted matrix
 	Transform operator ~ () const;
 
+// Properties of the matrix
 	// determinant of this matrix
 	float determinant() const;
+
+	__forceinline Vector2 get_translation() const {
+		return{ _13, _23 };
+	}
+
+	float get_scaleX() const;
+	float get_scaleY() const;
+	inline Vector2 get_scale() const {
+		return{ get_scaleX(), get_scaleY() };
+	}
+
+	float get_rotation() const;
+
+	// true if this is an identity matrix
+	inline bool is_identity() const {
+		return FLOAT_EQ(_11, 1.f) && FLOAT_EQ(_12, 0.f) && FLOAT_EQ(_13, 0.f) &&
+			   FLOAT_EQ(_21, 0.f) && FLOAT_EQ(_22, 1.f) && FLOAT_EQ(_23, 0.f);
+	}
+
+	// true if this is a pure translation matrix
+	inline bool is_translate_only() const {
+		return FLOAT_EQ(_11, 1.f) && FLOAT_EQ(_12, 0.f) &&
+			   FLOAT_EQ(_21, 0.f) && FLOAT_EQ(_22, 1.f);
+	}
+
+	// true if this matrix scales evenly. (it might also rotate)
+	bool is_uniform_scale() const;
+
+	// true if rects stay as rects even after translation
+	inline bool is_rect_invariant() const {
+		return (FLOAT_EQ(_12, 0.f) && FLOAT_EQ(_21, 0.f)) ||
+			   (FLOAT_EQ(_11, 0.f) && FLOAT_EQ(_22, 0.f));
+		// Equivalent to a multiple of 90 degree rotation
+	}
 
 	// modify this matrix by doing the given transform after the current one. Chainable.
 	__forceinline Transform& apply(Transform& next) {

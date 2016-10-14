@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
 
 		// test display
 
-		auto test = load_sprite_json("data/test.json");
+		auto test = load_sprite_json("data/test.sprite.json");
 		if (test.isLeft) {
 			printf("Parsing failed: %s\n", test.left.description);
 			SDL_Delay(5000);

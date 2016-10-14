@@ -9,86 +9,85 @@
 #include "either.h"
 #include "vectors.h"
 #include "storage.h"
+#include "transform.h"
 
 struct Hitbox {
 	enum : char {
-		BOX,	// Sprite-aligned bounding box
-		CIRCLE, // Hit-bubble
-		LINE,   // Line
-		ONEWAY  // Line that only collides from one side. Only works for solid collisions
-		        //   Solid side is the top side for left-to-right horizontal lines
-		// PIXELPERFECT ?
-	} shape;
+		BOX,	   // Sprite-aligned bounding box
+		CIRCLE,    // Hit-bubble
+		LINE,      // Line
+		ONEWAY,    // Line that only collides from one side. Only works for solid collisions
+		           //   Solid side is the top side for left-to-right horizontal lines
+		POLYGON,   // Convex polygon
+		COMPOSITE  // A combination of hitboxes
+	} type;
 
 	union {
-		SDL_Rect box;
+		AABB box;
+		Line line;
+		Circle circle;
 		struct {
-			int x1, y1, x2, y2;
-		} line;
+			Array<const Point2> vertices;
+			AABB aabb;
+		} polygon;
 		struct {
-			int x1, y1, x2, y2;
-		} oneway;
-		struct {
-			int x, y;
-			float radius;
-		} circle;
-	};
-};
-
-enum class HitboxType {
-	UNKNOWN,  // because reasons
-	SOLID,        // Collides with other solid hitboxes
-	TRIGGER,	  // Reports an event when initially colliding with a solid hitbox
-	HURTBOX,      // Reports events when hit by damage hitboxes
-	BLOCK,		  // Disables damage hitboxes that touch this. Takes priority over hurtboxes. Might not work from all sides.
-	DAMAGE,       // Reports an event when hitting a hurtbox or block, then stops colliding its group until refreshed
-	AREA          // Reports events when solid hitboxes overlap at least 50% with this
-};
-
-struct HitboxGroup {
-	HitboxType type; // determines what this collides with and what data is passed in events
-	union {
-		struct {} solid;
-		struct {} trigger;
-		struct {
-			int priority;
-		} hurtbox;
-		struct {
-			int priority;
-		} block;
-		struct {
-			int priority;
-		} damage;
-		struct {
-			int priority;
-			float minimum_containing;
-		} area;
+			Array<const Hitbox> hitboxes;
+			AABB aabb;
+		} composite;
 	};
 
-	uint64_t flags;
-	// HitboxGroups will only collide if their types are compatible and at least one flag matches
-	// I'm not exactly sure how this will look on the user-facing side...
-
-	Array<const Hitbox> hitboxes;
+	Hitbox() {}
+	Hitbox(Hitbox& other);
 };
 
-struct CollisionData {
-	float radius_squared;    // Used for sweep and prune checks
+struct CollisionType {
+	const char* name;
+	int id;
+	SDL_Color color;
 
-	Array<const HitboxGroup> groups;
+private:
+	static Array2D<bool> table;
+	static Array<const CollisionType> types;
+
+public:
+	static void init (const char* config_file);
+	inline static bool acts_on(const CollisionType* a, const CollisionType* b) {
+		return table(a->id, b->id);
+	}
+	static const CollisionType* by_name (const char* name);
+
+private:
+	inline CollisionType(const char* name, int id, SDL_Color color) :
+		name(name), id(id), color(color) {}
+
+	inline CollisionType() {}
 };
 
-HitboxType hitbox_type_by_name(const char* name);
-const char* name_of(HitboxType type);
-SDL_Color get_hitbox_color(HitboxType type, int flags = 0);
-bool hitbox_types_collide(HitboxType a, HitboxType b);
-bool hitbox_acts_on (HitboxType a, HitboxType b); // Returns true if a and b are in the correct order
+struct Collider {
+	/// type data that determines what things actually collide
+	const CollisionType* type;
 
-void get_hitbox_rects_relative_to(SDL_Rect* rects, const HitboxGroup& hitboxes, SDL_Point origin);
+	/// The inherently meaningful data that the engine handles.
+	Hitbox hitbox;
 
-void render_hitboxes(SDL_Renderer* context, SDL_Point origin, const CollisionData& collision);
+	/// Solidity ensures that physics depenetrates entities
+	bool solid : 1;
+
+	/// Is continuous collision detection enabled
+	/// CCD prevents fast-moving objects from tunneling, but is more expensive to calculate
+	bool ccd : 1;
+
+	// priority?
+};
+
+typedef Array<const Collider> CollisionData;
+
+void render_colliders(SDL_Renderer* context, const Transform& tx, const CollisionData& colliders);
 
 // Collision detection :O
-bool hitboxes_overlap(const Hitbox* a, const Point2& apos, float arot, const Hitbox* b, const Point2& bpos, float brot);
+bool hitboxes_overlap(
+	const Hitbox* a, const Transform& aTx, Vector2 aDis,
+	const Hitbox* b, const Transform& bTx, Vector2 bDis
+);
 
 #endif

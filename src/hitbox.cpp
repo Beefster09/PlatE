@@ -1,246 +1,350 @@
 
 #include "sprite.h"
 #include "hitbox.h"
-#include <SDL2/SDL_rect.h>
+#include "transform.h"
+#include <SDL2/SDL_render.h>
 #include <cstring>
 #include <cassert>
 
-HitboxType hitbox_type_by_name(const char* name) {
-	char namebuf[32];
-	if (strlen(name) >= 31) return HitboxType::UNKNOWN;
-	strcpy(namebuf, name);
-	strlwr(namebuf);
-
-	if (strcmp(namebuf, "solid") == 0) return HitboxType::SOLID;
-	if (strcmp(namebuf, "hurtbox") == 0) return HitboxType::HURTBOX;
-	if (strcmp(namebuf, "damage") == 0) return HitboxType::DAMAGE;
-	if (strcmp(namebuf, "area") == 0) return HitboxType::AREA;
-	if (strcmp(namebuf, "trigger") == 0) return HitboxType::TRIGGER;
-	if (strcmp(namebuf, "block") == 0) return HitboxType::BLOCK;
-	return HitboxType::UNKNOWN;
-}
-
-const char* name_of(HitboxType type) {
+Hitbox::Hitbox(Hitbox& other) {
+	type = other.type;
 	switch (type) {
-	case HitboxType::SOLID:   return "Solid";
-	case HitboxType::AREA:    return "Area";
-	case HitboxType::HURTBOX: return "Hurtbox";
-	case HitboxType::DAMAGE:  return "Damage";
-	case HitboxType::BLOCK:   return "Block";
-	case HitboxType::TRIGGER: return "Trigger";
-	default: return "<???>";
+	case BOX:
+		box = other.box;
+		return;
+	case CIRCLE:
+		circle = other.circle;
+		return;
+	case LINE:
+	case ONEWAY:
+		line = other.line;
+		return;
+	case POLYGON:
+		polygon = other.polygon;
+		return;
+	case COMPOSITE:
+		composite = other.composite;
+		return;
 	}
 }
 
-void get_hitbox_rects_relative_to(SDL_Rect* rects, const HitboxGroup& hitboxes, SDL_Point origin) {
-	int i = 0;
-	for (const Hitbox& hitbox : hitboxes.hitboxes) {
-		rects[i++] = {
-			origin.x + hitbox.box.x,
-			origin.y + hitbox.box.y,
-			hitbox.box.w,
-			hitbox.box.h
-		};
+Array2D<bool> CollisionType::table = Array2D<bool>();
+Array<const CollisionType> CollisionType::types = Array<const CollisionType>();
+
+const CollisionType* CollisionType::by_name(const char* name) {
+	for (const CollisionType& cgroup : CollisionType::types) {
+		if (strcmp(name, cgroup.name) == 0) return &cgroup;
 	}
+	return nullptr;
 }
 
-SDL_Color get_hitbox_color(HitboxType type, int flags) {
-	switch (type) {
-		case HitboxType::SOLID:   return { 160, 160, 160, 255 };
-		case HitboxType::AREA:    return {   0,  80, 255, 255 };
-		case HitboxType::HURTBOX: return { 255, 255,   0, 255 };
-		case HitboxType::DAMAGE:  return { 255,   0,   0, 255 };
-		case HitboxType::BLOCK:   return { 160,   0, 255, 255 };
-		case HitboxType::TRIGGER: return {   0, 255,   0, 255 };
-		default: return { 0, 0, 0, 0 };
-	}
+void CollisionType::init(const char* config_file) {
+	int n_cgroups = 5;
+
+	// TODO: count user types
+
+	CollisionType* types = new CollisionType[n_cgroups];
+
+	// init intrinsics
+	types[0] = CollisionType("Entity",  0, { 192, 192, 192 });
+	types[1] = CollisionType("Level",   1, { 128, 255, 128 });
+	types[2] = CollisionType("Damage",  2, { 255, 192, 192 });
+	types[3] = CollisionType("Hurtbox", 3, { 255, 255, 192 });
+	types[4] = CollisionType("Block",   4, { 255, 128, 255 });
+
+	// TODO: parse user types
+
+	CollisionType::types = Array<const CollisionType>(types, n_cgroups);
+
+	table = Array2D<bool>(n_cgroups, n_cgroups);
+	table.clear();
+
+	table.set(0, 0); // Entity -> Entity
+	table.set(0, 1); // Entity -> Level
+	table.set(2, 3); // Damage -> Hurtbox
+	table.set(2, 4); // Damage -> Block
+
+	// TODO: parse user interactions
 }
 
-void render_hitboxes(SDL_Renderer* context, SDL_Point origin, const CollisionData& collision) {
-	SDL_Rect rects[32];
-	for (const HitboxGroup& group: collision.groups) {
-		SDL_Color color = get_hitbox_color(group.type);
-		get_hitbox_rects_relative_to(rects, group, origin);
-		SDL_SetRenderDrawColor(context, color.r, color.g, color.b, 63); // fill
-		SDL_RenderFillRects(context, rects, group.hitboxes.size());
-		SDL_SetRenderDrawColor(context, color.r, color.g, color.b, 192); // outline
-		SDL_RenderDrawRects(context, rects, group.hitboxes.size());
-	}
-}
+void render_hitbox(SDL_Renderer* context, const Transform& tx, const Hitbox& hitbox, const SDL_Color& color) {
+	// TODO: culling
+	switch (hitbox.type) {
+	case Hitbox::BOX:
+	{
+		Vector2 topleft = tx * Vector2{ hitbox.box.left, hitbox.box.top };
+		Vector2 bottomright = tx * Vector2{ hitbox.box.right, hitbox.box.bottom };
 
-bool hitbox_types_collide(HitboxType a, HitboxType b) {
-	switch (a) {
-	case HitboxType::SOLID:
-		return b == HitboxType::SOLID
-			|| b == HitboxType::AREA
-			|| b == HitboxType::TRIGGER;
-	case HitboxType::AREA:
-	case HitboxType::TRIGGER:
-		return b == HitboxType::SOLID;
-	case HitboxType::HURTBOX:
-	case HitboxType::BLOCK:
-		return b == HitboxType::DAMAGE;
-	case HitboxType::DAMAGE:
-		return b == HitboxType::HURTBOX
-			|| b == HitboxType::BLOCK;
-	default:
-		return false;
-	}
-}
+		if (tx.is_rect_invariant()) {
+			SDL_Rect rect = to_rect(topleft, bottomright);
 
-bool hitbox_acts_on(HitboxType a, HitboxType b) {
-	switch (b) {
-	case HitboxType::SOLID:
-		return a == HitboxType::SOLID
-			|| a == HitboxType::TRIGGER;
-	case HitboxType::DAMAGE:
-	case HitboxType::TRIGGER:
-		return false;
-	case HitboxType::HURTBOX:
-	case HitboxType::BLOCK:
-	case HitboxType::AREA:
-	default:
-		return true;
-	}
-}
-
-bool hitboxes_overlap(const Hitbox* a, const Point2& apos, float arot, const Hitbox* b, const Point2& bpos, float brot) {
-	if (a->shape == Hitbox::ONEWAY) {
-		if (b->shape == Hitbox::ONEWAY) return false; // One-ways don't collide
-		else return hitboxes_overlap(b, bpos, brot, a, apos, arot); // And they can only be acted upon
-	}
-	if (a->shape == Hitbox::BOX) {
-		if (b->shape == Hitbox::BOX) {
-
-			float aLeft = apos.x + a->box.x;
-			float aRight = aLeft + a->box.w;
-			float aTop = apos.y + a->box.y;
-			float aBottom = aTop + a->box.h;
-
-			float bLeft = bpos.x + b->box.x;
-			float bRight = bLeft + b->box.w;
-			float bTop = bpos.y + b->box.y;
-			float bBottom = bTop + b->box.h;
-
-			return (
-				aLeft < bRight && aRight > bLeft &&
-				aTop < bBottom && aBottom > bTop
-				);
+			SDL_SetRenderDrawColor(context, color.r, color.g, color.b, 63); // fill
+			SDL_RenderFillRect(context, &rect);
+			SDL_SetRenderDrawColor(context, color.r, color.g, color.b, 192); // outline
+			SDL_RenderDrawRect(context, &rect);
 		}
-		else if (b->shape == Hitbox::CIRCLE) {
-			float left = apos.x + a->box.x;
-			float right = left + a->box.w;
-			float top = apos.y + a->box.y;
-			float bottom = top + a->box.h;
+		else {
+			// Render it like a polygon :-/
+		}
+	}
+		break;
+	case Hitbox::CIRCLE:
+	{
+		Vector2 center = tx * hitbox.circle.center;
+		Vector2 bottom = tx * (hitbox.circle.center + Vector2{0.f, hitbox.circle.radius});
+		float radius = distance(bottom, center);
 
-			float cx = bpos.x + b->circle.x;
-			float cy = bpos.y + b->circle.y;
-			float r = b->circle.radius;
+		// TODO: Draw it!
+	}
+		break;
+	case Hitbox::LINE:
+	case Hitbox::ONEWAY:
+	{
+		Vector2 p1 = (tx * hitbox.line.p1).rounded_down();
+		Vector2 p2 = (tx * hitbox.line.p2).rounded_down();
 
-			if (cx < left) {
-				// center is left of box
-				if (cy < top) {
-					// in top-left corner
-					float dx = cx - left;
-					float dy = cy - top;
-					return dx * dx + dy * dy < r * r;
-				}
-				else if (cy > bottom) {
-					// in bottom-left corner
-					float dx = cx - left;
-					float dy = cy - bottom;
-					return dx * dx + dy * dy < r * r;
-				}
-				else {
-					// just to the left
-					return cx < left - r;
-				}
+		SDL_SetRenderDrawColor(context, color.r, color.g, color.b, 192); // outline
+		SDL_RenderDrawLine(context, (int) p1.x, (int) p1.y, (int) p2.x, (int) p2.y);
+
+		if (hitbox.type == Hitbox::ONEWAY) {
+			Vector2 tag = (p2 - p1).normalized().rotated90CW() * 3.f;
+			for (float t = 0.25f; t < 1.f; t += 0.25f) {
+				Vector2 tagp1 = lerp(p1, p2, t);
+
+				SDL_RenderDrawLine(context, (int)tagp1.x, (int)tagp1.y, (int)tagp1.x + tag.x, (int)tagp1.y + tag.y);
 			}
-			else if (cx > right) {
-				// center is left of box
-				if (cy < top) {
-					// in top-right corner
-					float dx = cx - right;
-					float dy = cy - top;
-					return dx * dx + dy * dy < r * r;
-				}
-				else if (cy > bottom) {
-					// in bottom-right corner
-					float dx = cx - right;
-					float dy = cy - bottom;
-					return dx * dx + dy * dy < r * r;
-				}
-				else {
-					// just to the right
-					return cx > right + r;
-				}
+		}
+	}
+		break;
+	case Hitbox::POLYGON:
+		break;
+	case Hitbox::COMPOSITE:
+		for (const Hitbox& subhit : hitbox.composite.hitboxes) {
+			render_hitbox(context, tx, subhit, color);
+		}
+		break;
+	}
+}
+
+
+void render_colliders(SDL_Renderer* context, const Transform& tx, const CollisionData& collision) {
+	for (const Collider& collider: collision) {
+		render_hitbox(context, tx, collider.hitbox, collider.type->color);
+	}
+}
+
+static bool box_box_test(AABB a, AABB b);
+static bool box_circle_test(AABB box, Circle circle);
+static bool box_line_test(AABB box, Line line);
+static bool circle_circle_test(Circle a, Circle b);
+static bool circle_line_test(Circle circle, Line line);
+static bool line_line_test(Line a, Line b);
+static bool poly_poly_test(Array<Point2> a, Array<Point2> b);
+static bool poly_line_test(Array<Point2> poly, Line line);
+static bool poly_circle_test(Array<Point2> poly, Circle radius);
+
+bool hitboxes_overlap(
+	const Hitbox* a, const Transform& aTx, Vector2 aDis, // aDis and bDis are the displacement since last frame
+	const Hitbox* b, const Transform& bTx, Vector2 bDis  // They are only needed for checking oneway collisions
+) {
+	if (a->type == Hitbox::ONEWAY) {
+		if (b->type == Hitbox::ONEWAY) return false; // One-ways don't collide with each other
+		else return hitboxes_overlap(b, bTx, bDis, a, aTx, aDis); // And they can only be acted upon
+	}
+
+	if (a->type == Hitbox::COMPOSITE) {
+		// TODO: AABB check
+		for (const Hitbox& subHit : a->composite.hitboxes) {
+			if (hitboxes_overlap(&subHit, aTx, aDis, b, bTx, bDis)) return true;
+		}
+	}
+
+	if (b->type == Hitbox::COMPOSITE) {
+		// TODO: AABB check
+		for (const Hitbox& subHit : b->composite.hitboxes) {
+			if (hitboxes_overlap(a, aTx, aDis, &subHit, bTx, bDis)) return true;
+		}
+	}
+
+	if (a->type == Hitbox::BOX) {
+		if (b->type == Hitbox::BOX) {
+			if (aTx.is_rect_invariant() && bTx.is_rect_invariant()) {
+				return box_box_test(aTx * a->box, bTx * b->box);
+			}
+			//else {
+			//	if (!box_box_test(aTx * a->box, bTx * b->box)) return false;
+
+			//	Vector2 polyA[4], polyB[4];
+			//	aabb_to_poly(a->box, polyA);
+			//	aabb_to_poly(b->box, polyB);
+			//	for (int i = 0; i < 4; ++i) {
+			//		polyA[i] = aTx * polyA[i];
+			//		polyB[i] = bTx * polyB[i];
+			//	}
+			//	return poly_poly_test(Array<Point2>(polyA, 4), Array<Point2>(polyB, 4));
+			//}
+		}
+		else if (b->type == Hitbox::CIRCLE) {
+			if (aTx.is_rect_invariant() && bTx.is_uniform_scale()) {
+				return box_circle_test(aTx * a->box, bTx * b->circle);
 			}
 			else {
-				if (cy < top) {
-					// above
-					return cy < top - r;
-				}
-				else if (cy > bottom) {
-					// below
-					return cy > bottom + r;
-				}
-				else {
-					// center is inside box
-					return true;
-				}
+				// TODO approximate with polygons
 			}
 		}
-		else if (b->shape == Hitbox::LINE || b->shape == Hitbox::ONEWAY) {
+		else if (b->type == Hitbox::LINE || b->type == Hitbox::ONEWAY) {
 
 		}
 	}
-	else if (a->shape == Hitbox::CIRCLE) {
-		if (b->shape == Hitbox::CIRCLE) {
-			float dx = (apos.x + a->circle.x) - (bpos.x + b->circle.x);
-			float dy = (apos.y + a->circle.y) - (bpos.y + b->circle.y);
-			float dist = a->circle.radius + b->circle.radius;
-
-			return dx * dx + dy * dy < dist * dist;
-		}
-		else if (b->shape == Hitbox::LINE || b->shape == Hitbox::ONEWAY) {
-			// distance from point to a line
-			Vector2 parallel = {
-				(float) b->line.x2 - b->line.x1,
-				(float) b->line.y2 - b->line.y1
-			};
-			float parlen = parallel.magnitude();
-			parallel /= parlen;
-			Vector2 to_circle = {
-				(apos.x + a->circle.x) - (bpos.x + b->line.x1),
-				(apos.y + a->circle.y) - (bpos.y + b->line.y1)
-			};
-			// project center onto line
-			float projpos = to_circle.dot(parallel);
-			if (projpos < 0) { // outside the line on the first point side
-				float dx = (apos.x + a->circle.x) - (bpos.x + b->line.x1);
-				float dy = (apos.y + a->circle.y) - (bpos.y + b->line.y1);
-				// distance to endpoint
-				return dx * dx + dy * dy < b->circle.radius * b->circle.radius;
+	else if (a->type == Hitbox::CIRCLE) {
+		if (b->type == Hitbox::CIRCLE) {
+			if (aTx.is_uniform_scale() && bTx.is_uniform_scale()) {
+				return circle_circle_test(aTx * a->circle, bTx * b->circle);
 			}
-			else if (projpos > parlen) { // outside the line on the second point side
-				float dx = (apos.x + a->circle.x) - (bpos.x + b->line.x2);
-				float dy = (apos.y + a->circle.y) - (bpos.y + b->line.y2);
-				// distance to endpoint
-				return dx * dx + dy * dy < b->circle.radius * b->circle.radius;
+			else {
+				// TODO approximate with polygons
 			}
-			// TODO: velocity is needed here for oneway collisions
-			return fabs(to_circle.cross(parallel)) < a->circle.radius;
 		}
-		else if (b->shape == Hitbox::BOX) {
-			return hitboxes_overlap(b, bpos, brot, a, apos, arot);
+		else if (b->type == Hitbox::LINE || b->type == Hitbox::ONEWAY) {
+			if (aTx.is_uniform_scale()) {
+				circle_line_test(aTx * a->circle, bTx * b->line);
+			}
+		}
+		else if (b->type == Hitbox::BOX) {
+			return hitboxes_overlap(b, bTx, bDis, a, aTx, aDis);
 		}
 	}
-	else if (a->shape == Hitbox::LINE) {
-		if (b->shape == Hitbox::LINE) {
-			// line intersection test
+	else if (a->type == Hitbox::LINE) {
+		if (b->type == Hitbox::LINE) {
+			return line_line_test(aTx * a->line, bTx * b->line);
 		}
-		else return hitboxes_overlap(b, bpos, brot, a, apos, arot);
+		else if (b->type == Hitbox::ONEWAY) {
+			Line lineA = aTx * a->line;
+			Line lineB = bTx * b->line;
+			if (!line_line_test(lineA, lineB)) return false;
+
+			// the lines intersect :O
+			Vector2 netDis = aDis - bDis;
+			Vector2 lineVec = lineB.p2 - lineB.p1;
+
+			// the lines are moving in the wrong direction
+			if (lineVec.cross(netDis) < 0.f) return false;
+
+			// check that the lines were not previously intersecting
+			// This (sort of) handles the case where an object barely crosses it while moving the wrong direction
+			// then reverses direction. (think of the launching glitch in line rider)
+			return !line_line_test(
+				{lineA.p1 + aDis, lineA.p2 + aDis},
+				{lineB.p1 + bDis, lineB.p2 + bDis}
+			);
+		}
+		else return hitboxes_overlap(b, bTx, bDis, a, aTx, aDis);
+	}
+	else if (a->type == Hitbox::POLYGON) {
+
 	}
 	printf("WARNING: Reached default case of hitboxes_overlap(...)\n");
 	return false;
+}
+
+bool box_box_test(AABB a, AABB b) {
+	return (
+		a.left < b.right && a.right > b.left &&
+		a.top < b.bottom && a.bottom > b.top
+	);
+}
+
+bool box_circle_test(AABB box, Circle circ) {
+	if (circ.center.x < box.left) {
+		// center is left of box
+		if (circ.center.y < box.top) {
+			// in top-left corner
+			float dx = circ.center.x - box.left;
+			float dy = circ.center.y - box.top;
+			return dx * dx + dy * dy < circ.radius * circ.radius;
+		}
+		else if (circ.center.y > box.bottom) {
+			// in bottom-left corner
+			float dx = circ.center.x - box.left;
+			float dy = circ.center.y - box.bottom;
+			return dx * dx + dy * dy < circ.radius * circ.radius;
+		}
+		else {
+			// just to the left
+			return circ.center.x < box.left - circ.radius;
+		}
+	}
+	else if (circ.center.x > box.right) {
+		// center is left of box
+		if (circ.center.y < box.top) {
+			// in top-right corner
+			float dx = circ.center.x - box.right;
+			float dy = circ.center.y - box.top;
+			return dx * dx + dy * dy < circ.radius * circ.radius;
+		}
+		else if (circ.center.y > box.bottom) {
+			// in bottom-right corner
+			float dx = circ.center.x - box.right;
+			float dy = circ.center.y - box.bottom;
+			return dx * dx + dy * dy < circ.radius * circ.radius;
+		}
+		else {
+			// just to the right
+			return circ.center.x > box.right + circ.radius;
+		}
+	}
+	else {
+		if (circ.center.y < box.top) {
+			// above
+			return circ.center.y < box.top - circ.radius;
+		}
+		else if (circ.center.y > box.bottom) {
+			// below
+			return circ.center.y > box.bottom + circ.radius;
+		}
+		else {
+			// center is inside box
+			return true;
+		}
+	}
+}
+
+bool circle_circle_test(Circle a, Circle b) {
+	float dx = a.center.x - b.center.x;
+	float dy = a.center.y - b.center.y;
+	float dist = a.radius + b.radius;
+
+	return dx * dx + dy * dy < dist * dist;
+}
+
+bool circle_line_test(Circle circle, Line line) {
+	Vector2 parallel = line.p2 - line.p1;
+	float parlen = parallel.magnitude();
+	parallel /= parlen;
+	Vector2 to_circle = circle.center - line.p1;
+	// project center onto line
+	float projpos = to_circle.dot(parallel);
+	if (projpos < 0) { // outside the line on the first point side
+		// distance to endpoint
+		return to_circle.x * to_circle.x + to_circle.y * to_circle.y 
+			            < circle.radius * circle.radius;
+	}
+	else if (projpos > parlen) { // outside the line on the second point side
+		Vector2 other = circle.center - line.p2;
+		// distance to endpoint
+		return other.x * other.x + other.y * other.y
+			            < circle.radius * circle.radius;
+	}
+	return fabs(to_circle.cross(parallel)) < circle.radius;
+}
+
+static bool line_line_test(Line a, Line b) {
+	Vector2 aVec = a.p2 - a.p1;
+	Vector2 bVec = b.p2 - b.p1;
+	// test intersection via rotation directions
+	// i.e. if for both lines the endpoints of the other line lie on opposite sides of the line
+	// probably inefficient- currently 24 floating point ops + function call overhead
+	return
+		signbit(aVec.cross(b.p1 - a.p1)) != signbit(aVec.cross(b.p2 - a.p1)) &&
+		signbit(bVec.cross(a.p1 - b.p1)) != signbit(bVec.cross(a.p2 - b.p1));
 }

@@ -1,0 +1,32 @@
+{
+	"name": "Test Level",
+	"boundary": {
+		"x": -1024,
+		"y": -512,
+		"w": 2048,
+		"h": 1024
+	}
+	"tilemaps": [
+	],
+	"objects": [
+		{
+			"texture": "box.png",
+			"clip": {
+				"x": 0,
+				"y": 0,
+				"w": 32,
+				"h": 32
+			},
+			"position": {
+				"x": 32,
+				"y": 0
+			},
+			"z_order": 0,
+			"collision": []
+		}
+	],
+	"entities": [
+	],
+	"edge_triggers": [
+	]
+}

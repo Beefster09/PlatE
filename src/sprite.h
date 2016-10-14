@@ -5,6 +5,7 @@
 // This data is immutable when loaded.
 
 #include "storage.h"
+#include "vectors.h"
 #include "hitbox.h"
 #include "either.h"
 #include "error.h"
@@ -16,9 +17,7 @@ namespace Errors {
 		SpriteLoadJsonInvalid = { 201, "Json does not match the expected schema for Sprite" };
 }
 
-struct FrameOffset {
-	int x, y;
-};
+typedef Vector2 FrameOffset;
 
 struct Frame {
 	const SDL_Rect* texture_region; // Points to the same data as the toplevel sprite's texture regions

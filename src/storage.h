@@ -24,6 +24,10 @@ public:
 	__forceinline Array() {}
 	Array(Data* data, size_t size) : n_items(size), items(data) {}
 	Array(size_t size) : n_items(size), items((Data*) operator new(size * sizeof(Data))) {}
+	Array(Array& arr) {
+		items = arr.items;
+		n_items = arr.n_items;
+	}
 
 	// avoid magical memory management
 	__forceinline void free() const {
@@ -66,6 +70,10 @@ public:
 	Array(size_t size) {
 		n_bits = size;
 		bytes = new uint8_t[(size + 7) / 8];
+	}
+	Array(Array& arr) {
+		bytes = arr.bytes;
+		n_bits = arr.n_bits;
 	}
 
 	void free() {
@@ -283,11 +291,9 @@ public:
 		items = nullptr; w = 0; h = 0;
 	}
 
-	struct tile { unsigned int x, y; };
-
 	__forceinline operator const Data* () const { return items; }
 
-	__forceinline const Data& operator [] (tile index) const {
+	__forceinline const Data& operator () (size_t x, size_t y) const {
 		assert (index.x >= 0 && index.x < w && index.y >= 0 && index.y < h && "Array bounds check failed")
 		return items[index.y * w + index.x];
 	}
@@ -296,15 +302,68 @@ public:
 
 	__forceinline operator Data* () { return items; }
 
-	__forceinline Data& operator [] (tile index) {
-		assert(index.x >= 0 && index.x < w && index.y >= 0 && index.y < h && "Array bounds check failed")
-		return items[index.y * w + index.x];
+	__forceinline Data& operator () (size_t x, size_t y) {
+		assert(x >= 0 && x < w && y >= 0 && y < h && "Array bounds check failed")
+		return items[y * w + x];
 	}
 	__forceinline Data* begin() { return items; }
 	__forceinline Data* end() { return items + w * h; }
 
 	__forceinline size_t size() const { return w * h; }
 
+	__forceinline size_t width() const { return w; }
+	__forceinline size_t height() const { return h; }
+};
+
+template <>
+class Array2D<bool> {
+	uint8_t* bytes;
+	size_t w, h;
+
+public:
+	__forceinline Array2D() {}
+	Array2D(uint8_t* data, size_t width, size_t height) : w(width), h(height), bytes(data) {}
+	Array2D(size_t width, size_t height) : w(width), h(height),
+		bytes(new uint8_t[(width * height + 7) / 8]) {}
+	Array2D(Array2D& arr) : bytes(arr.bytes), w(arr.w), h(arr.h) {}
+
+	void free() {
+		delete[] bytes;
+		bytes = nullptr;
+	}
+
+	__forceinline bool operator () (size_t x, size_t y) const {
+		assert(x >= 0 && x < w && y >= 0 && y < h && "Array bounds check failed");
+		int index = y * h + x;
+		return bytes[index / 8] & BIT(index % 8);
+	}
+	__forceinline void set(size_t x, size_t y) { int index = y * h + x; bytes[index / 8] |= BIT(index % 8); }
+	__forceinline void unset(size_t x, size_t y) { int index = y * h + x; bytes[index / 8] &= ~BIT(index % 8); }
+
+	__forceinline void clear() { for (int i = 0; i * 8 < w * h; ++i) bytes[i] = 0; }
+
+	class iterator {
+		const Array2D* arr;
+		size_t bit;
+
+	public:
+		iterator() { bit = 0; arr = nullptr; }
+		iterator(const Array2D* a, size_t i = 0) { bit = i; arr = a; }
+		iterator(iterator& it) { arr = it.arr; bit = it.bit; }
+		~iterator() {}
+
+		bool operator == (iterator& it) const { return bit == it.bit && arr == it.arr; }
+		__forceinline bool operator != (iterator& it) const { return !(*this == it); }
+
+		__forceinline const bool operator * () const { return (*arr)(bit % arr->w, bit / arr->h); }
+
+		__forceinline iterator& operator ++ () { ++bit; }
+	};
+
+	iterator begin() const { return iterator(this); }
+	iterator end() const { return iterator(this, w * h); }
+
+	__forceinline size_t size() const { return w * h; }
 	__forceinline size_t width() const { return w; }
 	__forceinline size_t height() const { return h; }
 };
@@ -328,6 +387,7 @@ public:
 		nextAlloc = pool;
 		size = poolsize;
 	}
+	MemoryPool_raw(MemoryPool_raw& other) = delete;
 	~MemoryPool_raw() {
 		if (owned) this->free(); // this code will be eliminated in the unowned version.
 	}
@@ -365,3 +425,35 @@ public:
 
 typedef MemoryPool_raw<false> MemoryPool;
 typedef MemoryPool_raw<true> OwnedMemoryPool;
+
+template <size_t size>
+/// Memory pool that is stored on the stack
+class LocalMemoryPool {
+	uint8_t pool[size];
+	void* nextAlloc;
+
+public:
+	LocalMemoryPool() {
+		nextAlloc = pool;
+	}
+	~LocalMemoryPool() {}
+
+	template <class T>
+	T* alloc(size_t n_elements = 1) {
+		if ((intptr_t)nextAlloc - (intptr_t)pool + n_elements * sizeof(T) > size) return nullptr;
+		T* result = (T*)nextAlloc;
+		nextAlloc = result + n_elements;
+		return result;
+	}
+
+	char* alloc_str(const char* str) {
+		size_t str_size = strlen(str) + 1; // +1 for the null terminator
+		if ((intptr_t)nextAlloc - (intptr_t)pool + str_size > size) return nullptr;
+		char* result = (char*)nextAlloc;
+		strcpy(result, str);
+		nextAlloc = result + str_size;
+		return result;
+	}
+
+	__forceinline void clear() { nextAlloc = pool; }
+};

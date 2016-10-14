@@ -28,5 +28,5 @@ Either<Error, Level*> load_level_json(const char* filename) {
 		return Errors::InvalidJson;
 	}
 
-	MemoryPool pool = MemoryPool(65536); // Size is temporary
+	MemoryPool pool(65536); // Size is temporary
 }

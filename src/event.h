@@ -25,7 +25,7 @@ struct Event {
 
 	union {
 		struct {
-			const HitboxGroup *hitboxA, *hitboxB;
+			const Collider *hitboxA, *hitboxB;
 			Entity *entityA, *entityB;
 		} collision;
 	};

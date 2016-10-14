@@ -5,26 +5,6 @@
 
 #include <algorithm>
 
-static bool check_hitbox_groups(
-	Entity* entA, Entity* entB,
-	const HitboxGroup* a,
-	const HitboxGroup* b) 
-{
-	Point2 apos = entA->position;
-	Point2 bpos = entB->position;
-	float arot = entA->rotation;
-	float brot = entB->rotation;
-
-	for (const Hitbox& hitboxA : a->hitboxes) {
-		for (const Hitbox& hitboxB : b->hitboxes) {
-			if (hitboxes_overlap(&hitboxA, apos, arot, &hitboxB, bpos, brot)) {
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
 static void detect_collisions(Entity* a, Entity* b, EventBuffer* eventBuffer) {
 	// TODO: sweep and prune on distance squared
 
@@ -34,28 +14,33 @@ static void detect_collisions(Entity* a, Entity* b, EventBuffer* eventBuffer) {
 	if (a->ground.type == Entity::GroundLink::ENTITY && a->ground.entity == b) return;
 	if (b->ground.type == Entity::GroundLink::ENTITY && b->ground.entity == a) return;
 
-	for (const HitboxGroup& collisionA : a->curFrame->collision.groups) {
-		for (const HitboxGroup& collisionB : b->curFrame->collision.groups) {
-
-			// If no flags match, do not check collision
-			if (collisionA.flags & collisionB.flags == 0) continue;
-			if (!hitbox_types_collide(collisionA.type, collisionB.type)) continue;
+	for (const Collider& collisionA : a->curFrame->collision) {
+		for (const Collider& collisionB : b->curFrame->collision) {
 
 			bool wasCollision;
-			if (hitbox_acts_on(collisionA.type, collisionB.type)) {
-				wasCollision = check_hitbox_groups(a, b, &collisionA, &collisionB);
+			if (CollisionType::acts_on(collisionA.type, collisionB.type) ||
+				CollisionType::acts_on(collisionB.type, collisionA.type)) {
+				wasCollision = hitboxes_overlap(
+					&collisionA.hitbox, a->transform_matrix, a->position - a->last_pos,
+					&collisionB.hitbox, b->transform_matrix, b->position - b->last_pos
+				);
 			}
-			else {  // reversed
-				wasCollision = check_hitbox_groups(b, a, &collisionB, &collisionA);
-			}
+
 			if (wasCollision) {
 				// TODO: priority (where applicable)
 				if (eventBuffer != nullptr) {
 					Event ev;
 					ev.type = Event::Collision;
-					ev.collision = {
-						&collisionA, &collisionB, a, b
-					};
+					if (CollisionType::acts_on(collisionA.type, collisionB.type)) {
+						ev.collision = {
+							&collisionA, &collisionB, a, b
+						};
+					}
+					else {
+						ev.collision = {
+							&collisionB, &collisionA, b, a
+						};
+					}
 					push_event(eventBuffer, ev);
 				}
 			}
@@ -70,8 +55,8 @@ static void detect_collisions(Entity* a, Entity* b, EventBuffer* eventBuffer) {
 
 static void move_to_contact_position(
 	Entity* a, Entity* b,
-	const HitboxGroup* hitA,
-	const HitboxGroup* hitB) {
+	const Collider* hitA,
+	const Collider* hitB) {
 
 	Point2 a_init = a->last_pos;
 	Point2 b_init = b->last_pos;
@@ -114,7 +99,10 @@ static void move_to_contact_position(
 	while (search_diff * mag > CONTACT_EPSILON) {
 		a->position = a_init + (search_pos * rel_dis_a * a_move);
 		b->position = b_init + (search_pos * rel_dis_b * b_move);
-		if (check_hitbox_groups(a, b, hitA, hitB)) {
+		if (hitboxes_overlap(
+			&hitA->hitbox, a->transform_matrix, a->position - a_init,
+			&hitB->hitbox, b->transform_matrix, b->position - b_init
+		)) {
 			// back off
 			search_pos -= search_diff;
 		}
@@ -314,8 +302,8 @@ void process_entities(const int delta_time, EntitySystem* system) {
 			Event& ev = poss_ev.right;
 			Entity* a = ev.collision.entityA;
 			Entity* b = ev.collision.entityB;
-			const HitboxGroup *hitA = ev.collision.hitboxA;
-			const HitboxGroup *hitB = ev.collision.hitboxB;
+			const Collider *hitA = ev.collision.hitboxA;
+			const Collider *hitB = ev.collision.hitboxB;
 
 			//printf("COLLISION between entities %d and %d (%s -> %s)\n",
 			//	a->id, b,
@@ -323,8 +311,7 @@ void process_entities(const int delta_time, EntitySystem* system) {
 			//	name_of(hitB->type)
 			//);
 
-			if (hitA->type == HitboxType::SOLID &&
-				hitB->type == HitboxType::SOLID) {
+			if (hitA->solid && hitB->solid) {
 				float a_dx = a->position.x - a->last_pos.x;
 				float a_dy = a->position.y - a->last_pos.y;
 				float b_dx = b->position.x - b->last_pos.x;
@@ -343,6 +330,6 @@ void render_entities(SDL_Renderer* context, const EntitySystem* system) {
 	for (int i = 0; i < n_entities; ++i) {
 		Entity* e = system->z_ordered_entities[i];
 
-		render_hitboxes(context, { (int) e->position.x, (int) e->position.y }, e->curFrame->collision);
+		render_colliders(context, { e->position.x, e->position.y }, e->curFrame->collision);
 	}
 }

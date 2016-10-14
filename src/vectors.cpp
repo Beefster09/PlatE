@@ -1,5 +1,6 @@
 
 #include "vectors.h"
+#include "SDL2/SDL_rect.h"
 
 Vector2 Vector2::operator + (const Vector2 &that) const {
 	return{ x + that.x, y + that.y };
@@ -92,4 +93,27 @@ const Vector2 Vector2::zero = { 0.f, 0.f };
 // starts at right, rotates clockwise
 Vector2 Vector2::fromPolar(float angle, float length) {
 	return{ length * cosf(angle), length * sinf(angle) };
+}
+
+Vector2 Vector2::rounded_down() const {
+	return{ floorf(x), floorf(y) };
+}
+
+void Vector2::round_down() {
+	x = floorf(x);
+	y = floorf(y);
+}
+
+SDL_Rect to_rect(const Vector2& p1, const Vector2& p2) {
+	SDL_Rect result;
+	result.x = (int) floorf(fminf(p1.x, p2.x));
+	result.y = (int) floorf(fminf(p1.y, p2.y));
+	result.w = (int) fabs(floorf(p2.x - p1.x));
+	result.h = (int) fabs(floorf(p2.y - p1.y));
+
+	return result;
+}
+
+Vector2 lerp(const Vector2& p1, const Vector2& p2, float t) {
+	return p1 + (p2 - p1) * t;
 }

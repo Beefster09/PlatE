@@ -4,8 +4,11 @@
 #include "hitbox.h"
 #include "SDL2\SDL_render.h"
 
+// tile 0 is reserved as a blank tile
+#define TILE_BLANK 0
+
 struct TileFrame {
-	unsigned int index;
+	uint16_t x_ind, y_ind;
 	float time;
 };
 
@@ -16,9 +19,9 @@ struct Tile {
 
 struct Tileset {
 	SDL_Texture* texture;
-	unsigned int tileW, tileH;
-	unsigned int n_tilesW, n_tilesH;
-	Array<Tile> tile_data;
+	uint16_t tileW, tileH;
+	uint16_t n_tilesW, n_tilesH;
+	Array<Tile> tile_data; // 1 indexed; tile 0 is reserved as a blank tile
 };
 
 
