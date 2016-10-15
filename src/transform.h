@@ -103,6 +103,12 @@ struct Transform {
 	// inverted matrix
 	Transform operator ~ () const;
 
+	inline void print_matrix() const {
+		printf("[ %.6f  %.6f  %.6f ]\n", _11, _12, _13);
+		printf("[ %.6f  %.6f  %.6f ]\n", _21, _22, _23);
+		printf("[     0        0        0    ]\n", _11, _12, _13);
+	}
+
 // Properties of the matrix
 	// determinant of this matrix
 	float determinant() const;

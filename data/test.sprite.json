@@ -15,28 +15,48 @@
 			"offsets": [],
 			"collision": [
 				{
-					"type": "solid",
-					"hitboxes": [
-						{"shape": "box", "x": -64, "y": -64, "w": 128, "h": 128}
-					],
-					"flags": 255
+					"type": "Entity",
+					"hitbox": {
+						"type": "box",
+						"left": -64,
+						"top": -64,
+						"right": 64,
+						"bottom": 64
+					},
+					"solid": true
 				},
 				{
-					"type": "hurtbox",
-					"hitboxes": [
-						{"shape": "box", "x": -48, "y": -48, "w": 96, "h": 96}
-					],
-					"flags": 255
+					"type": "Hurtbox",
+					"hitbox": {
+						"type": "box",
+						"left": -48,
+						"top": -48,
+						"right": 48,
+						"bottom": 48
+					}
 				},
 				{
-					"type": "damage",
-					"hitboxes": [
-						{"shape": "box", "x": -64, "y": -32, "w": 32, "h": 64},
-						{"shape": "box", "x": 32, "y": -32, "w": 32, "h": 64}
-					],
-					"flags": 255
+					"type": "Damage",
+					"hitbox": {
+						"type": "composite",
+						"hitboxes": [
+							{
+								"type": "box",
+								"left": -64,
+								"top": -32,
+								"right": -32,
+								"bottom": 32
+							},
+							{
+								"type": "box",
+								"right": 64,
+								"top": -32,
+								"left": 32,
+								"bottom": 32
+							}
+						]
+					}
 				}
-				
 			]
 		},
 		{
@@ -46,28 +66,48 @@
 			"offsets": [],
 			"collision": [
 				{
-					"type": "solid",
-					"hitboxes": [
-						{"shape": "box", "x": -64, "y": -64, "w": 128, "h": 128}
-					],
-					"flags": 255
+					"type": "Entity",
+					"hitbox": {
+						"type": "box",
+						"left": -64,
+						"top": -64,
+						"right": 64,
+						"bottom": 64
+					},
+					"solid": true
 				},
 				{
-					"type": "hurtbox",
-					"hitboxes": [
-						{"shape": "box", "x": -32, "y": -32, "w": 64, "h": 64}
-					],
-					"flags": 255
+					"type": "Hurtbox",
+					"hitbox": {
+						"type": "box",
+						"left": -48,
+						"top": -48,
+						"right": 48,
+						"bottom": 48
+					}
 				},
 				{
-					"type": "damage",
-					"hitboxes": [
-						{"shape": "box", "x": -48, "y": -24, "w": 24, "h": 48},
-						{"shape": "box", "x": 16, "y": -24, "w": 24, "h": 48}
-					],
-					"flags": 255
+					"type": "Damage",
+					"hitbox": {
+						"type": "composite",
+						"hitboxes": [
+							{
+								"type": "box",
+								"left": -64,
+								"top": -32,
+								"right": -32,
+								"bottom": 32
+							},
+							{
+								"type": "box",
+								"right": 64,
+								"top": -32,
+								"left": 32,
+								"bottom": 32
+							}
+						]
+					}
 				}
-				
 			]
 		},
 		{
@@ -77,27 +117,47 @@
 			"offsets": [],
 			"collision": [
 				{
-					"type": "oneway",
-					"hitboxes": [
-						{"shape": "box", "x": -64, "y": -64, "w": 128, "h": 128}
-					],
-					"flags": 255,
-					"direction": "up"
+					"type": "Entity",
+					"hitbox": {
+						"type": "box",
+						"left": -64,
+						"top": -64,
+						"right": 64,
+						"bottom": 64
+					},
+					"solid": true
 				},
 				{
-					"type": "hurtbox",
-					"hitboxes": [
-						{"shape": "box", "x": -48, "y": -48, "w": 96, "h": 96}
-					],
-					"flags": 255
+					"type": "Hurtbox",
+					"hitbox": {
+						"type": "box",
+						"left": -48,
+						"top": -48,
+						"right": 48,
+						"bottom": 48
+					}
 				},
 				{
-					"type": "damage",
-					"hitboxes": [
-						{"shape": "box", "x": -32, "y": -64, "w": 64, "h": 32},
-						{"shape": "box", "x": -32, "y": 32, "w": 64, "h": 32}
-					],
-					"flags": 255
+					"type": "Damage",
+					"hitbox": {
+						"type": "composite",
+						"hitboxes": [
+							{
+								"type": "box",
+								"left": -64,
+								"top": -32,
+								"right": -32,
+								"bottom": 32
+							},
+							{
+								"type": "box",
+								"right": 64,
+								"top": -32,
+								"left": 32,
+								"bottom": 32
+							}
+						]
+					}
 				}
 			]
 		},
@@ -108,20 +168,26 @@
 			"offsets": [],
 			"collision": [
 				{
-					"type": "solid",
-					"hitboxes": [
-						{"shape": "box", "x": -64, "y": -64, "w": 128, "h": 128}
-					],
-					"flags": 255
+					"type": "Entity",
+					"hitbox": {
+						"type": "box",
+						"left": -64,
+						"top": -64,
+						"right": 64,
+						"bottom": 64
+					},
+					"solid": true
 				},
 				{
-					"type": "hurtbox",
-					"hitboxes": [
-						{"shape": "box", "x": -48, "y": -48, "w": 96, "h": 96}
-					],
-					"flags": 255
+					"type": "Hurtbox",
+					"hitbox": {
+						"type": "box",
+						"left": -48,
+						"top": -48,
+						"right": 48,
+						"bottom": 48
+					}
 				}
-				
 			]
 		}
 	],

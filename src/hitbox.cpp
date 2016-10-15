@@ -35,6 +35,7 @@ const CollisionType* CollisionType::by_name(const char* name) {
 	for (const CollisionType& cgroup : CollisionType::types) {
 		if (strcmp(name, cgroup.name) == 0) return &cgroup;
 	}
+	printf("Warning: '%s' is not a valid CollisionType.\n", name);
 	return nullptr;
 }
 
@@ -46,11 +47,11 @@ void CollisionType::init(const char* config_file) {
 	CollisionType* types = new CollisionType[n_cgroups];
 
 	// init intrinsics
-	types[0] = CollisionType("Entity",  0, { 192, 192, 192 });
-	types[1] = CollisionType("Level",   1, { 128, 255, 128 });
-	types[2] = CollisionType("Damage",  2, { 255, 192, 192 });
-	types[3] = CollisionType("Hurtbox", 3, { 255, 255, 192 });
-	types[4] = CollisionType("Block",   4, { 255, 128, 255 });
+	types[0] = CollisionType("Entity",  0, { 127, 127, 127 });
+	types[1] = CollisionType("Level",   1, {  32, 192,   0 });
+	types[2] = CollisionType("Damage",  2, { 255,   0,   0 });
+	types[3] = CollisionType("Hurtbox", 3, { 255, 255,  64 });
+	types[4] = CollisionType("Block",   4, { 192,   0, 255 });
 
 	// TODO: parse user types
 
@@ -69,6 +70,7 @@ void CollisionType::init(const char* config_file) {
 
 void render_hitbox(SDL_Renderer* context, const Transform& tx, const Hitbox& hitbox, const SDL_Color& color) {
 	// TODO: culling
+
 	switch (hitbox.type) {
 	case Hitbox::BOX:
 	{

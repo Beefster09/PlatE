@@ -20,6 +20,8 @@ int main(int argc, char* argv[]) {
 		SDL_Renderer* context = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 		SDL_SetRenderDrawBlendMode(context, SDL_BLENDMODE_BLEND);
 
+		CollisionType::init("");
+
 		// test display
 
 		auto test = load_sprite_json("data/test.sprite.json");

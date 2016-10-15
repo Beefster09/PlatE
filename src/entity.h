@@ -71,6 +71,7 @@ struct Entity {
 		};
 		// Where this entity's foot position is relative to the linked origin.
 		Vector2 foot_pos;
+		Vector2 contact_normal;
 	} ground;
 
 	int z_order; // needed for drawing
@@ -80,7 +81,7 @@ struct Entity {
 	Vector2 scale;
 
 	// Cached transformation matrix. Calculated during physics/movement step and after update.
-	Transform transform_matrix;
+	Transform tx;
 
 // === Sprite Data ===
 	const Sprite* sprite;

@@ -88,6 +88,10 @@ static bool bool_json(Value& json) {
 	return json.IsBool() && json.IsTrue();
 }
 
+static bool bool_json(GenericObject<false, Value>& json_obj, const char* prop) {
+	return json_obj.HasMember(prop) && !(json_obj[prop].IsFalse() || json_obj[prop].IsNull());
+}
+
 const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 	Document json;
 
@@ -106,7 +110,7 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 
 	if (json.HasParseError()) {
 		const char* message = GetParseError_En(json.GetParseError());
-		return Errors::InvalidJson;
+		return DetailedError(Errors::InvalidJson, "%s\n", message);
 	}
 
 	auto validation = validate_sprite_json(json);
@@ -157,8 +161,8 @@ const Either<Error, const Sprite*> load_sprite_json(char* filename) {
 			collision[j] = {
 				CollisionType::by_name(colliderJson["type"].GetString()),
 				hitbox_json(colliderJson["hitbox"], pool),
-				bool_json(colliderJson["solid"]),
-				bool_json(colliderJson["ccd"])
+				bool_json(colliderJson, "solid"),
+				bool_json(colliderJson, "ccd")
 			};
 		}
 

@@ -52,6 +52,9 @@ private:
 public:
 	static void init (const char* config_file);
 	inline static bool acts_on(const CollisionType* a, const CollisionType* b) {
+		if (a == nullptr || b == nullptr) {
+			return false;
+		}
 		return table(a->id, b->id);
 	}
 	static const CollisionType* by_name (const char* name);

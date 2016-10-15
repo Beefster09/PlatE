@@ -5,6 +5,10 @@
 
 #include <algorithm>
 
+void update_tx(Entity* a) {
+	a->tx = Transform::scal_rot_trans(a->scale, a->rotation, a->position);
+}
+
 static void detect_collisions(Entity* a, Entity* b, EventBuffer* eventBuffer) {
 	// TODO: sweep and prune on distance squared
 
@@ -17,12 +21,12 @@ static void detect_collisions(Entity* a, Entity* b, EventBuffer* eventBuffer) {
 	for (const Collider& collisionA : a->curFrame->collision) {
 		for (const Collider& collisionB : b->curFrame->collision) {
 
-			bool wasCollision;
+			bool wasCollision = false;
 			if (CollisionType::acts_on(collisionA.type, collisionB.type) ||
 				CollisionType::acts_on(collisionB.type, collisionA.type)) {
 				wasCollision = hitboxes_overlap(
-					&collisionA.hitbox, a->transform_matrix, a->position - a->last_pos,
-					&collisionB.hitbox, b->transform_matrix, b->position - b->last_pos
+					&collisionA.hitbox, a->tx, a->position - a->last_pos,
+					&collisionB.hitbox, b->tx, b->position - b->last_pos
 				);
 			}
 
@@ -100,8 +104,8 @@ static void move_to_contact_position(
 		a->position = a_init + (search_pos * rel_dis_a * a_move);
 		b->position = b_init + (search_pos * rel_dis_b * b_move);
 		if (hitboxes_overlap(
-			&hitA->hitbox, a->transform_matrix, a->position - a_init,
-			&hitB->hitbox, b->transform_matrix, b->position - b_init
+			&hitA->hitbox, a->tx, a->position - a_init,
+			&hitB->hitbox, b->tx, b->position - b_init
 		)) {
 			// back off
 			search_pos -= search_diff;
@@ -118,35 +122,35 @@ static void move_to_contact_position(
 			break;
 		}
 	}
+	update_tx(a);
+	update_tx(b);
 
+	//a->tx.print_matrix();
+	//(~a->tx).print_matrix();
+	//b->tx.print_matrix();
+	//(~b->tx).print_matrix();
+	//(~b->tx * a->tx).print_matrix();
+	//(~a->tx * b->tx).print_matrix();
+
+	// TODO: contact normals
 	// TODO: if this is a vertical collision (how to detect?), set the ground entity for the higher entity.
 	Vector2 diff = a->position - b->position;
 	if (diff.y < 0) {
 		// a is above b
 		//TODO: more checks
-		float foot_x = a->position.x + a->curFrame->foot.x;
-		float foot_y = a->position.y + a->curFrame->foot.y;
 
 		a->ground.type = Entity::GroundLink::ENTITY;
 		a->ground.entity = b;
-		a->ground.foot_pos = {
-			foot_x - b->position.x,
-			foot_y - b->position.y
-		};
+		a->ground.foot_pos = ~b->tx * (a->tx * a->curFrame->foot);
 		a->velocity.y = 0.f;
 	}
 	else {
 		// b is above a
 		// TODO: more checks
-		float foot_x = b->position.x + b->curFrame->foot.x;
-		float foot_y = b->position.y + b->curFrame->foot.y;
 
 		b->ground.type = Entity::GroundLink::ENTITY;
 		b->ground.entity = a;
-		a->ground.foot_pos = {
-			foot_x - a->position.x,
-			foot_y - a->position.y
-		};
+		b->ground.foot_pos = ~a->tx * (b->tx * b->curFrame->foot);
 		b->velocity.y = 0.f;
 	}
 
@@ -249,7 +253,7 @@ void process_entities(const int delta_time, EntitySystem* system) {
 		// Now that we know no new entities will be spawned, get the entities ready to sort.
 		system->z_ordered_entities[processed++] = &e;
 
-		e.transform_matrix = Transform::scal_rot_trans(e.scale, e.rotation, e.position);
+		e.tx = Transform::scal_rot_trans(e.scale, e.rotation, e.position);
 	}
 
 	// Sort the entities for display purposes
@@ -269,7 +273,7 @@ void process_entities(const int delta_time, EntitySystem* system) {
 			// Set the position by its foot coordinate
 			float dx = e->position.x - e->last_pos.x;
 			e->ground.foot_pos.x += dx;
-			e->position = e->ground.entity->position + e->ground.foot_pos;
+			e->position = e->ground.entity->tx * (e->ground.foot_pos - e->curFrame->foot);
 
 			//printf("Entity %d is now following entity %d as ground...\n", e->id, e->ground.entity->id);
 			//printf("    It moved %f pixels in the x direction and is being adjusted...\n", dx);
@@ -319,8 +323,8 @@ void process_entities(const int delta_time, EntitySystem* system) {
 				move_to_contact_position(a, b, hitA, hitB);
 			}
 
-			a->transform_matrix = Transform::scal_rot_trans(a->scale, a->rotation, a->position);
-			b->transform_matrix = Transform::scal_rot_trans(b->scale, b->rotation, b->position);
+			a->tx = Transform::scal_rot_trans(a->scale, a->rotation, a->position);
+			b->tx = Transform::scal_rot_trans(b->scale, b->rotation, b->position);
 		}
 	}
 }
@@ -330,6 +334,6 @@ void render_entities(SDL_Renderer* context, const EntitySystem* system) {
 	for (int i = 0; i < n_entities; ++i) {
 		Entity* e = system->z_ordered_entities[i];
 
-		render_colliders(context, { e->position.x, e->position.y }, e->curFrame->collision);
+		render_colliders(context, e->tx, e->curFrame->collision);
 	}
 }
