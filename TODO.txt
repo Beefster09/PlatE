@@ -7,13 +7,16 @@ Up next:
 [ ] Level data (basic)
   [X] Data structures
   [ ] Parse from JSON
-[ ] Line collision
+[X] Line collision
 [ ] Slope following
+  [ ] Contact normal/tangent
+  [ ] Falling off ledges/handing off to adjacent slopes
 
 High-Level 1.0 Features
 [ ] Fast collision detection
-  [ ] Rectangle, Line, Circle Collision types
-  [ ] Tunnelling prevention
+  [X] Rectangle, Line, Circle Collision types
+    [ ] Optimize
+  [ ] Tunnelling prevention & raycasting
   [ ] Spacial indexing for level collision data
   [ ] Entity offscreen culling
   [X] Gravity
@@ -28,9 +31,8 @@ High-Level 1.0 Features
   [ ] Textured particles (for sparkles, smoke, etc...)
   [ ] Collision? (maybe environment only)
 [ ] Event system
-[ ] JSON-based assets
-  [ ] Baking JSON assets into binary assets
-  [ ] (Maybe) compiler flags for JSON-free builds
+[ ] JSON and binary assets
+  [ ] Baking JSON assets into binary assets (external tool)
 [ ] Resolution independence
 [ ] GUI framework
 [ ] Automatic asset management (quasi-GC on Sprites, EntityClasses, etc...)

@@ -12,8 +12,6 @@ void update_tx(Entity* a) {
 static void detect_collisions(Entity* a, Entity* b, EventBuffer* eventBuffer) {
 	// TODO: sweep and prune on distance squared
 
-	// Do not collide entities that don't self-collide
-	if (a->e_class == b->e_class && !a->e_class->self_colliding) return;
 	// Ground-linked entities do not collide
 	if (a->ground.type == Entity::GroundLink::ENTITY && a->ground.entity == b) return;
 	if (b->ground.type == Entity::GroundLink::ENTITY && b->ground.entity == a) return;

@@ -2,217 +2,227 @@
 #include "storage.h"
 #include "sprite.h"
 #include "error.h"
-#include "rapidjson/document.h"
-#include "rapidjson/filereadstream.h"
-#include "rapidjson/error/en.h"
+#include "fileutil.h"
 #include <cstdio>
 #include <cerrno>
+#include <cstring>
 
-using namespace rapidjson;
+__forceinline static Either<Error, const Sprite*> read_sprite(FILE* stream, MemoryPool& pool,
+	uint32_t namelen, uint32_t texnamelen, uint32_t n_clips, uint32_t n_frames, uint32_t n_animations);
 
-static Either<const char*, bool> validate_sprite_json(Document& json) {
-	if (!json.IsObject()) return "/ is not an object";
-	if (!json["name"].IsString()) return "/name is not a string";
-	if (!json["spritesheet"].IsString()) return "/spritesheet is not a string";
-	if (!json["clips"].IsArray()) return "/clips is not an array";
-	if (!json["frames"].IsArray()) return "/frames is not an array";
-	if (!json["animations"].IsArray()) return "/animations is not an array";
+Either<Error, const Sprite*> load_sprite(const char* filename) {
+	FILE* stream = fopen(filename, "rb");
 
-	return true;
-}
-
-static Vector2 vector_json(Value& json) {
-	auto offsetJson = json.GetObject();
-	return{
-		offsetJson["x"].GetFloat(),
-		offsetJson["y"].GetFloat()
-	};
-}
-
-static Hitbox hitbox_json(Value& val, MemoryPool& pool) {
-	Hitbox result;
-	auto json = val.GetObject();
-	const char* type = json["type"].GetString();
-
-	if (strcmp(type, "box") == 0) {
-		result.type = Hitbox::BOX;
-		result.box = {
-			json["left"].GetFloat(),
-			json["right"].GetFloat(),
-			json["top"].GetFloat(),
-			json["bottom"].GetFloat()
-		};
+	if (stream == nullptr) {
+		// TODO: check what the actual error was :/
+		return Errors::FileNotFound;
 	}
-	else if (strcmp(type, "circle") == 0) {
-		result.type = Hitbox::CIRCLE;
-		result.circle = {
-			vector_json(json["center"]),
-			json["radius"].GetFloat()
-		};
-	}
-	else if (strcmp(type, "line") == 0) {
-		result.type = Hitbox::LINE;
-		result.line = {
-			vector_json(json["p1"]),
-			vector_json(json["p2"])
-		};
-	}
-	else if (strcmp(type, "oneway") == 0) {
-		result.type = Hitbox::ONEWAY;
-		result.line = {
-			vector_json(json["p1"]),
-			vector_json(json["p2"])
-		};
-	}
-	else if (strcmp(type, "polygon") == 0) {
-		result.type = Hitbox::POLYGON;
-		// TODO
-	}
-	else if (strcmp(type, "composite") == 0) {
-		result.type = Hitbox::COMPOSITE;
-		auto subs_json = json["hitboxes"].GetArray();
-		int n_subs = subs_json.Size();
-		Hitbox* subHits = pool.alloc<Hitbox>(n_subs);
-		for (int i = 0; i < n_subs; ++i) {
-			subHits[i] = hitbox_json(subs_json[i], pool);
-		}
-		// TODO: generate AABB
-	}
-	else {
-		//return Error
-	}
-	return result;
-}
 
-static bool bool_json(Value& json) {
-	return json.IsBool() && json.IsTrue();
-}
-
-static bool bool_json(GenericObject<false, Value>& json_obj, const char* prop) {
-	return json_obj.HasMember(prop) && !(json_obj[prop].IsFalse() || json_obj[prop].IsNull());
-}
-
-const Either<Error, const Sprite*> load_sprite_json(char* filename) {
-	Document json;
-
-	// Parse to json
+	// Check the magic number
 	{
-		FILE* fp = fopen(filename, "rb");
-		if (fp == 0) {
-			return Errors::FileNotFound;
+		char headbytes[SPRITE_MAGIC_NUMBER_LENGTH + 1];
+		headbytes[SPRITE_MAGIC_NUMBER_LENGTH] = 0;
+		if (fread(headbytes, 1, SPRITE_MAGIC_NUMBER_LENGTH, stream) != 11 ||
+			strcmp(headbytes, SPRITE_MAGIC_NUMBER) != 0) {
+			return Errors::InvalidSpriteHeader;
 		}
-		char readbuffer[65536];
-		// Streaming JSON just in case the JSON is somehow larger than 64 KiB...
-		FileReadStream stream(fp, readbuffer, 65536);
-		json.ParseStream(stream);
-		fclose(fp);
 	}
 
-	if (json.HasParseError()) {
-		const char* message = GetParseError_En(json.GetParseError());
-		return DetailedError(Errors::InvalidJson, "%s\n", message);
+	uint32_t namelen, texnamelen, n_clips, n_frames, n_animations,
+		tn_offsets, tn_colliders, tn_hitboxes,
+		tn_vertices, tn_frametimings, tn_stringbytes;
+
+	try {
+		namelen = read<uint32_t>(stream);
+		texnamelen = read<uint32_t>(stream);
+		n_clips = read<uint32_t>(stream);
+		n_frames = read<uint32_t>(stream);
+		n_animations = read<uint32_t>(stream);
+		tn_offsets = read<uint32_t>(stream);
+		tn_colliders = read<uint32_t>(stream);
+		tn_hitboxes = read<uint32_t>(stream);
+		tn_vertices = read<uint32_t>(stream);
+		tn_frametimings = read<uint32_t>(stream);
+		tn_stringbytes = read<uint32_t>(stream);
+	}
+	catch (Error& err) {
+		fclose(stream);
+		return err;
 	}
 
-	auto validation = validate_sprite_json(json);
-	if (validation.isLeft) {
-		return DetailedError(Errors::SpriteLoadJsonInvalid, "%s\n", validation.left);
+	size_t poolsize =
+		sizeof(Sprite) +
+		n_clips * sizeof(SDL_Rect) +
+		n_frames * sizeof(Frame) +
+		n_animations * sizeof(Animation) +
+		(tn_vertices + tn_offsets) * sizeof(Vector2) +
+		tn_colliders * sizeof(Collider) +
+		tn_hitboxes * sizeof(Hitbox) +
+		tn_frametimings * sizeof(FrameTiming) +
+		tn_stringbytes;
+
+	if (poolsize > SPRITE_MAX_SIZE) {
+		fclose(stream);
+		return Errors::SpriteDataTooLarge;
 	}
 
-	// TODO: Determine size needed for everything
+	MemoryPool pool(poolsize);
 
-	MemoryPool pool(65536); // size is temporary
-	Sprite* result = pool.alloc<Sprite>();
+	// Pulled out into an inline function to ensure we never leak the file
+	auto result = read_sprite(stream, pool,
+		namelen, texnamelen, n_clips, n_frames, n_animations);
 
-	// Clips
-	auto clipJson = json["clips"].GetArray();
-
-	int n_clipRects = clipJson.Size();
-
-	SDL_Rect* clipRects = pool.alloc<SDL_Rect>(n_clipRects);
-
-	for (int i = 0; i < n_clipRects; ++i) {
-		auto rectJson = clipJson[i].GetObject();
-		clipRects[i] = {
-			rectJson["x"].GetInt(),
-			rectJson["y"].GetInt(),
-			rectJson["w"].GetInt(),
-			rectJson["h"].GetInt()
-		};
+	if (result.isLeft) {
+		// Clean up from the error
+		pool.free();
 	}
 
-	// Frames
-	auto framesJson = json["frames"].GetArray();
+	fclose(stream);
 
-	int n_frames = framesJson.Size();
-
-	Frame* frames = pool.alloc<Frame>(n_frames);
-
-	for (int i = 0; i < n_frames; ++i) {
-		auto frameJson = framesJson[i].GetObject();
-
-		// colliders
-		auto collisionJson = frameJson["collision"].GetArray();
-		int n_colliders = collisionJson.Size();
-		Collider* collision = pool.alloc<Collider>(n_colliders);
-
-		for (int j = 0; j < n_colliders; ++j) {
-			auto colliderJson = collisionJson[j].GetObject();
-
-			collision[j] = {
-				CollisionType::by_name(colliderJson["type"].GetString()),
-				hitbox_json(colliderJson["hitbox"], pool),
-				bool_json(colliderJson, "solid"),
-				bool_json(colliderJson, "ccd")
-			};
-		}
-
-		frames[i] = {
-			&clipRects[frameJson["clip"].GetInt()],
-			vector_json(frameJson["display"]),
-			vector_json(frameJson["foot"]),
-			Array<const FrameOffset>(nullptr, 0),
-			Array<const Collider>(collision, n_colliders)
-		};
-	}
-
-	// Animations
-
-	auto animationsJson = json["animations"].GetArray();
-	int n_animations = animationsJson.Size();
-	Animation* animations = pool.alloc<Animation>(n_animations);
-
-	for (int i = 0; i < n_animations; ++i) {
-		auto animationJson = animationsJson[i].GetObject();
-
-		auto sequenceJson = animationJson["frames"].GetArray();
-		int n_entries = sequenceJson.Size();
-		FrameTiming* sequence = pool.alloc<FrameTiming>(n_entries);
-
-		for (int j = 0; j < n_entries; ++j) {
-			auto timingJson = sequenceJson[j].GetObject();
-			sequence[j] = {
-				timingJson["duration"].GetFloat(),
-				&frames[timingJson["frame"].GetInt()]
-			};
-		}
-
-		animations[i] = {
-			pool.alloc_str(animationJson["name"].GetString()),
-			Array<const FrameTiming>(sequence, n_entries)
-		};
-	}
-
-	// Now to put it all together!
-
-	*result = {
-		pool.alloc_str(json["name"].GetString()),
-		nullptr,
-		Array<const SDL_Rect>(clipRects, n_clipRects),
-		Array<const Frame>(frames, n_frames),
-		Array<const Animation>(animations, n_animations)
-	};
-
-	// json is RAII; no need to free
-	// return sprite pointer
 	return result;
+}
+
+static char* read_string(FILE* stream, unsigned int len, MemoryPool& pool) {
+	char* str = pool.alloc<char>(len + 1);
+
+	if (str == nullptr) return nullptr; // Memory Pool is full
+
+	if (fread(str, 1, len, stream) != len) return nullptr;
+
+	str[len] = 0;
+	return str;
+}
+
+static Hitbox read_hitbox(FILE* stream, MemoryPool& pool) {
+	Hitbox result;
+
+	result.type = read<Hitbox::Type>(stream);
+	switch (result.type) {
+	case Hitbox::BOX:
+		result.box = read<AABB>(stream);
+		break;
+	case Hitbox::CIRCLE:
+		result.circle = read<Circle>(stream);
+		break;
+	case Hitbox::LINE:
+	case Hitbox::ONEWAY:
+		result.line = read<Line>(stream);
+		break;
+	case Hitbox::POLYGON:
+	{
+		size_t n_vertices = read<uint32_t>(stream);
+		Vector2* vertices = pool.alloc<Vector2>(n_vertices);
+		for (int i = 0; i < n_vertices; ++i) {
+			vertices[i] = read<Vector2>(stream);
+		}
+		result.polygon.vertices = Array<const Vector2>(vertices, n_vertices);
+		//result.polygon.aabb = get_aabb(result.polygon.vertices);
+		break;
+	}
+	case Hitbox::COMPOSITE:
+	{
+		size_t n_subs = read<uint32_t>(stream);
+		Hitbox* subs = pool.alloc<Hitbox>(n_subs);
+		for (int i = 0; i < n_subs; ++i) {
+			subs[i] = read_hitbox(stream, pool);
+		}
+		result.composite.hitboxes = Array<const Hitbox>(subs, n_subs);
+		break;
+	}
+	default:
+		throw Errors::InvalidHitboxType;
+	}
+
+	return result;
+}
+
+__forceinline static Either<Error, const Sprite*> read_sprite(FILE* stream, MemoryPool& pool,
+	uint32_t namelen, uint32_t texnamelen, uint32_t n_clips, uint32_t n_frames, uint32_t n_animations) {
+	// TODO: detect errors
+
+	try {
+		Sprite* sprite = pool.alloc<Sprite>();
+
+		sprite->name = read_string(stream, namelen, pool);
+
+		{
+			// TODO: managed textures
+			char texname[1024];
+			fread(texname, 1, texnamelen, stream);
+			texname[texnamelen] = 0;
+
+			// TODO: Load texture here
+			sprite->texture = nullptr;
+		}
+
+		SDL_Rect* clips = pool.alloc<SDL_Rect>(n_clips);
+		for (int i = 0; i < n_clips; ++i) {
+			// probably a bad assumption - this probably isn't portable
+			clips[i] = read<SDL_Rect>(stream);
+		}
+
+		Frame* frames = pool.alloc<Frame>(n_frames);
+		for (int i = 0; i < n_frames; ++i) {
+			Frame& cur_frame = frames[i];
+			cur_frame.clip = &clips[read<uint32_t>(stream)];
+			cur_frame.display = read<Vector2>(stream);
+			cur_frame.foot = read<Vector2>(stream);
+
+			size_t n_offsets = read<uint32_t>(stream);
+			size_t n_colliders = read<uint32_t>(stream);
+
+			Vector2* offsets = pool.alloc<Vector2>(n_offsets);
+			for (int j = 0; j < n_offsets; ++j) {
+				offsets[j] = read<Vector2>(stream);
+			}
+			cur_frame.offsets = Array<const Vector2>(offsets, n_offsets);
+
+			Collider* colliders = pool.alloc<Collider>(n_colliders);
+			for (int j = 0; j < n_colliders; ++j) {
+				Collider& cur_coll = colliders[j];
+
+				size_t typestrlen = read<uint32_t>(stream);
+				cur_coll.solid = read<bool>(stream);
+				cur_coll.ccd = read<bool>(stream);
+
+				char namebuffer[51];
+				fread(namebuffer, 1, typestrlen, stream);
+				namebuffer[typestrlen] = 0;
+				cur_coll.type = CollisionType::by_name(namebuffer);
+
+				cur_coll.hitbox = read_hitbox(stream, pool);
+			}
+			cur_frame.collision = Array<const Collider>(colliders, n_colliders);
+		}
+
+		Animation* animations = pool.alloc<Animation>(n_animations);
+
+		for (int i = 0; i < n_animations; ++i) {
+			Animation& cur_anim = animations[i];
+
+			size_t namelen = read<uint32_t>(stream);
+			size_t n_timings = read<uint32_t>(stream);
+
+			cur_anim.name = read_string(stream, namelen, pool);
+
+			FrameTiming* timings = pool.alloc<FrameTiming>(n_timings);
+			for (int j = 0; j < n_timings; ++j) {
+				FrameTiming& timing = timings[j];
+
+				timing.delay = read<float>(stream);
+				timing.frame = &frames[read<uint32_t>(stream)];
+			}
+
+			cur_anim.frames = Array<const FrameTiming>(timings, n_timings);
+		}
+
+		sprite->clips = Array<const SDL_Rect>(clips, n_clips);
+		sprite->framedata = Array<const Frame>(frames, n_frames);
+		sprite->animations = Array<const Animation>(animations, n_animations);
+
+		return sprite;
+	}
+	catch (Error& err) {
+		return err;
+	}
 }

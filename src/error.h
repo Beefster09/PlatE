@@ -11,8 +11,7 @@ namespace Errors {
 
 	const error_data
 		BadAlloc = { -9999, "Bad Allocation!" },
-		FileNotFound = { 1, "File not found" },
-		InvalidJson = { 10, "Json is not well-formed" };
+		FileNotFound = { 1, "File not found" };
 }
 
 // Code ranges

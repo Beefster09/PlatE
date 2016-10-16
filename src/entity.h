@@ -28,14 +28,14 @@ struct EntityClass {
 	const Sprite* initial_sprite;
 	size_t initial_animation;
 
-	bool self_colliding: 1; // instances of this entity class collide with other instances of the same class
-
 	//  \- BEHAVIOR -/
 	// Script* init_script;
 	// Script* update_script;
 	// Script* event_handlers;
 	// Array<Parameter> spawn_params;
 };
+
+const EntityClass* get_entity_class(const char* name);
 
 typedef uint32_t EntityId;
 

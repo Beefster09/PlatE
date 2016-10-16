@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
 
 		// test display
 
-		auto test = load_sprite_json("data/test.sprite.json");
+		auto test = load_sprite("data/test.sprite");
 		if (test.isLeft) {
 			printf("Parsing failed: %s\n", test.left.description);
 			SDL_Delay(5000);
@@ -41,8 +41,7 @@ int main(int argc, char* argv[]) {
 			const EntityClass* temp_class = new EntityClass{
 				"LOLOLOLOL",
 				test.right,
-				0,
-				true
+				0
 			};
 
 			auto blah = spawn_entity(system, temp_class, {100, 400});

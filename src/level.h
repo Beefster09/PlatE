@@ -49,8 +49,8 @@ struct SceneObject {
 
 /// Points that spawn entities when within the culling range of the viewport
 struct EntitySpawnPoint {
-	float x, y;
-	const char* e_class; // (file)name of entity class
+	Vector2 location;
+	const EntityClass* e_class; // Entity class
 
 	// Spawn Parameters:
 	// ---- Something like:
@@ -107,6 +107,7 @@ struct Level {
 	Array<const SceneObject> objects;
 	Array<const EntitySpawnPoint> entities;
 
+	// Regions of the level with different rules- such as water... ?
 	Array<const LevelArea> areas;
 
 	// This modifies what is actually fired for edge-entity interactions
@@ -135,12 +136,10 @@ struct Level {
 
 // static to .cpp: RTree* build_spacial_index(Level*);
 
-Either<Error, Level*> load_level(const char* filename);
-
-Either<Error, Level*> load_level_json(const char* filename);
+Either<Error, const Level*> load_level(const char* filename);
 // MAYBE:?
 //Level* load_level(const char* filename, MemoryPool mempool);
-Option<Error> unload_level(Level*);
+Option<Error> unload_level(const Level*);
 
 
 void render_tilemap(Tilemap* map);

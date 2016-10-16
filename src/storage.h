@@ -393,8 +393,12 @@ public:
 	}
 
 	template <class T>
-	T* alloc(size_t n_elements = 1) {
-		if ( (intptr_t)nextAlloc - (intptr_t)pool + n_elements * sizeof(T) > size) return nullptr;
+	T* alloc(int n_elements = 1) {
+		if (n_elements <= 0) return nullptr;
+		if (reinterpret_cast<intptr_t>(nextAlloc) - reinterpret_cast<intptr_t>(pool)
+			+ n_elements * sizeof(T) > size) {
+			return nullptr;
+		}
 		T* result = (T*) nextAlloc;
 		nextAlloc = result + n_elements;
 		return result;

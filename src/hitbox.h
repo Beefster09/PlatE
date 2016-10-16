@@ -12,14 +12,14 @@
 #include "transform.h"
 
 struct Hitbox {
-	enum : char {
-		BOX,	   // Sprite-aligned bounding box
-		CIRCLE,    // Hit-bubble
-		LINE,      // Line
-		ONEWAY,    // Line that only collides from one side. Only works for solid collisions
-		           //   Solid side is the top side for left-to-right horizontal lines
-		POLYGON,   // Convex polygon
-		COMPOSITE  // A combination of hitboxes
+	enum Type : char {
+		BOX       = 'b', // Sprite-aligned bounding box
+		CIRCLE    = 'c', // Hit-bubble
+		LINE      = 'l', // Line
+		ONEWAY    = 'o', // Line that only collides from one side. Only works for solid collisions
+		                 //   Solid side is the top side for left-to-right horizontal lines
+		POLYGON   = 'p', // Convex polygon
+		COMPOSITE = '?'  // A combination of hitboxes
 	} type;
 
 	union {

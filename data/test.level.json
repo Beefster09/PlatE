@@ -1,10 +1,10 @@
 {
 	"name": "Test Level",
 	"boundary": {
-		"x": -1024,
-		"y": -512,
-		"w": 2048,
-		"h": 1024
+		"left": -1024,
+		"top": -512,
+		"right": 1024,
+		"bottom": 512
 	}
 	"tilemaps": [
 	],

@@ -92,5 +92,8 @@
     <ClInclude Include="src\tileset.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\fileutil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
