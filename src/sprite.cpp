@@ -11,6 +11,7 @@ __forceinline static Either<Error, const Sprite*> read_sprite(FILE* stream, Memo
 	uint32_t namelen, uint32_t texnamelen, uint32_t n_clips, uint32_t n_frames, uint32_t n_animations);
 
 Either<Error, const Sprite*> load_sprite(const char* filename) {
+	// TODO/later managed assets
 	FILE* stream = fopen(filename, "rb");
 
 	if (stream == nullptr) {
@@ -93,53 +94,8 @@ static char* read_string(FILE* stream, unsigned int len, MemoryPool& pool) {
 	return str;
 }
 
-static Hitbox read_hitbox(FILE* stream, MemoryPool& pool) {
-	Hitbox result;
-
-	result.type = read<Hitbox::Type>(stream);
-	switch (result.type) {
-	case Hitbox::BOX:
-		result.box = read<AABB>(stream);
-		break;
-	case Hitbox::CIRCLE:
-		result.circle = read<Circle>(stream);
-		break;
-	case Hitbox::LINE:
-	case Hitbox::ONEWAY:
-		result.line = read<Line>(stream);
-		break;
-	case Hitbox::POLYGON:
-	{
-		size_t n_vertices = read<uint32_t>(stream);
-		Vector2* vertices = pool.alloc<Vector2>(n_vertices);
-		for (int i = 0; i < n_vertices; ++i) {
-			vertices[i] = read<Vector2>(stream);
-		}
-		result.polygon.vertices = Array<const Vector2>(vertices, n_vertices);
-		//result.polygon.aabb = get_aabb(result.polygon.vertices);
-		break;
-	}
-	case Hitbox::COMPOSITE:
-	{
-		size_t n_subs = read<uint32_t>(stream);
-		Hitbox* subs = pool.alloc<Hitbox>(n_subs);
-		for (int i = 0; i < n_subs; ++i) {
-			subs[i] = read_hitbox(stream, pool);
-		}
-		result.composite.hitboxes = Array<const Hitbox>(subs, n_subs);
-		break;
-	}
-	default:
-		throw Errors::InvalidHitboxType;
-	}
-
-	return result;
-}
-
 __forceinline static Either<Error, const Sprite*> read_sprite(FILE* stream, MemoryPool& pool,
 	uint32_t namelen, uint32_t texnamelen, uint32_t n_clips, uint32_t n_frames, uint32_t n_animations) {
-	// TODO: detect errors
-
 	try {
 		Sprite* sprite = pool.alloc<Sprite>();
 

@@ -12,7 +12,7 @@
 /// Static tile-based level data. Tiles can be animated.
 struct Tilemap {
 	const Tileset* tileset;
-	Array2D<uint32_t> tiles;
+	Array2D<uint16_t> tiles;
 	int z_order;
 
 	/// position of this tilemap's top-left corner relative to the level's origin
@@ -37,6 +37,7 @@ struct Tilemap {
 struct SceneObject {
 	SDL_Texture* texture;
 	SDL_Rect clip;
+	Vector2 display;
 	Vector2 position;
 	int z_order;
 	float rotation;
@@ -61,8 +62,11 @@ struct EntitySpawnPoint {
 /// They trigger when entities intersect part of the boundary of the level
 // this allows for things like side warps
 struct EdgeTrigger {
-	enum {
-		TOP, BOTTOM, LEFT, RIGHT
+	enum Side : char {
+		TOP    = 't',
+		BOTTOM = 'b',
+		LEFT   = 'l',
+		RIGHT  = 'r'
 	} side;
 
 	/// The center position along that edge

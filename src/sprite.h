@@ -20,8 +20,7 @@
 namespace Errors {
 	const error_data
 		InvalidSpriteHeader = { 201, "Sprite does not begin with the string \"" SPRITE_MAGIC_NUMBER "\"" },
-		SpriteDataTooLarge = { 202, "Sprites are limited to be 1 MB (not including texture)" },
-		InvalidHitboxType = { 190, "Hitbox type is invalid." };
+		SpriteDataTooLarge = { 202, "Sprites are limited to be 1 MB (not including texture)" };
 }
 
 typedef Vector2 FrameOffset;
@@ -51,8 +50,6 @@ struct Sprite {
 	Array<const Frame> framedata;
 	Array<const Animation> animations;
 };
-
-//const Either<Error, const Sprite*> load_sprite_json(char* filename);
 
 Either<Error, const Sprite*> load_sprite(const char* filename); // load from "compiled" format
 void unload_sprite(Sprite* sprite); // deallocates all associated resources

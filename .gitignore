@@ -10,3 +10,6 @@ x64
 /PlatE.vcxproj.user
 /bin/*.pdb
 /tools/__pycache__
+*.pyc
+*.level
+*.sprite

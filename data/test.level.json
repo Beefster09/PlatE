@@ -5,7 +5,7 @@
 		"top": -512,
 		"right": 1024,
 		"bottom": 512
-	}
+	},
 	"tilemaps": [
 	],
 	"objects": [
@@ -17,6 +17,7 @@
 				"w": 32,
 				"h": 32
 			},
+			"display": {"x": 0, "y": 0},
 			"position": {
 				"x": 32,
 				"y": 0
@@ -26,6 +27,8 @@
 		}
 	],
 	"entities": [
+	],
+	"areas": [
 	],
 	"edge_triggers": [
 	]

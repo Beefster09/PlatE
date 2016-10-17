@@ -1,6 +1,7 @@
 
 import struct
 import json
+from hitbox import *
 
 MAGIC_NUMBER = b"PlatEsprite"
 
@@ -30,30 +31,6 @@ ClipRect = struct.Struct("<4I")
 Frame = struct.Struct("<I2f2fII")
 Offset = struct.Struct("<2f")
 
-# Collider data without the Hitbox (due to hitboxes being variable length)
-#  length of the name of the collider type
-#  solid
-#  ccd
-ColliderNoHitbox = struct.Struct("<I??")
-
-# Stuff for hitboxes
-HitboxBox = b'b'
-HitboxLine = b'l'
-HitboxOneway = b'o'
-HitboxCircle = b'c'
-HitboxPolygon = b'p'
-HitboxComposite = b'?'
-
-# These are padded to make it easier to predetermine how much space to allocate
-# by ensuring that the binary is at least as large as the final representation
-#  Currently, the size of the Hitbox struct is 33 bytes
-Box = struct.Struct("<4f")
-Line = struct.Struct("<4f")
-Circle = struct.Struct("<3f")
-HitboxArrayLen = struct.Struct("<I")
-
-Vertex = struct.Struct("<2f")
-
 # Animation
 #  length of the name of the animation
 #  number of frames in the animation
@@ -65,29 +42,18 @@ Animation = struct.Struct("<II")
 AnimFrame = struct.Struct("<fI")
 
 def bake(infile, outfile):
-    sprite = None;
+    sprite = None
     with open(infile, 'r') as f:
-        sprite = json.load(f)
+        try:
+            sprite = json.load(f)
+        except Exception as e:
+            raise Exception("Error in parsing '{}': {}".format(infile, str(e)))
         
     with open(outfile, "wb") as f:
         f.write(MAGIC_NUMBER)
         
         name = sprite["name"].encode()
         texture = sprite["spritesheet"].encode()
-            
-        def count_hitboxes_and_vertices(hitbox):
-            if hitbox["type"] == "polygon":
-                return 1, len(hitbox["vertices"])
-            elif hitbox["type"] == "composite":
-                hitboxes = 1
-                vertices = 0
-                for sub in hitbox["hitboxes"]:
-                    h, v = count_hitboxes_and_vertices(sub)
-                    hitboxes += h
-                    vertices += v
-                return hitboxes, vertices
-            else:
-                return 1, 0
             
         n_stringbytes = len(name) + 1
         n_offsets = 0
@@ -149,64 +115,8 @@ def bake(infile, outfile):
                     offset["y"]
                 ))
                 
-            def write_hitbox(hitbox):
-                type = hitbox["type"]
-                if type == "box":
-                    f.write(HitboxBox)
-                    f.write(Box.pack(
-                        hitbox["left"],
-                        hitbox["right"],
-                        hitbox["top"],
-                        hitbox["bottom"]
-                    ))
-                elif type == "line":
-                    f.write(HitboxLine)
-                    f.write(Line.pack(
-                        hitbox["p1"]["x"],
-                        hitbox["p1"]["y"],
-                        hitbox["p2"]["x"],
-                        hitbox["p2"]["y"]
-                    ))
-                elif type == "oneway":
-                    f.write(HitboxOneway)
-                    f.write(Line.pack(
-                        hitbox["p1"]["x"],
-                        hitbox["p1"]["y"],
-                        hitbox["p2"]["x"],
-                        hitbox["p2"]["y"]
-                    ))
-                elif type == "circle":
-                    f.write(HitboxCircle)
-                    f.write(Line.pack(
-                        hitbox["center"]["x"],
-                        hitbox["center"]["y"],
-                        hitbox["radius"]
-                    ))
-                elif type == "polygon":
-                    f.write(HitboxPolygon)
-                    f.write(HitboxArrayLen.pack(len(hitbox["vertices"])))
-                    for vertex in hitbox["vertices"]:
-                        f.write(Vertex.pack(
-                            vertex["x"],
-                            vertex["y"]
-                        ))
-                elif type == "composite":
-                    f.write(HitboxComposite)
-                    f.write(HitboxArrayLen.pack(len(hitbox["hitboxes"])))
-                    for sub in hitbox["hitboxes"]:
-                        write_hitbox(sub)
-                
             for collider in frame["collision"]:
-                ctype = collider["type"].encode()
-            
-                f.write(ColliderNoHitbox.pack(
-                    len(ctype),
-                    collider.get("solid"),
-                    collider.get("ccd")
-                ))
-                
-                f.write(ctype)
-                write_hitbox(collider["hitbox"])
+                write_collider(f, collider)
                 
                 
         for anim in sprite["animations"]:

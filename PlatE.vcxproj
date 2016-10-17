@@ -183,6 +183,7 @@
     <ClCompile Include="src\entity.cpp" />
     <ClCompile Include="src\event.cpp" />
     <ClCompile Include="src\engine.cpp" />
+    <ClCompile Include="src\fileutil.cpp" />
     <ClCompile Include="src\hitbox.cpp" />
     <ClCompile Include="src\level.cpp" />
     <ClCompile Include="src\main.cpp" />

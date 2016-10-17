@@ -11,6 +11,11 @@
 #include "storage.h"
 #include "transform.h"
 
+namespace Errors {
+	const error_data
+		InvalidHitboxType = { 190, "Hitbox type is invalid." };
+}
+
 struct Hitbox {
 	enum Type : char {
 		BOX       = 'b', // Sprite-aligned bounding box

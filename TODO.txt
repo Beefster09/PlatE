@@ -6,7 +6,8 @@ Up next:
 [X] Solidity
 [ ] Level data (basic)
   [X] Data structures
-  [ ] Parse from JSON
+  [X] Bake JSON
+  [ ] Read in and use
 [X] Line collision
 [ ] Slope following
   [ ] Contact normal/tangent
@@ -16,7 +17,8 @@ High-Level 1.0 Features
 [ ] Fast collision detection
   [X] Rectangle, Line, Circle Collision types
     [ ] Optimize
-  [ ] Tunnelling prevention & raycasting
+  [ ] Tunnelling prevention
+  [ ] Raycasting
   [ ] Spacial indexing for level collision data
   [ ] Entity offscreen culling
   [X] Gravity

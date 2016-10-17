@@ -21,8 +21,6 @@ Of course. The selling point. Other than the obvious of being open-source MIT-li
 ## Influences and inspiration
 Probably my biggest (most recent) inspiration was watching the Indivisible development streams with Mike Z. Seeing the hitbox system and... fighting game physics... applied to a 2D platformer made me realize that that was probably the best way to go about collision detection - lots of smaller hitboxes. Except instead of taking the engine from fighter to platformer, I'd start from scratch from the platformer angle.
 
-My coding style is mostly inspired from Jonathan Blow's demos on his new programming language, with some influences from working in Scala. (Thus why I avoid exceptions and prefer structs over classes) When JAI is ready, this engine will possibly/probably be translated into JAI.
-
 Sonic and Freedom Planet acted as inspiration. I want to make it possible at some point to have loop-de-loop physics and such _just work_ in the engine.
 
 Lastly, Zelda Classic and RPG Maker are sort of my yardsticks when it comes to the engine and editor usability (which will come later and will probably be written in a different language since performance is not so critical there). Making a playable 1st iteration prototype of a game should be simple and fast if you have the assets.
