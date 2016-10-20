@@ -10,8 +10,7 @@ namespace Errors {
 	} error_data;
 
 	const error_data
-		BadAlloc = { -9999, "Bad Allocation!" },
-		FileNotFound = { 1, "File not found" };
+		BadAlloc = { -9999, "Bad Allocation!" };
 }
 
 // Code ranges
@@ -22,6 +21,7 @@ namespace Errors {
 // 200-299: Sprite related errors
 // 300-499: Entity related errors
 // 500-599: Event related errors
+// 600-699: Level related errors
 
 typedef Errors::error_data Error;
 

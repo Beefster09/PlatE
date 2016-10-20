@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <type_traits>
+#include <memory>
 #include "either.h"
 #include "error.h"
 #include "macros.h"
@@ -368,12 +369,16 @@ public:
 	__forceinline size_t height() const { return h; }
 };
 
+// The size increments that memory pools should stay in
+#define MEMORYPOOL_GRANULARITY 512
+
 // If a memory pool is owned, it will free the memory when it goes out of scope. Use with care.
 template <bool owned = false>
 class MemoryPool_raw {
 	void* pool;
 	void* nextAlloc;
 	size_t size;
+	size_t free_space;
 
 public:
 	__forceinline MemoryPool_raw() {}
@@ -381,11 +386,13 @@ public:
 		this->pool = pool;
 		nextAlloc = pool;
 		size = poolsize;
+		free_space = size;
 	}
 	MemoryPool_raw(size_t poolsize) {
-		pool = new uint8_t[poolsize];
+		size = poolsize + (512 - poolsize % MEMORYPOOL_GRANULARITY);
+		pool = operator new (size);
 		nextAlloc = pool;
-		size = poolsize;
+		free_space = size;
 	}
 	MemoryPool_raw(MemoryPool_raw& other) = delete;
 	~MemoryPool_raw() {
@@ -395,12 +402,12 @@ public:
 	template <class T>
 	T* alloc(int n_elements = 1) {
 		if (n_elements <= 0) return nullptr;
-		if (reinterpret_cast<intptr_t>(nextAlloc) - reinterpret_cast<intptr_t>(pool)
-			+ n_elements * sizeof(T) > size) {
+		T* result = reinterpret_cast<T*>(std::align(alignof(T), sizeof(T) * n_elements, nextAlloc, free_space));
+		if (result == nullptr) {
 			return nullptr;
 		}
-		T* result = (T*) nextAlloc;
 		nextAlloc = result + n_elements;
+		free_space -= sizeof(T) * n_elements;
 		return result;
 	}
 
@@ -418,13 +425,26 @@ public:
 	* All memory is free to be overwritten. Destructors will not be run.
 	* Use with care.
 	*/
-	__forceinline void clear() { nextAlloc = pool; }
+	__forceinline void clear() {
+		nextAlloc = pool;
+		free_space = size;
+	}
 
 	/** Free everything allocated in this pool
 	* Destructors will not be run.
 	* Use with care.
 	*/
-	__forceinline void free() { operator delete(pool); }
+	__forceinline void free() {
+		operator delete(pool);
+	}
+
+	__forceinline size_t get_slack() {
+		return free_space;
+	}
+
+	__forceinline size_t get_size() {
+		return size;
+	}
 };
 
 typedef MemoryPool_raw<false> MemoryPool;
@@ -445,7 +465,7 @@ public:
 	template <class T>
 	T* alloc(size_t n_elements = 1) {
 		if ((intptr_t)nextAlloc - (intptr_t)pool + n_elements * sizeof(T) > size) return nullptr;
-		T* result = (T*)nextAlloc;
+		T* result = (T*) std::align(nextAlloc);
 		nextAlloc = result + n_elements;
 		return result;
 	}

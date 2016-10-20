@@ -25,19 +25,19 @@ HitboxArrayLen = struct.Struct("<I")
 
 Vertex = struct.Struct("<2f")
 
-def count_hitboxes_and_vertices(hitbox):
+def count_nested_hitboxes_and_vertices(hitbox):
     if hitbox["type"] == "polygon":
         return 1, len(hitbox["vertices"])
     elif hitbox["type"] == "composite":
-        hitboxes = 1
+        hitboxes = len(hitbox["hitboxes"])
         vertices = 0
         for sub in hitbox["hitboxes"]:
-            h, v = count_hitboxes_and_vertices(sub)
+            h, v = count_nested_hitboxes_and_vertices(sub)
             hitboxes += h
             vertices += v
         return hitboxes, vertices
     else:
-        return 1, 0
+        return 0, 0
 
 def write_hitbox(f, hitbox):
     type = hitbox["type"]

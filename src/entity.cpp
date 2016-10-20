@@ -171,7 +171,7 @@ Either<Error, EntitySystem*> create_entity_system(size_t capacity) {
 	};
 }
 
-Error dispose_entity_system(EntitySystem* system) {
+Option<Error> destroy_entity_system(EntitySystem* system) {
 	// Will probably get more complex later...
 	delete[] system->z_ordered_entities;
 	delete system;

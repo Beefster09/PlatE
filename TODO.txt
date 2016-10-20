@@ -1,23 +1,29 @@
 Up next:
-[X] JSON Sprites (basic)
-[X] Entities, Velocity
-[X] Gravity
-[X] Rect collision
-[X] Solidity
 [ ] Level data (basic)
   [X] Data structures
   [X] Bake JSON
-  [ ] Read in and use
-[X] Line collision
+  [X] Read in
+  [ ] Rendering and collision of level data
 [ ] Slope following
   [ ] Contact normal/tangent
   [ ] Falling off ledges/handing off to adjacent slopes
+[ ] Virtual controller
+  [ ] Data Structures
+  [ ] Detailed state
+  [ ] Configuration
+[ ] Asset manager
+  [ ] Keep track of what is loaded and prevent double-loading
+  [ ] Quasi-GC
+    [ ] When to run?
+    [ ] Analyze dependency/reachability
+    [ ] Unload unused assets
+[ ] Scripting
 
 High-Level 1.0 Features
 [ ] Fast collision detection
   [X] Rectangle, Line, Circle Collision types
     [ ] Optimize
-  [ ] Tunnelling prevention
+  [ ] Tunnelling prevention (ccd)
   [ ] Raycasting
   [ ] Spacial indexing for level collision data
   [ ] Entity offscreen culling
@@ -38,11 +44,18 @@ High-Level 1.0 Features
 [ ] Resolution independence
 [ ] GUI framework
 [ ] Automatic asset management (quasi-GC on Sprites, EntityClasses, etc...)
-[ ] Scripting - probably Lua
-  [ ] Thread-safe! (using one Lua interpreter per core and disallowing coroutines)
+[ ] Console commands
+[ ] Scripting - probably AngelScript
+  [ ] Thread-safe
     [ ] Per-frame entities updates limit scope to ONLY the currently processed entity
     [ ] Event updates allow access to all entities involved
   [ ] Saving system that is easy to use and implement.
     [ ] Persistent data stores at both global scope and map scope.
     [ ] Forwards-compatible data structure (probably a hash table)
+[ ] Controller subsystem
+  [ ] Virtual controller / mappings
+  [ ] Up/Down/Hold/Press/Release/Trigger polling (perhaps as time since last X)
+  [ ] Press/Release/Trigger events
+  [ ] Input history with pattern matching (fightstick type stuff)
+  [ ] Configuration
 [ ] Basic editor (probably in a different language)

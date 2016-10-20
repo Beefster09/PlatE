@@ -12,25 +12,26 @@ __forceinline static Either<Error, const Sprite*> read_sprite(FILE* stream, Memo
 
 Either<Error, const Sprite*> load_sprite(const char* filename) {
 	// TODO/later managed assets
-	FILE* stream = fopen(filename, "rb");
+	auto file = open(filename, "rb");
 
-	if (stream == nullptr) {
-		// TODO: check what the actual error was :/
-		return Errors::FileNotFound;
+	if (file.isLeft) {
+		return file.left;
 	}
+	FILE* stream = file.right;
 
 	// Check the magic number
 	{
 		char headbytes[SPRITE_MAGIC_NUMBER_LENGTH + 1];
 		headbytes[SPRITE_MAGIC_NUMBER_LENGTH] = 0;
-		if (fread(headbytes, 1, SPRITE_MAGIC_NUMBER_LENGTH, stream) != 11 ||
+		if (fread(headbytes, 1, SPRITE_MAGIC_NUMBER_LENGTH, stream) != SPRITE_MAGIC_NUMBER_LENGTH ||
 			strcmp(headbytes, SPRITE_MAGIC_NUMBER) != 0) {
 			return Errors::InvalidSpriteHeader;
 		}
 	}
 
+	// Read the header to determine how much we need to allocate in the memory pool
 	uint32_t namelen, texnamelen, n_clips, n_frames, n_animations,
-		tn_offsets, tn_colliders, tn_hitboxes,
+		tn_offsets, tn_colliders, nested_hitboxes,
 		tn_vertices, tn_frametimings, tn_stringbytes;
 
 	try {
@@ -41,7 +42,7 @@ Either<Error, const Sprite*> load_sprite(const char* filename) {
 		n_animations = read<uint32_t>(stream);
 		tn_offsets = read<uint32_t>(stream);
 		tn_colliders = read<uint32_t>(stream);
-		tn_hitboxes = read<uint32_t>(stream);
+		nested_hitboxes = read<uint32_t>(stream);
 		tn_vertices = read<uint32_t>(stream);
 		tn_frametimings = read<uint32_t>(stream);
 		tn_stringbytes = read<uint32_t>(stream);
@@ -58,7 +59,7 @@ Either<Error, const Sprite*> load_sprite(const char* filename) {
 		n_animations * sizeof(Animation) +
 		(tn_vertices + tn_offsets) * sizeof(Vector2) +
 		tn_colliders * sizeof(Collider) +
-		tn_hitboxes * sizeof(Hitbox) +
+		nested_hitboxes * sizeof(Hitbox) +
 		tn_frametimings * sizeof(FrameTiming) +
 		tn_stringbytes;
 
@@ -67,11 +68,14 @@ Either<Error, const Sprite*> load_sprite(const char* filename) {
 		return Errors::SpriteDataTooLarge;
 	}
 
+	printf("Number of bytes needed for sprite data: %ld\n", poolsize);
 	MemoryPool pool(poolsize);
 
 	// Pulled out into an inline function to ensure we never leak the file
 	auto result = read_sprite(stream, pool,
 		namelen, texnamelen, n_clips, n_frames, n_animations);
+
+	printf("Read sprite data with %ld/%ld bytes of slack in memory pool\n", pool.get_slack(), pool.get_size());
 
 	if (result.isLeft) {
 		// Clean up from the error
@@ -81,17 +85,6 @@ Either<Error, const Sprite*> load_sprite(const char* filename) {
 	fclose(stream);
 
 	return result;
-}
-
-static char* read_string(FILE* stream, unsigned int len, MemoryPool& pool) {
-	char* str = pool.alloc<char>(len + 1);
-
-	if (str == nullptr) return nullptr; // Memory Pool is full
-
-	if (fread(str, 1, len, stream) != len) return nullptr;
-
-	str[len] = 0;
-	return str;
 }
 
 __forceinline static Either<Error, const Sprite*> read_sprite(FILE* stream, MemoryPool& pool,
@@ -133,22 +126,7 @@ __forceinline static Either<Error, const Sprite*> read_sprite(FILE* stream, Memo
 			}
 			cur_frame.offsets = Array<const Vector2>(offsets, n_offsets);
 
-			Collider* colliders = pool.alloc<Collider>(n_colliders);
-			for (int j = 0; j < n_colliders; ++j) {
-				Collider& cur_coll = colliders[j];
-
-				size_t typestrlen = read<uint32_t>(stream);
-				cur_coll.solid = read<bool>(stream);
-				cur_coll.ccd = read<bool>(stream);
-
-				char namebuffer[51];
-				fread(namebuffer, 1, typestrlen, stream);
-				namebuffer[typestrlen] = 0;
-				cur_coll.type = CollisionType::by_name(namebuffer);
-
-				cur_coll.hitbox = read_hitbox(stream, pool);
-			}
-			cur_frame.collision = Array<const Collider>(colliders, n_colliders);
+			cur_frame.collision = read_colliders(stream, n_colliders, pool);
 		}
 
 		Animation* animations = pool.alloc<Animation>(n_animations);

@@ -5,9 +5,22 @@
 #include "storage.h"
 #include "hitbox.h"
 #include "entity.h"
+#include "error.h"
 #include "SDL2\SDL_render.h"
 #include <cstdint>
 #include <array>
+
+
+#define LEVEL_MAGIC_NUMBER "PlatElevel"
+#define LEVEL_MAGIC_NUMBER_LENGTH (sizeof(LEVEL_MAGIC_NUMBER) - 1)
+// 32 MB level data limit- should be big enough for anything sane
+#define LEVEL_MAX_SIZE (1024 * 1024 * 32)
+
+namespace Errors {
+	const error_data
+		InvalidLevelHeader = { 601, "Level does not begin with the string \"" LEVEL_MAGIC_NUMBER "\"" },
+		LevelDataTooLarge = { 602, "Level data is limited to be 32 MB" };
+}
 
 /// Static tile-based level data. Tiles can be animated.
 struct Tilemap {

@@ -4,6 +4,7 @@ import struct
 import json
 import array
 from hitbox import *
+from util import *
 
 assert array.array('H').itemsize == 2
 
@@ -66,11 +67,6 @@ EdgeTriggerSides = {
     "right": b'r'
 }
 
-def str2rgb(s):
-    if s[0] == '#':
-        s = s[1:]
-    return int(s[0:2], 16), int(s[2:4], 16), int(s[4:6], 16)
-
 def bake(infile, outfile):
     level = None
     with open(infile, 'r') as f:
@@ -85,16 +81,16 @@ def bake(infile, outfile):
         name = level["name"].encode()
         
         n_vertices = 0
-        n_hitboxes = 0
+        nested_hitboxes = 0
         n_tiles = 0
         for tilemap in level["tilemaps"]:
             n_tiles += len(tilemap["tiles"][0]) * len(tilemap["tiles"])
         
         for obj in level["objects"]:
             for collider in obj["collision"]:
-                h, v = count_hitboxes_and_vertices(collider["hitbox"])
+                h, v = count_nested_hitboxes_and_vertices(collider["hitbox"])
                 n_vertices += v
-                n_hitboxes += h
+                nested_hitboxes += h
         
         f.write(Header.pack(
             len(name),
@@ -108,7 +104,7 @@ def bake(infile, outfile):
             len(level["areas"]),
             len(level["edge_triggers"]),
             n_vertices,
-            n_hitboxes,
+            nested_hitboxes,
             n_tiles
         ))
         

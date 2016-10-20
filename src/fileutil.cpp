@@ -4,6 +4,7 @@
 #include "error.h"
 #include "hitbox.h"
 #include <cstdio>
+#include <cerrno>
 
 Hitbox read_hitbox(FILE* stream, MemoryPool& pool) {
 	Hitbox result;
@@ -46,4 +47,45 @@ Hitbox read_hitbox(FILE* stream, MemoryPool& pool) {
 	}
 
 	return result;
+}
+
+Array<const Collider> read_colliders(FILE* stream, uint32_t n_colliders, MemoryPool& pool) {
+	Collider* colliders = pool.alloc<Collider>(n_colliders);
+	for (int i = 0; i < n_colliders; ++i) {
+		Collider& cur_coll = colliders[i];
+
+		size_t typestrlen = read<uint32_t>(stream);
+		cur_coll.solid = read<bool>(stream);
+		cur_coll.ccd = read<bool>(stream);
+
+		char namebuffer[51];
+		fread(namebuffer, 1, typestrlen, stream);
+		namebuffer[typestrlen] = 0;
+		cur_coll.type = CollisionType::by_name(namebuffer);
+
+		cur_coll.hitbox = read_hitbox(stream, pool);
+	}
+	return Array<const Collider>(colliders, n_colliders);
+}
+
+Either<Error, FILE*> open(const char* filename, const char* mode) {
+	FILE* file = fopen(filename, mode);
+
+	if (file == nullptr) {
+		// TODO: more descriptive errors...
+		return Errors::CannotOpenFile;
+	}
+
+	return file;
+}
+
+const char* read_string(FILE* stream, unsigned int len, MemoryPool& pool) {
+	char* str = pool.alloc<char>(len + 1);
+
+	if (str == nullptr) return nullptr; // Memory Pool is full
+
+	if (fread(str, 1, len, stream) != len) return nullptr;
+
+	str[len] = 0;
+	return str;
 }

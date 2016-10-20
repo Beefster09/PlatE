@@ -111,7 +111,7 @@ struct EntitySystem {
 };
 
 Either<Error, EntitySystem*> create_entity_system(size_t capacity = ENTITY_SYSTEM_DEFAULT_SIZE);
-Error dispose_entity_system(EntitySystem* system);
+Option<Error> destroy_entity_system(EntitySystem* system);
 
 Either<Error, Entity*> spawn_entity(EntitySystem* system, const EntityClass* e_class, Point2 position);
 Option<Error> destroy_entity(EntitySystem* system, EntityId id);

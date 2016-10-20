@@ -5,6 +5,7 @@
 #include "hitbox.h"
 #include "entity.h"
 #include "either.h"
+#include "level.h"
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
@@ -32,9 +33,17 @@ int main(int argc, char* argv[]) {
 			return 1;
 		}
 
+		auto level = load_level("data/test.level");
+		if (level.isLeft) {
+			printf("Parsing failed: %s\n", level.left.description);
+			SDL_Delay(5000);
+			SDL_Quit();
+			return 1;
+		}
+
 		Engine engine;
 
-		auto es1 = engine.add_entity_system(20);
+		auto es1 = engine.init_entity_system(20);
 		if (!es1.isLeft) {
 			EntitySystem* system = es1.right;
 
@@ -83,6 +92,7 @@ int main(int argc, char* argv[]) {
 
 			SDL_RenderPresent(context);
 
+			// TODO: better FPS/delay calculation
 			int delay = 16 - (SDL_GetTicks() - lastTime);
 			delay = (delay < 0) ? 0 : delay;
 			lastTime = SDL_GetTicks();

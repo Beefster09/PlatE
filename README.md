@@ -15,7 +15,7 @@ Of course. The selling point. Other than the obvious of being open-source MIT-li
   + Specialized: Limited, yet flexible
     * They say limitation is the mother of creativity.
 	* It's better to have something that does a 95% job at 15% of tasks than to have something that does a 15% job at 95% of tasks. Most other game engines are so nebulously multi-purpose that you end up re-inventing the wheel or spend hours trying to comprehend basic things about the system.
-	* There _will_ be a scripting system. At this point, it's unclear to me whether this will be something like Lua or a simpler VM-based homebrew scripting language. I want the scripting engine to be parallelizable somehow, sandboxed, and fast.
+	* There _will_ be a scripting system, most likely AngelScript.
   + It will be easy to implement game saves. (Hopefully as mindlessly as Zelda Classic)
   
 ## Influences and inspiration

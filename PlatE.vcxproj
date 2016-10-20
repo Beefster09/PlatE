@@ -208,6 +208,13 @@
     <ClInclude Include="src\transform.h" />
     <ClInclude Include="src\vectors.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="tools\bake.py" />
+    <None Include="tools\bakelevel.py" />
+    <None Include="tools\bakesprite.py" />
+    <None Include="tools\hitbox.py" />
+    <None Include="tools\util.py" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

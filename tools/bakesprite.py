@@ -2,6 +2,7 @@
 import struct
 import json
 from hitbox import *
+from util import *
 
 MAGIC_NUMBER = b"PlatEsprite"
 
@@ -13,7 +14,7 @@ MAGIC_NUMBER = b"PlatEsprite"
 #  number of animations
 #  total number of offsets
 #  total number of colliders
-#  total number of hitboxes
+#  number of nested hitboxes
 #  total number of polygon vertices
 #  total number of frame timings
 #  total number of bytes needed for strings
@@ -41,6 +42,7 @@ Animation = struct.Struct("<II")
 #  index of the frame
 AnimFrame = struct.Struct("<fI")
 
+
 def bake(infile, outfile):
     sprite = None
     with open(infile, 'r') as f:
@@ -55,22 +57,22 @@ def bake(infile, outfile):
         name = sprite["name"].encode()
         texture = sprite["spritesheet"].encode()
             
-        n_stringbytes = len(name) + 1
+        n_stringbytes = alignstrlen(name)
         n_offsets = 0
         n_colliders = 0
         n_vertices = 0
-        n_hitboxes = 0
+        nested_hitboxes = 0
         for frame in sprite["frames"]:
             n_offsets += len(frame["offsets"])
             n_colliders += len(frame["collision"])
             for collider in frame["collision"]:
-                h, v = count_hitboxes_and_vertices(collider["hitbox"])
-                n_hitboxes += h
+                h, v = count_nested_hitboxes_and_vertices(collider["hitbox"])
+                nested_hitboxes += h
                 n_vertices += v
             
         n_frametimings = 0
         for anim in sprite["animations"]:
-            n_stringbytes += len(anim["name"].encode()) + 1
+            n_stringbytes += alignstrlen(anim["name"])
             n_frametimings += len(anim["frames"])
         
         f.write(Header.pack(
@@ -81,7 +83,7 @@ def bake(infile, outfile):
             len(sprite["animations"]),
             n_offsets,
             n_colliders,
-            n_hitboxes,
+            nested_hitboxes,
             n_vertices,
             n_frametimings,
             n_stringbytes
