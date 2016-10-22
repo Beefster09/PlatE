@@ -68,14 +68,14 @@ Either<Error, const Sprite*> load_sprite(const char* filename) {
 		return Errors::SpriteDataTooLarge;
 	}
 
-	printf("Number of bytes needed for sprite data: %ld\n", poolsize);
+	printf("Number of bytes needed for sprite data: %lld\n", poolsize);
 	MemoryPool pool(poolsize);
 
 	// Pulled out into an inline function to ensure we never leak the file
 	auto result = read_sprite(stream, pool,
 		namelen, texnamelen, n_clips, n_frames, n_animations);
 
-	printf("Read sprite data with %ld/%ld bytes of slack in memory pool\n", pool.get_slack(), pool.get_size());
+	printf("Read sprite data with %lld/%lld bytes of slack in memory pool\n", pool.get_slack(), pool.get_size());
 
 	if (result.isLeft) {
 		// Clean up from the error

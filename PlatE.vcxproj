@@ -100,16 +100,27 @@
       <WarningLevel>Level2</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\Justin\Data\General Files\Projects\PlatE\lib\bin;C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL2main.lib;SDL2.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreLinkEvent>
+      <Command>
+      </Command>
+    </PreLinkEvent>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Build</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -118,8 +129,8 @@
       <WarningLevel>Level2</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
@@ -129,6 +140,16 @@
       <AdditionalDependencies>SDL2main.lib;SDL2.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>bin/$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PreLinkEvent>
+      <Command>
+      </Command>
+    </PreLinkEvent>
+    <PreBuildEvent>
+      <Command>ml64.exe /c  /nologo /Fo build\as_callfunc_x64_msvc_asm.obj /W3 /Zi /Ta lib/angelscript-sdk/source/as_callfunc_x64_msvc_asm.asm</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Build ASM</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -139,8 +160,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
@@ -148,9 +169,20 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\Justin\Data\General Files\Projects\PlatE\lib\bin;C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>SDL2main.lib;SDL2.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreLinkEvent>
+      <Command>
+      </Command>
+    </PreLinkEvent>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Build</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -161,8 +193,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
     </ClCompile>
     <Link>
@@ -174,11 +206,63 @@
       <AdditionalDependencies>SDL2main.lib;SDL2.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>bin/$(TargetName)$(TargetExt)</OutputFile>
     </Link>
+    <PreLinkEvent>
+      <Command>
+      </Command>
+    </PreLinkEvent>
+    <PreBuildEvent>
+      <Command>ml64.exe /c  /nologo /Fo build\as_callfunc_x64_msvc_asm.obj /W3 /Zi /Ta lib/angelscript-sdk/source/as_callfunc_x64_msvc_asm.asm</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Build ASM</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="lib\angelscript-sdk\addon\scriptany\scriptany.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\addon\scriptarray\scriptarray.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\addon\scriptdictionary\scriptdictionary.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\addon\scriptmath\scriptmath.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\addon\scriptmath\scriptmathcomplex.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\addon\scriptstdstring\scriptstdstring.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\addon\scriptstdstring\scriptstdstring_utils.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_atomic.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_builder.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_bytecode.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_callfunc.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_callfunc_arm.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_callfunc_mips.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_callfunc_ppc.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_callfunc_ppc_64.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_callfunc_sh4.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_callfunc_x64_msvc.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_callfunc_x86.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_compiler.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_configgroup.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_context.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_datatype.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_gc.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_generic.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_globalproperty.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_memory.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_module.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_objecttype.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_outputbuffer.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_parser.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_restore.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_scriptcode.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_scriptengine.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_scriptfunction.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_scriptnode.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_scriptobject.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_string.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_string_util.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_thread.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_tokenizer.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_typeinfo.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\source\as_variablescope.cpp" />
     <ClCompile Include="src\direction.cpp" />
     <ClCompile Include="src\entity.cpp" />
     <ClCompile Include="src\event.cpp" />
@@ -192,6 +276,43 @@
     <ClCompile Include="src\vectors.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="lib\angelscript-sdk\source\as_array.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_atomic.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_builder.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_bytecode.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_callfunc.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_compiler.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_config.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_configgroup.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_context.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_criticalsection.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_datatype.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_debug.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_gc.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_generic.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_map.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_memory.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_module.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_namespace.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_objecttype.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_outputbuffer.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_parser.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_property.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_restore.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_scriptcode.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_scriptengine.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_scriptfunction.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_scriptnode.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_scriptobject.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_string.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_string_util.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_symboltable.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_texts.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_thread.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_tokendef.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_tokenizer.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_typeinfo.h" />
+    <ClInclude Include="lib\angelscript-sdk\source\as_variablescope.h" />
     <ClInclude Include="src\fileutil.h" />
     <ClInclude Include="src\level.h" />
     <ClInclude Include="src\macros.h" />
@@ -214,6 +335,9 @@
     <None Include="tools\bakesprite.py" />
     <None Include="tools\hitbox.py" />
     <None Include="tools\util.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="build\as_callfunc_x64_msvc_asm.obj" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

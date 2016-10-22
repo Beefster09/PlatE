@@ -22,6 +22,7 @@ namespace Errors {
 // 300-499: Entity related errors
 // 500-599: Event related errors
 // 600-699: Level related errors
+// 2000-2199: Scripting related errors
 
 typedef Errors::error_data Error;
 

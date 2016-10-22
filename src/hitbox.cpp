@@ -102,8 +102,8 @@ void render_hitbox(SDL_Renderer* context, const Transform& tx, const Hitbox& hit
 	case Hitbox::LINE:
 	case Hitbox::ONEWAY:
 	{
-		Vector2 p1 = (tx * hitbox.line.p1).rounded_down();
-		Vector2 p2 = (tx * hitbox.line.p2).rounded_down();
+		Vector2 p1 = (tx * hitbox.line.p1).floor();
+		Vector2 p2 = (tx * hitbox.line.p2).floor();
 
 		SDL_SetRenderDrawColor(context, color.r, color.g, color.b, 192); // outline
 		SDL_RenderDrawLine(context, (int) p1.x, (int) p1.y, (int) p2.x, (int) p2.y);

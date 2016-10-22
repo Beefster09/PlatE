@@ -126,7 +126,7 @@ private:
 
 public:
 	__forceinline DenseBucket() {}
-	DenseBucket(size_t capacity = BUCKET_DEFAULT_CAPACITY) {
+	DenseBucket(size_t capacity) {
 		this->capacity = capacity;
 		n_items = 0;
 		items = new Data[capacity];

@@ -48,14 +48,14 @@ struct Tilemap {
 
 /// Static elements of the level. Logic cannot be attached.
 struct SceneObject {
-	SDL_Texture* texture;
-	SDL_Rect clip;
+	const Sprite* sprite;
+
 	Vector2 display;
-	Vector2 position;
 	int z_order;
+
+	Vector2 position;
 	float rotation;
 	Vector2 scale;
-	CollisionData collision;
 
 // === Transient Fields ===
 	AABB aabb;

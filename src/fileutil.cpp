@@ -79,6 +79,24 @@ Either<Error, FILE*> open(const char* filename, const char* mode) {
 	return file;
 }
 
+size_t size(FILE* f) {
+	size_t orig_pos = ftell(f);
+
+	fseek(f, 0, SEEK_END);
+	size_t len = ftell(f);
+	fseek(f, orig_pos, SEEK_SET);
+
+	return len;
+}
+
+char* read_all(FILE* f) {
+	size_t len = size(f);
+	char* buffer = new char[len + 1];
+	size_t bytes_read = fread(buffer, 1, len, f);
+	buffer[bytes_read] = 0;
+	return buffer;
+}
+
 const char* read_string(FILE* stream, unsigned int len, MemoryPool& pool) {
 	char* str = pool.alloc<char>(len + 1);
 

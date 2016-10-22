@@ -95,7 +95,7 @@ Vector2 Vector2::fromPolar(float angle, float length) {
 	return{ length * cosf(angle), length * sinf(angle) };
 }
 
-Vector2 Vector2::rounded_down() const {
+Vector2 Vector2::floor() const {
 	return{ floorf(x), floorf(y) };
 }
 
@@ -116,4 +116,84 @@ SDL_Rect to_rect(const Vector2& p1, const Vector2& p2) {
 
 Vector2 lerp(const Vector2& p1, const Vector2& p2, float t) {
 	return p1 + (p2 - p1) * t;
+}
+
+
+void Vector2ListConstructor(float* list, Vector2* self) {
+	new(self) Vector2{ list[0], list[1] };
+}
+
+void RegisterVector2(asIScriptEngine* engine) {
+	int r;
+
+	r = engine->RegisterObjectType("Vector2", sizeof(Vector2),
+		asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<Vector2>() | asOBJ_APP_CLASS_ALLFLOATS); assert(r >= 0);
+
+	// Initializer
+	r = engine->RegisterObjectBehaviour("Vector2", asBEHAVE_LIST_CONSTRUCT, "void f(const int& in) {float, float}",
+		asFUNCTION(Vector2ListConstructor), asCALL_CDECL_OBJLAST); assert(r >= 0);
+
+	// Properties
+	r = engine->RegisterObjectProperty("Vector2", "float x", asOFFSET(Vector2, x)); assert(r >= 0);
+	r = engine->RegisterObjectProperty("Vector2", "float y", asOFFSET(Vector2, y)); assert(r >= 0);
+
+	// Compound assignment operators
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 opAddAssign(const Vector2 &in)",
+		asMETHODPR(Vector2, operator+=, (const Vector2&), void), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 opSubAssign(const Vector2 &in)",
+		asMETHODPR(Vector2, operator-=, (const Vector2&), void), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 opMulAssign(float scalar)",
+		asMETHODPR(Vector2, operator*=, (float), void), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 opDivAssign(float scalar)",
+		asMETHODPR(Vector2, operator/=, (float), void), asCALL_THISCALL); assert(r >= 0);
+
+	// Const operators
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 opAdd(Vector2 &in) const",
+		asMETHODPR(Vector2, operator+, (const Vector2&) const, Vector2), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 opSub(Vector2 &in) const",
+		asMETHODPR(Vector2, operator-, (const Vector2&) const, Vector2), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 opMul(float scalar)",
+		asMETHODPR(Vector2, operator*, (float) const, Vector2), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 opDiv(float scalar)",
+		asMETHODPR(Vector2, operator/, (float) const, Vector2), asCALL_THISCALL); assert(r >= 0);
+	// scalar * vector convenience operator
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 opMul_r(float scalar)",
+		asFUNCTIONPR(operator*, (float, const Vector2&), Vector2), asCALL_CDECL_OBJLAST); assert(r >= 0);
+
+	// Const Methods
+	r = engine->RegisterObjectMethod("Vector2", "float dot(const Vector2 &in) const",
+		asMETHOD(Vector2, dot), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "float cross(const Vector2 &in) const",
+		asMETHOD(Vector2, cross), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "float get_magnitude() const",
+		asMETHOD(Vector2, magnitude), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "float get_angle() const",
+		asMETHOD(Vector2, angle), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 get_floor() const",
+		asMETHOD(Vector2, floor), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 get_normalized() const",
+		asMETHOD(Vector2, normalized), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 projected(Vector2 axis) const",
+		asMETHOD(Vector2, projected), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 rotated(float angle) const",
+		asMETHOD(Vector2, rotated), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 get_rotated90CW() const",
+		asMETHOD(Vector2, rotated90CW), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 get_rotated90CCW() const",
+		asMETHOD(Vector2, rotated90CCW), asCALL_THISCALL); assert(r >= 0);
+
+	r = engine->RegisterObjectMethod("Vector2", "void normalize()",
+		asMETHOD(Vector2, normalize), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "void round_down()",
+		asMETHOD(Vector2, round_down), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "void rotate(float angle)",
+		asMETHOD(Vector2, rotate), asCALL_THISCALL); assert(r >= 0);
+
+	r = engine->RegisterObjectMethod("Vector2", "float distance_to(const Vector2 &in) const",
+		asFUNCTIONPR(distance, (const Vector2&, const Vector2&), float), asCALL_CDECL_OBJFIRST); assert(r >= 0);
+
+	r = engine->RegisterGlobalFunction("float distance (const Vector2 &in, const Vector2 &in)",
+		asFUNCTIONPR(distance, (const Vector2&, const Vector2&), float), asCALL_CDECL); assert(r >= 0);
+	r = engine->RegisterGlobalFunction("Vector2 Vector2_polar (float angle, float length)",
+		asFUNCTION(Vector2::fromPolar), asCALL_CDECL); assert(r >= 0);
 }

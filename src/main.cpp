@@ -43,6 +43,20 @@ int main(int argc, char* argv[]) {
 
 		Engine engine;
 
+		auto mod = engine.load_script("scripts/main.as");
+		if (mod) {
+			printf("Failed to load script 'main.as': %s\n", mod.value.description);
+		}
+		else {
+			auto result = engine.run_script_function("scripts/main.as", "init");
+			if (result.isLeft) {
+				printf("error %d: %s\n", result.left.code, result.left.description);
+			}
+			else {
+				printf("Result of init: %d\n", result.right);
+			}
+		}
+
 		auto es1 = engine.init_entity_system(20);
 		if (!es1.isLeft) {
 			EntitySystem* system = es1.right;

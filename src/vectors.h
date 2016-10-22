@@ -3,6 +3,7 @@
 #include "SDL2/SDL_rect.h"
 #include "storage.h"
 #include <cmath>
+#include "angelscript.h"
 
 struct Vector2 {
 	float x, y;
@@ -14,7 +15,7 @@ struct Vector2 {
 	Vector2 normalized() const;
 	Vector2 projected(Vector2 axis) const;
 	Vector2 rotated(float angle) const;
-	Vector2 rounded_down() const;
+	Vector2 floor() const;
 	inline Vector2 rotated90CW() const { return{ y, -x }; }
 	inline Vector2 rotated90CCW() const { return{ -y, x }; }
 
@@ -38,8 +39,8 @@ struct Vector2 {
 	static const Vector2 up, down, left, right, zero;
 };
 
-__forceinline Vector2 operator * (float scalar, const Vector2 &vec) { return vec * scalar; }
-__forceinline float distance (const Vector2 &lhs, const Vector2 &rhs) { return (rhs - lhs).magnitude(); }
+inline Vector2 operator * (float scalar, const Vector2 &vec) { return vec * scalar; }
+inline float distance (const Vector2 &lhs, const Vector2 &rhs) { return (rhs - lhs).magnitude(); }
 
 typedef Vector2 Point2;
 
@@ -68,3 +69,7 @@ SDL_Rect to_rect(const Vector2& p1, const Vector2& p2);
 AABB to_aabb(Line& line);
 
 Vector2 lerp(const Vector2& p1, const Vector2& p2, float t);
+
+// AngelScript hooks
+void Vector2ListConstructor(float* list, Vector2* self);
+void RegisterVector2(asIScriptEngine* engine);

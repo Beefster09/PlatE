@@ -35,6 +35,8 @@ T read(FILE* stream) {
 }
 
 Either<Error, FILE*> open(const char* file, const char* mode);
+size_t size(FILE* f);
+char* read_all(FILE* f);
 
 Hitbox read_hitbox(FILE* stream, MemoryPool& pool);
 Array<const Collider> read_colliders(FILE* stream, uint32_t n_colliders, MemoryPool& pool);

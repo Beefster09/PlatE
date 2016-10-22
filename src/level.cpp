@@ -65,13 +65,13 @@ Either<Error, const Level*> load_level(const char* filename) {
 		return Errors::LevelDataTooLarge;
 	}
 
-	printf("Number of bytes needed for level data: %ld\n", poolsize);
+	printf("Number of bytes needed for level data: %zd\n", poolsize);
 	MemoryPool pool(poolsize);
 
 	auto result = read_level(stream, pool,
 		namelen, boundary, n_tilemaps, n_objects, n_entities, n_areas, n_edge_triggers);
 
-	printf("Read level data with %ld/%ld bytes of slack in memory pool\n", pool.get_slack(), pool.get_size());
+	printf("Read level data with %zd/%zd bytes of slack in memory pool\n", pool.get_slack(), pool.get_size());
 
 	if (result.isLeft) {
 		// Clean up from the error
@@ -103,7 +103,7 @@ __forceinline static Either<Error, const Level*> read_level(FILE* stream, Memory
 			auto& obj = objects[i];
 
 			uint32_t texnamelen = read<uint32_t>(stream);
-			obj.clip = read<SDL_Rect>(stream);
+			/*obj.clip =*/ read<SDL_Rect>(stream);
 			obj.display = read<Vector2>(stream);
 			obj.position = read<Vector2>(stream);
 			obj.z_order = read<int32_t>(stream);
@@ -118,10 +118,10 @@ __forceinline static Either<Error, const Level*> read_level(FILE* stream, Memory
 				texname[texnamelen] = 0;
 
 				// TODO: Load texture here
-				obj.texture = nullptr;
+				//obj.texture = nullptr;
 			}
 
-			obj.collision = read_colliders(stream, n_colliders, pool);
+			/*obj.collision =*/ read_colliders(stream, n_colliders, pool);
 		}
 
 		EntitySpawnPoint* entities = pool.alloc<EntitySpawnPoint>(n_entities);
