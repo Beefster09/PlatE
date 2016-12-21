@@ -70,14 +70,14 @@ namespace PlatE {
 
 		//ContextPool context_pool;
 	public:
-		Either<Error, EntitySystem*> init_entity_system(size_t size = ENTITY_SYSTEM_DEFAULT_SIZE);
+		Result<EntitySystem*> init_entity_system(size_t size = ENTITY_SYSTEM_DEFAULT_SIZE);
 
 		void update(int delta_time);
 		void render(SDL_Renderer* context);
 		void event(const SDL_Event& event);
 
-		Option<Error> load_script(const char* filename);
-		Either<Error, asDWORD> run_script_function(const char* modname, const char* funcname);
+		Result<> load_script(const char* filename);
+		Result<asDWORD> run_script_function(const char* modname, const char* funcname);
 
 		Engine();
 	};

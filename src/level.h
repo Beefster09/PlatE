@@ -153,10 +153,10 @@ struct Level {
 
 // static to .cpp: RTree* build_spacial_index(Level*);
 
-Either<Error, const Level*> load_level(const char* filename);
+Result<const Level*> load_level(const char* filename);
 // MAYBE:?
 //Level* load_level(const char* filename, MemoryPool mempool);
-Option<Error> unload_level(const Level*);
+Result<> unload_level(const Level*);
 
 
 void render_tilemap(Tilemap* map);

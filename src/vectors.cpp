@@ -1,6 +1,7 @@
 
 #include "vectors.h"
 #include "SDL2/SDL_rect.h"
+#include <string>
 
 Vector2 Vector2::operator + (const Vector2 &that) const {
 	return{ x + that.x, y + that.y };
@@ -118,6 +119,17 @@ Vector2 lerp(const Vector2& p1, const Vector2& p2, float t) {
 	return p1 + (p2 - p1) * t;
 }
 
+// ==== SCRIPTING INTERFACE ====
+
+std::string to_string(const Vector2& vec) {
+	char buf[100];
+	sprintf(buf, "(%g, %g)", vec.x, vec.y);
+	return std::string(buf);
+}
+
+void PrintLn(const Vector2& vec) {
+	printf("(%g, %g)\n", vec.x, vec.y);
+}
 
 void Vector2ListConstructor(float* list, Vector2* self) {
 	new(self) Vector2{ list[0], list[1] };
@@ -189,6 +201,13 @@ void RegisterVector2(asIScriptEngine* engine) {
 	r = engine->RegisterObjectMethod("Vector2", "void rotate(float angle)",
 		asMETHOD(Vector2, rotate), asCALL_THISCALL); assert(r >= 0);
 
+	r = engine->RegisterObjectMethod("Vector2", "string to_string() const",
+		asFUNCTIONPR(to_string, (const Vector2&), std::string), asCALL_CDECL_OBJFIRST); assert(r >= 0);
+	r = engine->RegisterGlobalFunction("string str(const Vector2 &in)",
+		asFUNCTIONPR(to_string, (const Vector2&), std::string), asCALL_CDECL); assert(r >= 0);
+	r = engine->RegisterGlobalFunction("void println(const Vector2 &in)",
+		asFUNCTIONPR(PrintLn, (const Vector2&), void), asCALL_CDECL); assert(r >= 0);
+
 	r = engine->RegisterObjectMethod("Vector2", "float distance_to(const Vector2 &in) const",
 		asFUNCTIONPR(distance, (const Vector2&, const Vector2&), float), asCALL_CDECL_OBJFIRST); assert(r >= 0);
 
@@ -196,4 +215,14 @@ void RegisterVector2(asIScriptEngine* engine) {
 		asFUNCTIONPR(distance, (const Vector2&, const Vector2&), float), asCALL_CDECL); assert(r >= 0);
 	r = engine->RegisterGlobalFunction("Vector2 Vector2_polar (float angle, float length)",
 		asFUNCTION(Vector2::fromPolar), asCALL_CDECL); assert(r >= 0);
+	r = engine->RegisterGlobalFunction("Vector2 lerp (Vector2 &in, Vector2 &in, float)",
+		asFUNCTIONPR(lerp, (const Vector2&, const Vector2&, float), Vector2), asCALL_CDECL); assert(r >= 0);
+
+	// Constants
+
+	r = engine->RegisterGlobalProperty("const Vector2 Vector2_zero", const_cast<Vector2*>(&Vector2::zero)); assert(r >= 0);
+	r = engine->RegisterGlobalProperty("const Vector2 Vector2_up", const_cast<Vector2*>(&Vector2::up)); assert(r >= 0);
+	r = engine->RegisterGlobalProperty("const Vector2 Vector2_down", const_cast<Vector2*>(&Vector2::down)); assert(r >= 0);
+	r = engine->RegisterGlobalProperty("const Vector2 Vector2_left", const_cast<Vector2*>(&Vector2::left)); assert(r >= 0);
+	r = engine->RegisterGlobalProperty("const Vector2 Vector2_right", const_cast<Vector2*>(&Vector2::right)); assert(r >= 0);
 }

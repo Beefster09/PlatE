@@ -13,11 +13,15 @@ Up next:
   [ ] Configuration
 [ ] Asset manager
   [ ] Keep track of what is loaded and prevent double-loading
-  [ ] Quasi-GC
-    [ ] When to run?
-    [ ] Analyze dependency/reachability
-    [ ] Unload unused assets
 [ ] Scripting
+  [X] Angelscript engine init
+  [X] Register Vector2
+  [ ] Register other key types
+  [ ] Engine behavior hooks
+  [ ] System for hooking into entity behavior
+    [ ] Way to inspect initializers and pass parameters to them
+  [ ] Adding input event hooks
+[ ] Game global config
 
 High-Level 1.0 Features
 [ ] Fast collision detection
@@ -42,16 +46,19 @@ High-Level 1.0 Features
 [ ] JSON and binary assets
   [ ] Baking JSON assets into binary assets (external tool)
 [ ] Resolution independence
-[ ] GUI framework
+[ ] GUI engine
+  [ ] Tilable/stretchable frames
+  [ ] Text boxes with options for letter-by-letter, word-by-word, etc...
+  [ ] Edge/component - relative positioning
 [ ] Automatic asset management (quasi-GC on Sprites, EntityClasses, etc...)
 [ ] Console commands
-[ ] Scripting - probably AngelScript
+[ ] Scripting via AngelScript
   [ ] Thread-safe
     [ ] Per-frame entities updates limit scope to ONLY the currently processed entity
     [ ] Event updates allow access to all entities involved
-  [ ] Saving system that is easy to use and implement.
-    [ ] Persistent data stores at both global scope and map scope.
-    [ ] Forwards-compatible data structure (probably a hash table)
+[ ] Saving system that is easy to use and interface with
+  [ ] Persistent data stores at both global scope and map scope.
+  [ ] Forwards-compatible data structure (probably a hash table)
 [ ] Controller subsystem
   [ ] Virtual controller / mappings
   [ ] Up/Down/Hold/Press/Release/Trigger polling (perhaps as time since last X)

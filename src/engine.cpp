@@ -25,9 +25,20 @@ static void MessageCallback(const asSMessageInfo *msg, void *param)
 	printf("%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type, msg->message);
 }
 
-static void PrintLn(std::string& str) {
+static void PrintLn(const std::string& str) {
 	printf("%s\n", str.c_str());
 }
+
+static void PrintLn(long i) {
+	printf("%ld\n", i);
+}
+
+static void PrintLn(float f) {
+	printf("%g\n", f);
+}
+
+static const float pi = static_cast<float>(M_PI);
+static const float tau = static_cast<float>(M_PI * 2);
 
 Engine::Engine() {
 	entity_system = nullptr;
@@ -37,19 +48,31 @@ Engine::Engine() {
 	
 	script_engine->SetMessageCallback(asFUNCTION(MessageCallback), 0, asCALL_CDECL);
 
+	int r;
+
 	RegisterScriptMath(script_engine);
 
-	RegisterVector2(script_engine);
+	r = script_engine->RegisterGlobalProperty("const float PI", const_cast<void*>((const void*)&pi)); assert(r >= 0);
+	r = script_engine->RegisterGlobalProperty("const float TAU", const_cast<void*>((const void*)&tau)); assert(r >= 0);
 
 	RegisterScriptArray(script_engine, true);
 	RegisterStdString(script_engine);
 	RegisterStdStringUtils(script_engine);
 	RegisterScriptDictionary(script_engine);
 
-	int r = script_engine->RegisterGlobalFunction("void println(string& in)", asFUNCTION(PrintLn), asCALL_CDECL); assert(r >= 0);
-
 	// This will probably be useful for game saves... Or maybe I can do better?
 	RegisterScriptAny(script_engine);
+
+	// Util
+	r = script_engine->RegisterGlobalFunction("void println(string& in)",
+		asFUNCTIONPR(PrintLn, (const std::string&), void), asCALL_CDECL); assert(r >= 0);
+	r = script_engine->RegisterGlobalFunction("void println(int64)",
+		asFUNCTIONPR(PrintLn, (long), void), asCALL_CDECL); assert(r >= 0);
+	r = script_engine->RegisterGlobalFunction("void println(float)",
+		asFUNCTIONPR(PrintLn, (float), void), asCALL_CDECL); assert(r >= 0);
+
+	// Game Stuff
+	RegisterVector2(script_engine);
 
 	//context_pool = ContextPool(script_engine);
 }
@@ -66,9 +89,9 @@ void Engine::event(const SDL_Event& event) {
 
 }
 
-Option<Error> Engine::load_script(const char* filename) {
+Result<> Engine::load_script(const char* filename) {
 	auto res = open(filename, "r");
-	if (!res.isLeft) {
+	if (res) {
 		const char* script = read_all(res);
 		if (script == nullptr) return Errors::IncompleteFileRead;
 
@@ -86,10 +109,10 @@ Option<Error> Engine::load_script(const char* filename) {
 			return nullptr;
 		}
 	}
-	else return res.left;
+	else return res.err;
 }
 
-Either<Error, asDWORD> Engine::run_script_function(const char* modname, const char* funcname) {
+Result<asDWORD> Engine::run_script_function(const char* modname, const char* funcname) {
 	asIScriptModule* module = script_engine->GetModule(modname);
 	if (module == nullptr) return Errors::ScriptNoSuchModule;
 	asIScriptFunction* function = module->GetFunctionByName(funcname);
@@ -118,23 +141,21 @@ void PlatE::exit() {
 	SDL_PushEvent(&event);
 }
 
-Either<Error, EntitySystem*> Engine::init_entity_system(size_t capacity) {
+Result<EntitySystem*> Engine::init_entity_system(size_t capacity) {
 	auto result = create_entity_system(capacity);
 
-	if (result.isLeft) {
-		return result.left;
-	}
-	else {
+	if (result) {
 		if (entity_system != nullptr) {
 			auto res = destroy_entity_system(entity_system);
-			if (res) {
-				return res.value;
+			if (!res) {
+				return res.err;
 			}
 		}
 
-		entity_system = result.right;
-		return result.right;
+		entity_system = result.value;
+		return result.value;
 	}
+	else return result.err;
 }
 
 //ContextPool::ContextPool(asIScriptEngine* engine) {

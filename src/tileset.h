@@ -25,7 +25,7 @@ struct Tileset {
 };
 
 
-Either<Error, Tileset*> load_tileset_json(const char* filename);
-Either<Error, Tileset*> load_tileset(const char* filename);
+Result<Tileset*> load_tileset_json(const char* filename);
+Result<Tileset*> load_tileset(const char* filename);
 
 Option<Error> unload_tileset(Tileset*);

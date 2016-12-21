@@ -31,14 +31,13 @@ struct Event {
 	};
 };
 
-// A "queue" that is either being emptied or filled, not both
 struct EventBuffer {
 	SDL_mutex* lock;
 	std::deque<Event> events;
 };
 
-Either<Error, EventBuffer*> create_EventBuffer();
-Error destroy_EventBuffer(EventBuffer* buffer);
-Error push_event(EventBuffer* buffer, Event &ev);
-Either<Error, Event> pop_event(EventBuffer* buffer);
+Result<EventBuffer*> create_EventBuffer();
+Result<void> destroy_EventBuffer(EventBuffer* buffer);
+Result<void> push_event(EventBuffer* buffer, Event &ev);
+Result<Event> pop_event(EventBuffer* buffer);
 bool has_events(EventBuffer* buffer);

@@ -7,17 +7,17 @@
 #include <cerrno>
 #include <cstring>
 
-__forceinline static Either<Error, const Sprite*> read_sprite(FILE* stream, MemoryPool& pool,
+__forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool& pool,
 	uint32_t namelen, uint32_t texnamelen, uint32_t n_clips, uint32_t n_frames, uint32_t n_animations);
 
-Either<Error, const Sprite*> load_sprite(const char* filename) {
+Result<const Sprite*> load_sprite(const char* filename) {
 	// TODO/later managed assets
 	auto file = open(filename, "rb");
 
-	if (file.isLeft) {
-		return file.left;
+	if (!file) {
+		return file.err;
 	}
-	FILE* stream = file.right;
+	FILE* stream = file;
 
 	// Check the magic number
 	{
@@ -68,16 +68,16 @@ Either<Error, const Sprite*> load_sprite(const char* filename) {
 		return Errors::SpriteDataTooLarge;
 	}
 
-	printf("Number of bytes needed for sprite data: %lld\n", poolsize);
+	LOG_VERBOSE("Number of bytes needed for sprite data: %lld\n", poolsize);
 	MemoryPool pool(poolsize);
 
 	// Pulled out into an inline function to ensure we never leak the file
 	auto result = read_sprite(stream, pool,
 		namelen, texnamelen, n_clips, n_frames, n_animations);
 
-	printf("Read sprite data with %lld/%lld bytes of slack in memory pool\n", pool.get_slack(), pool.get_size());
+	LOG_VERBOSE("Read sprite data with %lld/%lld bytes of slack in memory pool\n", pool.get_slack(), pool.get_size());
 
-	if (result.isLeft) {
+	if (!result) {
 		// Clean up from the error
 		pool.free();
 	}
@@ -87,7 +87,7 @@ Either<Error, const Sprite*> load_sprite(const char* filename) {
 	return result;
 }
 
-__forceinline static Either<Error, const Sprite*> read_sprite(FILE* stream, MemoryPool& pool,
+__forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool& pool,
 	uint32_t namelen, uint32_t texnamelen, uint32_t n_clips, uint32_t n_frames, uint32_t n_animations) {
 	try {
 		Sprite* sprite = pool.alloc<Sprite>();

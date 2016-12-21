@@ -4,18 +4,18 @@
 #include "error.h"
 #include "fileutil.h"
 
-__forceinline static Either<Error, const Level*> read_level(FILE* stream, MemoryPool& pool,
+__forceinline static Result<const Level*> read_level(FILE* stream, MemoryPool& pool,
 	uint32_t namelen, AABB boundary, uint32_t n_tilemaps, uint32_t n_objects,
 	uint32_t n_entities, uint32_t n_areas, uint32_t n_edge_triggers);
 
-Either<Error, const Level*> load_level(const char* filename) {
+Result<const Level*> load_level(const char* filename) {
 	// TODO/later managed assets
 	auto file = open(filename, "rb");
 
-	if (file.isLeft) {
-		return file.left;
+	if (!file) {
+		return file.err;
 	}
-	FILE* stream = file.right;
+	FILE* stream = file;
 
 	// Check the magic number
 	{
@@ -73,7 +73,7 @@ Either<Error, const Level*> load_level(const char* filename) {
 
 	printf("Read level data with %zd/%zd bytes of slack in memory pool\n", pool.get_slack(), pool.get_size());
 
-	if (result.isLeft) {
+	if (!result) {
 		// Clean up from the error
 		pool.free();
 	}
@@ -83,7 +83,7 @@ Either<Error, const Level*> load_level(const char* filename) {
 	return result;
 }
 
-__forceinline static Either<Error, const Level*> read_level(FILE* stream, MemoryPool& pool,
+__forceinline static Result<const Level*> read_level(FILE* stream, MemoryPool& pool,
 	uint32_t namelen, AABB boundary, uint32_t n_tilemaps, uint32_t n_objects,
 	uint32_t n_entities, uint32_t n_areas, uint32_t n_edge_triggers) {
 

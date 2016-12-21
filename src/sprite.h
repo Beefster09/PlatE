@@ -51,7 +51,7 @@ struct Sprite {
 	Array<const Animation> animations;
 };
 
-Either<Error, const Sprite*> load_sprite(const char* filename); // load from "compiled" format
-void unload_sprite(Sprite* sprite); // deallocates all associated resources
+Result<const Sprite*> load_sprite(const char* filename); // load from "compiled" format
+Result<void> unload_sprite(Sprite* sprite); // deallocates all associated resources
 
 #endif

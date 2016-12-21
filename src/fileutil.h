@@ -34,7 +34,7 @@ T read(FILE* stream) {
 	return *reinterpret_cast<T*>(buffer);
 }
 
-Either<Error, FILE*> open(const char* file, const char* mode);
+Result<FILE*> open(const char* file, const char* mode);
 size_t size(FILE* f);
 char* read_all(FILE* f);
 

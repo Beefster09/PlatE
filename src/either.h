@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <type_traits>
+#include "error.h"
 
 // I like either types because they're better for error handling than exceptions
 // I also would like to cut the cruft as much as possible here and leave this somewhat unsafe
@@ -14,14 +15,14 @@ template<class Left, class Right> struct Either {
 	};
 	bool isLeft;
 
-	Either(Left l) : isLeft(true), left(l) {}
-	Either(Right r) : isLeft(false), right(r) {}
+	Either(const Left& l) : isLeft(true), left(l) {}
+	Either(const Right& r) : isLeft(false), right(r) {}
 
-	operator Left () const { assert(isLeft && "implicit Either value extraction failed"); return left; }
-	operator Right () const { assert(!isLeft && "implicit Either value extraction failed"); return right; }
+	operator Left& () const { assert(isLeft && "implicit Either value extraction failed"); return left; }
+	operator Right& () const { assert(!isLeft && "implicit Either value extraction failed"); return right; }
 
-	Left leftOrElse(Left default) const { return isLeft ? left : default; }
-	Right rightOrElse(Right default) const { return isLeft ? default : right; }
+	Left leftOrElse(const Left& default) const { return isLeft ? left : default; }
+	Right rightOrElse(const Right& default) const { return isLeft ? default : right; }
 };
 
 template <class T>
@@ -34,7 +35,7 @@ struct Option {
 	};
 	bool isDefined;
 
-	Option(T val) : isDefined(true), value(val) {}
+	Option(const T& val) : isDefined(true), value(val) {}
 	Option(nullptr_t null) : isDefined(false), _empty_() {}
 	Option() : isDefined(false), _empty_() {}
 
@@ -42,4 +43,39 @@ struct Option {
 
 	operator bool() const { return isDefined; }
 	operator T() const { assert(isDefined && "implicit Option value extraction failed"); return value; }
+};
+
+template <class T = void>
+struct Result {
+	union {
+		T value;
+		Error err;
+	};
+	bool isSuccess;
+
+	Result(const T& val) : isSuccess(true), value(val) {}
+	Result(const Error& err) : isSuccess(false), err(err) {}
+
+	T orElse(T default) const {
+		LOG_VERBOSE("Error ignored: %s\n", err.description);
+		return isDefined ? value : default;
+	}
+
+	operator bool() const { return isSuccess; }
+	operator T() const {
+		assert(isSuccess && "implicit Result value extraction failed");
+		return value;
+	}
+};
+
+template <>
+struct Result<void> {
+	Error err;
+	bool isSuccess;
+
+	Result(const Error& err) : isSuccess(false), err(err) {}
+	Result(nullptr_t null) : isSuccess(true), err(SUCCESS) {}
+	Result() : isSuccess(true), err(SUCCESS) {}
+
+	operator bool() const { return isSuccess; }
 };

@@ -344,6 +344,9 @@
     <ClInclude Include="lib\angelscript-sdk\source\as_variablescope.h">
       <Filter>Source Files\angelscript-src</Filter>
     </ClInclude>
+    <ClInclude Include="src\input.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="tools\bakelevel.py">

@@ -2,7 +2,7 @@
 #include "event.h"
 #include <new>
 
-Either<Error, EventBuffer*> create_EventBuffer() {
+Result<EventBuffer*> create_EventBuffer() {
 	SDL_mutex* lock = SDL_CreateMutex();
 	if (lock == nullptr) {
 		return Errors::EventQueueCannotCreateMutex;
@@ -13,18 +13,18 @@ Either<Error, EventBuffer*> create_EventBuffer() {
 	};
 }
 
-Error destroy_EventBuffer(EventBuffer* buffer) {
+Result<> destroy_EventBuffer(EventBuffer* buffer) {
 	SDL_DestroyMutex(buffer->lock);
 	delete buffer; // Cleans up deque because RAII
-	return SUCCESS;
+	return nullptr;
 }
 
 // Synchronized
-Error push_event(EventBuffer* q, Event &ev) {
+Result<> push_event(EventBuffer* q, Event &ev) {
 	if (SDL_LockMutex(q->lock) == 0) {
 		q->events.push_back(ev);
 		if (SDL_UnlockMutex(q->lock) == 0) {
-			return SUCCESS;
+			return nullptr;
 		}
 		else {
 			return Errors::EventQueueCannotUnlockMutex;
@@ -37,7 +37,7 @@ Error push_event(EventBuffer* q, Event &ev) {
 
 
 // NOT synchronized. Should be handled in sequence.
-Either<Error, Event> pop_event(EventBuffer* q) {
+Result<Event> pop_event(EventBuffer* q) {
 	// Check and return error to avoid throwing an exception
 	if (!has_events(q)) return Errors::EventQueueEmpty;
 	// No-throw guarantee!

@@ -26,16 +26,16 @@ int main(int argc, char* argv[]) {
 		// test display
 
 		auto test = load_sprite("data/test.sprite");
-		if (test.isLeft) {
-			printf("Parsing failed: %s\n", test.left.description);
+		if (!test) {
+			printf("Parsing failed: %s\n", test.err.description);
 			SDL_Delay(5000);
 			SDL_Quit();
 			return 1;
 		}
 
 		auto level = load_level("data/test.level");
-		if (level.isLeft) {
-			printf("Parsing failed: %s\n", level.left.description);
+		if (!level) {
+			printf("Parsing failed: %s\n", level.err.description);
 			SDL_Delay(5000);
 			SDL_Quit();
 			return 1;
@@ -44,41 +44,41 @@ int main(int argc, char* argv[]) {
 		Engine engine;
 
 		auto mod = engine.load_script("scripts/main.as");
-		if (mod) {
-			printf("Failed to load script 'main.as': %s\n", mod.value.description);
+		if (!mod) {
+			printf("Failed to load script 'main.as': %s\n", mod.err.description);
 		}
 		else {
 			auto result = engine.run_script_function("scripts/main.as", "init");
-			if (result.isLeft) {
-				printf("error %d: %s\n", result.left.code, result.left.description);
+			if (!result) {
+				printf("error %d: %s\n", result.err.code, result.err.description);
 			}
 			else {
-				printf("Result of init: %d\n", result.right);
+				printf("Result of init: %d\n", result.value);
 			}
 		}
 
 		auto es1 = engine.init_entity_system(20);
-		if (!es1.isLeft) {
-			EntitySystem* system = es1.right;
+		if (es1) {
+			EntitySystem* system = es1.value;
 
 			const EntityClass* temp_class = new EntityClass{
 				"LOLOLOLOL",
-				test.right,
+				test.value,
 				0
 			};
 
 			auto blah = spawn_entity(system, temp_class, {100, 400});
 
-			if (!blah.isLeft) {
-				blah.right->velocity = { 300, -1000 };
-				blah.right->gravity = { 0, 1500 };
+			if (blah) {
+				blah.value->velocity = { 300, -1000 };
+				blah.value->gravity = { 0, 1500 };
 			}
 
 			auto blah2 = spawn_entity(system, temp_class, { 400, 350 });
 
-			if (!blah2.isLeft) {
-				blah2.right->velocity = { 25, -10 };
-				blah2.right->gravity = { 0, 20 };
+			if (blah2) {
+				blah2.value->velocity = { 25, -10 };
+				blah2.value->gravity = { 0, 20 };
 			}
 		}
 

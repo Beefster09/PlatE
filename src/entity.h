@@ -85,10 +85,10 @@ struct Entity {
 
 // === Sprite Data ===
 	const Sprite* sprite;
-	const Animation* curAnimation;
-	uint32_t curAnimFrame;
-	float curFrameTime;
-	const Frame* curFrame;
+	const Animation* animation;
+	uint32_t anim_frame;
+	float frame_time;
+	const Frame* frame;
 
 	// Scripting / Events
 	// Data for storing
@@ -110,12 +110,12 @@ struct EntitySystem {
 	uint32_t next_id;
 };
 
-Either<Error, EntitySystem*> create_entity_system(size_t capacity = ENTITY_SYSTEM_DEFAULT_SIZE);
-Option<Error> destroy_entity_system(EntitySystem* system);
+Result<EntitySystem*> create_entity_system(size_t capacity = ENTITY_SYSTEM_DEFAULT_SIZE);
+Result<> destroy_entity_system(EntitySystem* system);
 
-Either<Error, Entity*> spawn_entity(EntitySystem* system, const EntityClass* e_class, Point2 position);
-Option<Error> destroy_entity(EntitySystem* system, EntityId id);
-Option<Error> destroy_entity(EntitySystem* system, Entity* ent);
+Result<Entity*> spawn_entity(EntitySystem* system, const EntityClass* e_class, Point2 position);
+Result<> destroy_entity(EntitySystem* system, EntityId id);
+Result<> destroy_entity(EntitySystem* system, Entity* ent);
 
 // TODO/later: allow interactions between entity systems and level collision data
 void process_entities(int delta_time, EntitySystem* system);

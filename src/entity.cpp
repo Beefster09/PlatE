@@ -16,8 +16,8 @@ static void detect_collisions(Entity* a, Entity* b, EventBuffer* eventBuffer) {
 	if (a->ground.type == Entity::GroundLink::ENTITY && a->ground.entity == b) return;
 	if (b->ground.type == Entity::GroundLink::ENTITY && b->ground.entity == a) return;
 
-	for (const Collider& collisionA : a->curFrame->collision) {
-		for (const Collider& collisionB : b->curFrame->collision) {
+	for (const Collider& collisionA : a->frame->collision) {
+		for (const Collider& collisionB : b->frame->collision) {
 
 			bool wasCollision = false;
 			if (CollisionType::acts_on(collisionA.type, collisionB.type) ||
@@ -139,7 +139,7 @@ static void move_to_contact_position(
 
 		a->ground.type = Entity::GroundLink::ENTITY;
 		a->ground.entity = b;
-		a->ground.foot_pos = ~b->tx * (a->tx * a->curFrame->foot);
+		a->ground.foot_pos = ~b->tx * (a->tx * a->frame->foot);
 		a->velocity.y = 0.f;
 	}
 	else {
@@ -148,30 +148,30 @@ static void move_to_contact_position(
 
 		b->ground.type = Entity::GroundLink::ENTITY;
 		b->ground.entity = a;
-		b->ground.foot_pos = ~a->tx * (b->tx * b->curFrame->foot);
+		b->ground.foot_pos = ~a->tx * (b->tx * b->frame->foot);
 		b->velocity.y = 0.f;
 	}
 
 	// CONSIDER: 3 solid entities collide at the same time... How should that be resolved?
 }
 
-Either<Error, EntitySystem*> create_entity_system(size_t capacity) {
+Result<EntitySystem*> create_entity_system(size_t capacity) {
 	if (capacity <= 0) {
 		return Errors::EntitySystemInvalidSize;
 	}
 
 	auto eBuffer = create_EventBuffer();
-	if (eBuffer.isLeft) return eBuffer.left;
+	if (!eBuffer) return eBuffer.err;
 
 	return new EntitySystem {
 		SparseBucket<Entity>(capacity),
 		new Entity*[capacity],
-		eBuffer.right,
+		eBuffer.value,
 		1
 	};
 }
 
-Option<Error> destroy_entity_system(EntitySystem* system) {
+Result<> destroy_entity_system(EntitySystem* system) {
 	// Will probably get more complex later...
 	delete[] system->z_ordered_entities;
 	delete system;
@@ -179,7 +179,7 @@ Option<Error> destroy_entity_system(EntitySystem* system) {
 	return SUCCESS;
 }
 
-Either<Error, Entity*> spawn_entity(EntitySystem* system, const EntityClass* entity_class, Point2 position) {
+Result<Entity*> spawn_entity(EntitySystem* system, const EntityClass* entity_class, Point2 position) {
 	const Sprite* initial_sprite = entity_class->initial_sprite;
 	const Animation* initial_animation = &initial_sprite->animations[entity_class->initial_animation];
 	return system->entities.add(Entity{
@@ -203,11 +203,11 @@ Either<Error, Entity*> spawn_entity(EntitySystem* system, const EntityClass* ent
 	});
 }
 
-Option<Error> destroy_entity(EntitySystem* system, Entity* ent) {
+Result<> destroy_entity(EntitySystem* system, Entity* ent) {
 	return system->entities.remove(ent);
 }
 
-Option<Error> destroy_entity(EntitySystem* system, EntityId id) {
+Result<> destroy_entity(EntitySystem* system, EntityId id) {
 	for (Entity& e : system->entities) {
 		if (e.id == id) {
 			return system->entities.remove(&e);
@@ -271,7 +271,7 @@ void process_entities(const int delta_time, EntitySystem* system) {
 			// Set the position by its foot coordinate
 			float dx = e->position.x - e->last_pos.x;
 			e->ground.foot_pos.x += dx;
-			e->position = e->ground.entity->tx * (e->ground.foot_pos - e->curFrame->foot);
+			e->position = e->ground.entity->tx * (e->ground.foot_pos - e->frame->foot);
 
 			//printf("Entity %d is now following entity %d as ground...\n", e->id, e->ground.entity->id);
 			//printf("    It moved %f pixels in the x direction and is being adjusted...\n", dx);
@@ -296,12 +296,12 @@ void process_entities(const int delta_time, EntitySystem* system) {
 	// Process events in the order they arrived
 	while (has_events(system->event_buffer)) {
 		auto poss_ev = pop_event(system->event_buffer);
-		if (poss_ev.isLeft) {
-			printf("Event Queue error %d: %s\n", poss_ev.left.code, poss_ev.left.description);
+		if (!poss_ev) {
+			printf("Event Queue error %d: %s\n", poss_ev.err.code, poss_ev.err.description);
 			continue;
 		}
 		else {
-			Event& ev = poss_ev.right;
+			Event& ev = poss_ev.value;
 			Entity* a = ev.collision.entityA;
 			Entity* b = ev.collision.entityB;
 			const Collider *hitA = ev.collision.hitboxA;
@@ -332,6 +332,6 @@ void render_entities(SDL_Renderer* context, const EntitySystem* system) {
 	for (int i = 0; i < n_entities; ++i) {
 		Entity* e = system->z_ordered_entities[i];
 
-		render_colliders(context, e->tx, e->curFrame->collision);
+		render_colliders(context, e->tx, e->frame->collision);
 	}
 }

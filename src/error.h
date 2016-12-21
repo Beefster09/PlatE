@@ -34,3 +34,44 @@ inline Error DetailedError(const Error& err, const char* format, ...) {
 	vprintf(format, args);
 	return err;
 }
+
+// Debug/Reporting Verbosity Levels
+#define LOGLEVEL_VERBOSE 10
+#define LOGLEVEL_DEBUG 8
+#define LOGLEVEL_NORMAL 5
+#define LOGLEVEL_RELEASE 1
+#define LOGLEVEL_SILENT 0
+// This probably should be moved to config files :-/
+#define LOG_VERBOSITY LOGLEVEL_VERBOSE
+
+#if LOG_VERBOSITY >= LOGLEVEL_VERBOSE
+#define LOG_VERBOSE(...) printf(__VA_ARGS__)
+#define ERR_VERBOSE(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define LOG_VERBOSE(...)
+#define ERR_VERBOSE(...)
+#endif
+
+#if LOG_VERBOSITY >= LOGLEVEL_DEBUG
+#define LOG_DEBUG(...) printf(__VA_ARGS__)
+#define ERR_DEBUG(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define LOG_DEBUG(...)
+#define ERR_DEBUG(...)
+#endif
+
+#if LOG_VERBOSITY >= LOGLEVEL_NORMAL
+#define LOG(...) printf(__VA_ARGS__)
+#define ERR(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define LOG(...)
+#define ERR(...)
+#endif
+
+#if LOG_VERBOSITY >= LOGLEVEL_RELEASE
+#define LOG_RELEASE(...) printf(__VA_ARGS__)
+#define ERR_RELEASE(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define LOG_RELEASE(...)
+#define LOG_RELEASE(...)
+#endif

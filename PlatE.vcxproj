@@ -314,6 +314,7 @@
     <ClInclude Include="lib\angelscript-sdk\source\as_typeinfo.h" />
     <ClInclude Include="lib\angelscript-sdk\source\as_variablescope.h" />
     <ClInclude Include="src\fileutil.h" />
+    <ClInclude Include="src\input.h" />
     <ClInclude Include="src\level.h" />
     <ClInclude Include="src\macros.h" />
     <ClInclude Include="src\direction.h" />

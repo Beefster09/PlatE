@@ -136,7 +136,7 @@ public:
 		delete[] items;
 	}
 
-	Either<Error, Data*> add(Data& data) {
+	Result<Data*> add(Data& data) {
 		if (n_items >= capacity) {
 			return Errors::BucketFull;
 		}
@@ -146,13 +146,13 @@ public:
 		return result;
 	}
 
-	Option<Error> remove(Data* item) {
+	Result<> remove(Data* item) {
 		auto offset = item - items;
 		if (offset < 0 || offset >= n_items) {
 			return Errors::BucketIllegalRemove;
 		}
 		items[offset] = items[--n_items];
-		return Option<Error>::None;
+		return nullptr;
 	}
 
 	__forceinline Data* begin() { return items; }
@@ -199,7 +199,7 @@ public:
 		printf("\n");
 	}
 
-	Either<Error, Data*> add(Data& data) {
+	Result<Data*> add(Data& data) {
 		if (n_items >= capacity) {
 			return Errors::BucketFull;
 		}
@@ -221,7 +221,7 @@ public:
 		return result;
 	}
 
-	Option<Error> remove(Data* item) {
+	Result<> remove(Data* item) {
 		auto offset = item - items;
 		if (offset < 0 || offset >= n_items || !occupation[offset]) {
 			return Errors::BucketIllegalRemove;

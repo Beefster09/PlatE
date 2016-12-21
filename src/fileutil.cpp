@@ -68,7 +68,7 @@ Array<const Collider> read_colliders(FILE* stream, uint32_t n_colliders, MemoryP
 	return Array<const Collider>(colliders, n_colliders);
 }
 
-Either<Error, FILE*> open(const char* filename, const char* mode) {
+Result<FILE*> open(const char* filename, const char* mode) {
 	FILE* file = fopen(filename, mode);
 
 	if (file == nullptr) {
