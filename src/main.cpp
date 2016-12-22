@@ -9,17 +9,24 @@
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
-#include <SDL2/SDL_video.h>
+#include "SDL_gpu.h"
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_timer.h>
 
 using namespace PlatE;
 
+#define SDL_INIT_CUSTOM (SDL_INIT_EVERYTHING & ~SDL_INIT_VIDEO | SDL_INIT_EVENTS)
+
 int main(int argc, char* argv[]) {
-	if (SDL_Init(SDL_INIT_EVERYTHING) >= 0) {
-		SDL_Window* window = SDL_CreateWindow("PlatE", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 480, 0);
-		SDL_Renderer* context = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-		SDL_SetRenderDrawBlendMode(context, SDL_BLENDMODE_BLEND);
+	if (SDL_Init(SDL_INIT_CUSTOM) >= 0) {
+		atexit(SDL_Quit);
+
+		GPU_Target* context = GPU_Init(800, 480, 0);
+		if (context == nullptr) {
+			return EXIT_SDL_GPU_FAIL;
+		}
+
+		atexit(GPU_Quit);
 
 		CollisionType::init("");
 
@@ -29,7 +36,6 @@ int main(int argc, char* argv[]) {
 		if (!test) {
 			printf("Parsing failed: %s\n", test.err.description);
 			SDL_Delay(5000);
-			SDL_Quit();
 			return 1;
 		}
 
@@ -37,7 +43,6 @@ int main(int argc, char* argv[]) {
 		if (!level) {
 			printf("Parsing failed: %s\n", level.err.description);
 			SDL_Delay(5000);
-			SDL_Quit();
 			return 1;
 		}
 
@@ -88,7 +93,6 @@ int main(int argc, char* argv[]) {
 			// process events
 			while (SDL_PollEvent(&curEvent)) {
 				if (curEvent.type == SDL_QUIT) {
-					SDL_Quit();
 					return EXIT_SUCCESS;
 				}
 				engine.event(curEvent);
@@ -99,17 +103,16 @@ int main(int argc, char* argv[]) {
 			engine.update(updateTime - lastTime);
 
 			// render
-			SDL_SetRenderDrawColor(context, 0, 0, 0, 255);
-			SDL_RenderClear(context);
+			GPU_Clear(context);
 
 			engine.render(context);
 
-			SDL_RenderPresent(context);
+			GPU_Flip(context);
 
 			// TODO: better FPS/delay calculation
 			int delay = 16 - (SDL_GetTicks() - lastTime);
 			delay = (delay < 0) ? 0 : delay;
-			lastTime = SDL_GetTicks();
+			lastTime = updateTime;
 			SDL_Delay(delay);
 		}
 

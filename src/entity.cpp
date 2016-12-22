@@ -327,7 +327,7 @@ void process_entities(const int delta_time, EntitySystem* system) {
 	}
 }
 
-void render_entities(SDL_Renderer* context, const EntitySystem* system) {
+void render_entities(GPU_Target* context, const EntitySystem* system) {
 	int n_entities = system->entities.size();
 	for (int i = 0; i < n_entities; ++i) {
 		Entity* e = system->z_ordered_entities[i];

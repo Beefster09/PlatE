@@ -2,7 +2,7 @@
 #include "sprite.h"
 #include "hitbox.h"
 #include "transform.h"
-#include <SDL2/SDL_render.h>
+#include <SDL_gpu.h>
 #include <cstring>
 #include <cassert>
 
@@ -68,25 +68,34 @@ void CollisionType::init(const char* config_file) {
 	// TODO: parse user interactions
 }
 
-void render_hitbox(SDL_Renderer* context, const Transform& tx, const Hitbox& hitbox, const SDL_Color& color) {
-	// TODO: culling
+void render_hitbox(GPU_Target* context, const Transform& tx, const Hitbox& hitbox, const SDL_Color& color) {
+	SDL_Color stroke, fill;
+	stroke = color;
+	stroke.a = 192;
+	fill = color;
+	fill.a = 64;
 
 	switch (hitbox.type) {
 	case Hitbox::BOX:
 	{
-		Vector2 topleft = tx * Vector2{ hitbox.box.left, hitbox.box.top };
-		Vector2 bottomright = tx * Vector2{ hitbox.box.right, hitbox.box.bottom };
-
 		if (tx.is_rect_invariant()) {
-			SDL_Rect rect = to_rect(topleft, bottomright);
+			AABB box = tx * hitbox.box;
 
-			SDL_SetRenderDrawColor(context, color.r, color.g, color.b, 63); // fill
-			SDL_RenderFillRect(context, &rect);
-			SDL_SetRenderDrawColor(context, color.r, color.g, color.b, 192); // outline
-			SDL_RenderDrawRect(context, &rect);
+			GPU_RectangleFilled(context, box.left, box.top, box.right, box.bottom, fill);
+			GPU_Rectangle(context, box.left, box.top, box.right, box.bottom, stroke);
 		}
 		else {
-			// Render it like a polygon :-/
+			Vector2 topleft = tx * Vector2{ hitbox.box.left, hitbox.box.top };
+			Vector2 bottomright = tx * Vector2{ hitbox.box.right, hitbox.box.bottom };
+			float vertices[8] = {
+				topleft.x, topleft.y,
+				bottomright.x, topleft.y,
+				bottomright.x, bottomright.y,
+				topleft.x, bottomright.y
+			};
+
+			GPU_PolygonFilled(context, 4, vertices, fill);
+			GPU_Polygon(context, 4, vertices, stroke);
 		}
 	}
 		break;
@@ -96,7 +105,8 @@ void render_hitbox(SDL_Renderer* context, const Transform& tx, const Hitbox& hit
 		Vector2 bottom = tx * (hitbox.circle.center + Vector2{0.f, hitbox.circle.radius});
 		float radius = distance(bottom, center);
 
-		// TODO: Draw it!
+		GPU_CircleFilled(context, center.x, center.y, radius, fill);
+		GPU_Circle(context, center.x, center.y, radius, stroke);
 	}
 		break;
 	case Hitbox::LINE:
@@ -105,20 +115,29 @@ void render_hitbox(SDL_Renderer* context, const Transform& tx, const Hitbox& hit
 		Vector2 p1 = (tx * hitbox.line.p1).floor();
 		Vector2 p2 = (tx * hitbox.line.p2).floor();
 
-		SDL_SetRenderDrawColor(context, color.r, color.g, color.b, 192); // outline
-		SDL_RenderDrawLine(context, (int) p1.x, (int) p1.y, (int) p2.x, (int) p2.y);
+		GPU_Line(context, p1.x, p1.y, p2.x, p2.y, stroke);
 
 		if (hitbox.type == Hitbox::ONEWAY) {
 			Vector2 tag = (p2 - p1).normalized().rotated90CW() * 3.f;
 			for (float t = 0.25f; t < 1.f; t += 0.25f) {
 				Vector2 tagp1 = lerp(p1, p2, t);
 
-				SDL_RenderDrawLine(context, (int)tagp1.x, (int)tagp1.y, (int)tagp1.x + tag.x, (int)tagp1.y + tag.y);
+				GPU_Line(context, tagp1.x, tagp1.y, tagp1.x + tag.x, tagp1.y + tag.y, stroke);
 			}
 		}
 	}
 		break;
 	case Hitbox::POLYGON:
+	{
+		Vector2 vertexBuf[32];
+		int i = 0;
+		for (auto vertex : hitbox.polygon.vertices) {
+			vertexBuf[i++] = tx * vertex;
+		}
+
+		GPU_PolygonFilled(context, hitbox.polygon.vertices.size(), (float*)vertexBuf, fill);
+		GPU_Polygon(context, hitbox.polygon.vertices.size(), (float*)vertexBuf, stroke);
+	}
 		break;
 	case Hitbox::COMPOSITE:
 		for (const Hitbox& subhit : hitbox.composite.hitboxes) {
@@ -129,7 +148,7 @@ void render_hitbox(SDL_Renderer* context, const Transform& tx, const Hitbox& hit
 }
 
 
-void render_colliders(SDL_Renderer* context, const Transform& tx, const CollisionData& collision) {
+void render_colliders(GPU_Target* context, const Transform& tx, const CollisionData& collision) {
 	for (const Collider& collider: collision) {
 		render_hitbox(context, tx, collider.hitbox, collider.type->color);
 	}

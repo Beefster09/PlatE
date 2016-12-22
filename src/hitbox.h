@@ -10,6 +10,7 @@
 #include "vectors.h"
 #include "storage.h"
 #include "transform.h"
+#include "SDL_gpu.h"
 
 namespace Errors {
 	const error_data
@@ -90,7 +91,7 @@ struct Collider {
 
 typedef Array<const Collider> CollisionData;
 
-void render_colliders(SDL_Renderer* context, const Transform& tx, const CollisionData& colliders);
+void render_colliders(GPU_Target* context, const Transform& tx, const CollisionData& colliders);
 
 // Collision detection :O
 bool hitboxes_overlap(

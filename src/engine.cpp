@@ -81,7 +81,7 @@ void Engine::update(int delta_time) {
 	process_entities(delta_time, entity_system);
 }
 
-void Engine::render(SDL_Renderer* context) {
+void Engine::render(GPU_Target* context) {
 	render_entities(context, entity_system);
 }
 

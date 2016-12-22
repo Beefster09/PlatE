@@ -10,6 +10,7 @@
 #include "vectors.h"
 #include "storage.h"
 #include "transform.h"
+#include "SDL_gpu.h"
 
 #define ENTITY_SYSTEM_DEFAULT_SIZE 256
 
@@ -121,4 +122,4 @@ Result<> destroy_entity(EntitySystem* system, Entity* ent);
 void process_entities(int delta_time, EntitySystem* system);
 
 // self-explanatory
-void render_entities(SDL_Renderer* context, const EntitySystem* system);
+void render_entities(GPU_Target* context, const EntitySystem* system);

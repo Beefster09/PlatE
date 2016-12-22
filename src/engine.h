@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SDL2/SDL_render.h>
+#include "SDL_gpu.h"
 #include <SDL2/SDL_events.h>
 #include "either.h"
 #include "error.h"
@@ -73,7 +73,7 @@ namespace PlatE {
 		Result<EntitySystem*> init_entity_system(size_t size = ENTITY_SYSTEM_DEFAULT_SIZE);
 
 		void update(int delta_time);
-		void render(SDL_Renderer* context);
+		void render(GPU_Target* context);
 		void event(const SDL_Event& event);
 
 		Result<> load_script(const char* filename);

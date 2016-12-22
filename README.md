@@ -1,5 +1,5 @@
 # PlatE
-PlatE aims to be a core executable engine designed for 2D platformers. A game designer need only provide levels, assets, and behaviors. It is meant to be _specialized_ and fast. It is not intended to be as multi-purpose or sophisticated as Unreal,
+PlatE aims to be a core executable engine designed for 2D platformers. A game designer need only provide levels, assets, and behaviors. It is meant to be _specialized_ and fast. It is not intended to be as multi-purpose or sophisticated as Unreal, Unity, and similar engines.
 
 Note that I'm still nailing down what I want out of this engine, so everything here is subject to change.
 

@@ -13,3 +13,5 @@ x64
 *.pyc
 *.level
 *.sprite
+/bin/PlatE.lib
+/bin/PlatE.exp
