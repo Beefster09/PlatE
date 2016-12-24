@@ -122,7 +122,7 @@ void render_hitbox(GPU_Target* context, const Transform& tx, const Hitbox& hitbo
 			for (float t = 0.25f; t < 1.f; t += 0.25f) {
 				Vector2 tagp1 = lerp(p1, p2, t);
 
-				GPU_Line(context, tagp1.x, tagp1.y, tagp1.x + tag.x, tagp1.y + tag.y, stroke);
+				GPU_Line(context, tagp1.x, tagp1.y, tagp1.x + tag.x, tagp1.y + tag.y, fill);
 			}
 		}
 	}
@@ -178,6 +178,7 @@ bool hitboxes_overlap(
 		for (const Hitbox& subHit : a->composite.hitboxes) {
 			if (hitboxes_overlap(&subHit, aTx, aDis, b, bTx, bDis)) return true;
 		}
+		return false;
 	}
 
 	if (b->type == Hitbox::COMPOSITE) {
@@ -185,6 +186,7 @@ bool hitboxes_overlap(
 		for (const Hitbox& subHit : b->composite.hitboxes) {
 			if (hitboxes_overlap(a, aTx, aDis, &subHit, bTx, bDis)) return true;
 		}
+		return false;
 	}
 
 	if (a->type == Hitbox::BOX) {
@@ -192,18 +194,18 @@ bool hitboxes_overlap(
 			if (aTx.is_rect_invariant() && bTx.is_rect_invariant()) {
 				return box_box_test(aTx * a->box, bTx * b->box);
 			}
-			//else {
-			//	if (!box_box_test(aTx * a->box, bTx * b->box)) return false;
+			else {
+				if (!box_box_test(aTx * a->box, bTx * b->box)) return false;
 
-			//	Vector2 polyA[4], polyB[4];
-			//	aabb_to_poly(a->box, polyA);
-			//	aabb_to_poly(b->box, polyB);
-			//	for (int i = 0; i < 4; ++i) {
-			//		polyA[i] = aTx * polyA[i];
-			//		polyB[i] = bTx * polyB[i];
-			//	}
-			//	return poly_poly_test(Array<Point2>(polyA, 4), Array<Point2>(polyB, 4));
-			//}
+				Vector2 polyA[4], polyB[4];
+				aabb_to_poly(a->box, polyA);
+				aabb_to_poly(b->box, polyB);
+				for (int i = 0; i < 4; ++i) {
+					polyA[i] = aTx * polyA[i];
+					polyB[i] = bTx * polyB[i];
+				}
+				return poly_poly_test(Array<Point2>(polyA, 4), Array<Point2>(polyB, 4));
+			}
 		}
 		else if (b->type == Hitbox::CIRCLE) {
 			if (aTx.is_rect_invariant() && bTx.is_uniform_scale()) {
@@ -214,7 +216,7 @@ bool hitboxes_overlap(
 			}
 		}
 		else if (b->type == Hitbox::LINE || b->type == Hitbox::ONEWAY) {
-
+			// TODO
 		}
 	}
 	else if (a->type == Hitbox::CIRCLE) {
@@ -229,6 +231,9 @@ bool hitboxes_overlap(
 		else if (b->type == Hitbox::LINE || b->type == Hitbox::ONEWAY) {
 			if (aTx.is_uniform_scale()) {
 				circle_line_test(aTx * a->circle, bTx * b->line);
+			}
+			else {
+				// TODO
 			}
 		}
 		else if (b->type == Hitbox::BOX) {
@@ -264,7 +269,7 @@ bool hitboxes_overlap(
 	else if (a->type == Hitbox::POLYGON) {
 
 	}
-	printf("WARNING: Reached default case of hitboxes_overlap(...)\n");
+	//assert(false && "WARNING: Reached default case of hitboxes_overlap(...)\n");
 	return false;
 }
 
@@ -339,6 +344,8 @@ bool circle_circle_test(Circle a, Circle b) {
 }
 
 bool circle_line_test(Circle circle, Line line) {
+	// TODO: Optimize
+
 	Vector2 parallel = line.p2 - line.p1;
 	float parlen = parallel.magnitude();
 	parallel /= parlen;
@@ -364,8 +371,12 @@ static bool line_line_test(Line a, Line b) {
 	Vector2 bVec = b.p2 - b.p1;
 	// test intersection via rotation directions
 	// i.e. if for both lines the endpoints of the other line lie on opposite sides of the line
-	// probably inefficient- currently 24 floating point ops + function call overhead
+	// TODO: Unwind and simplify (optimize)
 	return
 		signbit(aVec.cross(b.p1 - a.p1)) != signbit(aVec.cross(b.p2 - a.p1)) &&
 		signbit(bVec.cross(a.p1 - b.p1)) != signbit(bVec.cross(a.p2 - b.p1));
+}
+
+static bool poly_poly_test(Array<Point2> a, Array<Point2> b) {
+	return false;
 }

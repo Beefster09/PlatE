@@ -2,8 +2,10 @@
 #include "entity.h"
 #include "error.h"
 #include "transform.h"
+#include "macros.h"
 
 #include <algorithm>
+#include <cmath>
 
 void update_tx(Entity* a) {
 	a->tx = Transform::scal_rot_trans(a->scale, a->rotation, a->position);
@@ -221,9 +223,7 @@ Result<> destroy_entity(EntitySystem* system, EntityId id) {
 // Move entities and advance animations in parallel
 // Collision detection in parallel -> generating events in shared buffer
 // Process events in main thread (cross-entity interactions are not threadsafe)
-void process_entities(const int delta_time, EntitySystem* system) {
-	const float dt = ((float) delta_time) / 1000.0f;
-
+void process_entities(const float dt, EntitySystem* system) {
 	// TODO/later run scripts
 
 	// Update step: position & frame
@@ -331,6 +331,15 @@ void render_entities(GPU_Target* context, const EntitySystem* system) {
 	int n_entities = system->entities.size();
 	for (int i = 0; i < n_entities; ++i) {
 		Entity* e = system->z_ordered_entities[i];
+		const Sprite* sprite = e->sprite;
+		const Frame* frame = e->animation->frames[e->anim_frame].frame;
+		Vector2 display = frame->display;
+
+		GPU_BlitTransformX(
+			sprite->texture, const_cast<GPU_Rect*>(frame->clip), context,
+			e->position.x, e->position.y, -display.x, -display.y,
+			RAD_TO_DEG(e->rotation), e->scale.x, e->scale.y
+		);
 
 		render_colliders(context, e->tx, e->frame->collision);
 	}

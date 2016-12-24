@@ -115,6 +115,13 @@ SDL_Rect to_rect(const Vector2& p1, const Vector2& p2) {
 	return result;
 }
 
+void aabb_to_poly(const AABB& aabb, Point2* arr) {
+	arr[0] = { aabb.left, aabb.top };
+	arr[1] = { aabb.right, aabb.top };
+	arr[2] = { aabb.right, aabb.bottom };
+	arr[3] = { aabb.left, aabb.bottom };
+}
+
 Vector2 lerp(const Vector2& p1, const Vector2& p2, float t) {
 	return p1 + (p2 - p1) * t;
 }

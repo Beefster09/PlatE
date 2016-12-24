@@ -47,6 +47,7 @@ struct Option {
 
 template <class T = void>
 struct Result {
+	static_assert(!std::is_same<T, Error>::value, "Result<T> cannot have Error as its type");
 	union {
 		T value;
 		Error err;

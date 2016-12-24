@@ -9,8 +9,7 @@
 #include "hitbox.h"
 #include "either.h"
 #include "error.h"
-#include <SDL2/SDL_render.h>
-#include <SDL2/SDL_rect.h>
+#include "SDL_gpu.h"
 
 #define SPRITE_MAGIC_NUMBER "PlatEsprite"
 #define SPRITE_MAGIC_NUMBER_LENGTH (sizeof(SPRITE_MAGIC_NUMBER) - 1)
@@ -26,7 +25,7 @@ namespace Errors {
 typedef Vector2 FrameOffset;
 
 struct Frame {
-	const SDL_Rect* clip; // Points to the same data as the toplevel sprite's texture regions
+	const GPU_Rect* clip; // Points to the same data as the toplevel sprite's texture regions
 	FrameOffset display; // Relative position of the upper-left corner of the texture from the origin
 	FrameOffset foot; // Relative position of the "foot" coordinate which is used to follow slopes.
 	Array<const FrameOffset> offsets; // Other offsets that might be of interest
@@ -45,8 +44,8 @@ struct Animation {
 
 struct Sprite {
 	const char* name;
-	const SDL_Texture* texture;
-	Array<const SDL_Rect> clips;
+	GPU_Image* texture;
+	Array<const GPU_Rect> clips;
 	Array<const Frame> framedata;
 	Array<const Animation> animations;
 };

@@ -25,9 +25,17 @@ public:
 	__forceinline Array() {}
 	Array(Data* data, size_t size) : n_items(size), items(data) {}
 	Array(size_t size) : n_items(size), items((Data*) operator new(size * sizeof(Data))) {}
-	Array(Array& arr) {
-		items = arr.items;
-		n_items = arr.n_items;
+	Array(Array& arr) = default;
+	Array& operator = (Array& arr) = default;
+
+	/// Be VERY cautious when using this function as it could cause memory to be invalidated somewhere else.
+	/// Only use this if you know you are the sole user/owner of an array.
+	void resize(size_t new_size) {
+		Data* new_items = new Data[new_size];
+		memcpy(new_items, items, n_items * sizeof(Data));
+		delete[] items;
+		items = new_items;
+		n_items = new_size;
 	}
 
 	// avoid magical memory management
@@ -72,9 +80,17 @@ public:
 		n_bits = size;
 		bytes = new uint8_t[(size + 7) / 8];
 	}
-	Array(Array& arr) {
-		bytes = arr.bytes;
-		n_bits = arr.n_bits;
+	Array(Array& arr) = default;
+	Array& operator = (Array& arr) = default;
+
+	/// Be VERY cautious when using this function as it could cause memory to be invalidated somewhere else.
+	/// Only use this if you know you are the sole user/owner of an array.
+	void resize(size_t new_size) {
+		uint8_t* new_bytes = new uint8_t[(new_size + 7) / 8];
+		memcpy(new_bytes, bytes, (n_bits + 7) / 8);
+		delete[] bytes;
+		bytes = new_bytes;
+		n_bits = new_size;
 	}
 
 	void free() {
@@ -153,6 +169,13 @@ public:
 		}
 		items[offset] = items[--n_items];
 		return nullptr;
+	}
+
+	void resize(size_t new_capacity) {
+		Data* new_items = new Data[new_capacity];
+		memcpy(new_items, items, n_items * sizeof(Data));
+		delete[] items;
+		items = new_items;
 	}
 
 	__forceinline Data* begin() { return items; }
@@ -237,6 +260,17 @@ public:
 		--n_items;
 		return nullptr;
 	}
+
+	//void resize(size_t new_capacity) {
+	//	occupation.resize(new_capacity);
+	//	for (int i = capacity; i < new_capacity; ++i) {
+	//		occupation.unset(i); // not efficient :-/
+	//	}
+	//	Data* new_items = new Data[new_capacity];
+	//	memcpy(new_items, items, capacity * sizeof(Data));
+	//	delete[] items;
+	//	items = new_items;
+	//}
 
 	class iterator {
 		SparseBucket* b;

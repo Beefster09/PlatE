@@ -265,6 +265,7 @@
     <ClCompile Include="lib\angelscript-sdk\source\as_tokenizer.cpp" />
     <ClCompile Include="lib\angelscript-sdk\source\as_typeinfo.cpp" />
     <ClCompile Include="lib\angelscript-sdk\source\as_variablescope.cpp" />
+    <ClCompile Include="src\assetmanager.cpp" />
     <ClCompile Include="src\direction.cpp" />
     <ClCompile Include="src\entity.cpp" />
     <ClCompile Include="src\event.cpp" />
@@ -274,6 +275,7 @@
     <ClCompile Include="src\level.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\sprite.cpp" />
+    <ClCompile Include="src\tileset.cpp" />
     <ClCompile Include="src\transform.cpp" />
     <ClCompile Include="src\vectors.cpp" />
   </ItemGroup>
@@ -315,6 +317,7 @@
     <ClInclude Include="lib\angelscript-sdk\source\as_tokenizer.h" />
     <ClInclude Include="lib\angelscript-sdk\source\as_typeinfo.h" />
     <ClInclude Include="lib\angelscript-sdk\source\as_variablescope.h" />
+    <ClInclude Include="src\assetmanager.h" />
     <ClInclude Include="src\fileutil.h" />
     <ClInclude Include="src\input.h" />
     <ClInclude Include="src\level.h" />

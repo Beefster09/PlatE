@@ -67,7 +67,7 @@ def write_hitbox(f, hitbox):
         ))
     elif type == "circle":
         f.write(HitboxCircle)
-        f.write(Line.pack(
+        f.write(Circle.pack(
             hitbox["center"]["x"],
             hitbox["center"]["y"],
             hitbox["radius"]
@@ -85,7 +85,7 @@ def write_hitbox(f, hitbox):
         f.write(HitboxArrayLen.pack(len(hitbox["hitboxes"])))
         for sub in hitbox["hitboxes"]:
             write_hitbox(f, sub)
-            
+
 def write_collider(f, collider):
     ctype = collider["type"].encode()
 
@@ -94,6 +94,6 @@ def write_collider(f, collider):
         collider.get("solid"),
         collider.get("ccd")
     ))
-    
+
     f.write(ctype)
     write_hitbox(f, collider["hitbox"])

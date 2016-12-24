@@ -45,33 +45,33 @@ inline Error DetailedError(const Error& err, const char* format, ...) {
 #define LOG_VERBOSITY LOGLEVEL_VERBOSE
 
 #if LOG_VERBOSITY >= LOGLEVEL_VERBOSE
-#define LOG_VERBOSE(...) printf(__VA_ARGS__)
-#define ERR_VERBOSE(...) fprintf(stderr, __VA_ARGS__)
+#define LOG_VERBOSE(fmt, ...) printf(fmt, __VA_ARGS__)
+#define ERR_VERBOSE(fmt, ...) fprintf(stderr, __VA_ARGS__)
 #else
-#define LOG_VERBOSE(...)
-#define ERR_VERBOSE(...)
+#define LOG_VERBOSE(fmt, ...)
+#define ERR_VERBOSE(fmt, ...)
 #endif
 
 #if LOG_VERBOSITY >= LOGLEVEL_DEBUG
-#define LOG_DEBUG(...) printf(__VA_ARGS__)
-#define ERR_DEBUG(...) fprintf(stderr, __VA_ARGS__)
+#define LOG_DEBUG(fmt, ...) printf(fmt, __VA_ARGS__)
+#define ERR_DEBUG(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
 #else
-#define LOG_DEBUG(...)
-#define ERR_DEBUG(...)
+#define LOG_DEBUG(fmt, ...)
+#define ERR_DEBUG(fmt, ...)
 #endif
 
 #if LOG_VERBOSITY >= LOGLEVEL_NORMAL
-#define LOG(...) printf(__VA_ARGS__)
-#define ERR(...) fprintf(stderr, __VA_ARGS__)
+#define LOG(fmt, ...) printf(fmt, __VA_ARGS__)
+#define ERR(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
 #else
-#define LOG(...)
-#define ERR(...)
+#define LOG(fmt, ...)
+#define ERR(fmt, ...)
 #endif
 
 #if LOG_VERBOSITY >= LOGLEVEL_RELEASE
-#define LOG_RELEASE(...) printf(__VA_ARGS__)
-#define ERR_RELEASE(...) fprintf(stderr, __VA_ARGS__)
+#define LOG_RELEASE(fmt, ...) printf(fmt, __VA_ARGS__)
+#define ERR_RELEASE(fmt, ...) fprintf(fmt, stderr, __VA_ARGS__)
 #else
-#define LOG_RELEASE(...)
-#define LOG_RELEASE(...)
+#define LOG_RELEASE(fmt, ...)
+#define LOG_RELEASE(fmt, ...)
 #endif

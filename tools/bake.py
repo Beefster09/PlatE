@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
-import bakesprite
-import bakelevel
+import bakesprite, bakelevel, baketileset
 import sys
 import re
 import traceback
@@ -18,6 +17,10 @@ def main(*files):
                 outfn = infn[:-5]
                 bakelevel.bake(infn, outfn)
                 print ("Baked level:", infn, "-->", outfn)
+            elif infn.endswith(".tileset.json"):
+                outfn = infn[:-5]
+                baketileset.bake(infn, outfn)
+                print ("Baked tileset:", infn, "-->", outfn)
             else:
                 print ("No bake defined for", infn)
         except Exception as e:

@@ -68,14 +68,14 @@ Result<const Sprite*> load_sprite(const char* filename) {
 		return Errors::SpriteDataTooLarge;
 	}
 
-	LOG_VERBOSE("Number of bytes needed for sprite data: %lld\n", poolsize);
+	LOG_VERBOSE("Number of bytes needed for sprite data: %zd\n", poolsize);
 	MemoryPool pool(poolsize);
 
 	// Pulled out into an inline function to ensure we never leak the file
 	auto result = read_sprite(stream, pool,
 		namelen, texnamelen, n_clips, n_frames, n_animations);
 
-	LOG_VERBOSE("Read sprite data with %lld/%lld bytes of slack in memory pool\n", pool.get_slack(), pool.get_size());
+	LOG_VERBOSE("Read sprite data with %zd/%zd bytes of slack in memory pool\n", pool.get_slack(), pool.get_size());
 
 	if (!result) {
 		// Clean up from the error
@@ -94,20 +94,14 @@ __forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool&
 
 		sprite->name = read_string(stream, namelen, pool);
 
-		{
-			// TODO: managed textures
-			char texname[1024];
-			fread(texname, 1, texnamelen, stream);
-			texname[texnamelen] = 0;
+		sprite->texture = read_texture(stream, texnamelen);
 
-			// TODO: Load texture here
-			sprite->texture = nullptr;
-		}
-
-		SDL_Rect* clips = pool.alloc<SDL_Rect>(n_clips);
+		GPU_Rect* clips = pool.alloc<GPU_Rect>(n_clips);
 		for (int i = 0; i < n_clips; ++i) {
-			// probably a bad assumption - this probably isn't portable
-			clips[i] = read<SDL_Rect>(stream);
+			clips[i].x = read<uint32_t>(stream);
+			clips[i].y = read<uint32_t>(stream);
+			clips[i].w = read<uint32_t>(stream);
+			clips[i].h = read<uint32_t>(stream);
 		}
 
 		Frame* frames = pool.alloc<Frame>(n_frames);
@@ -150,7 +144,7 @@ __forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool&
 			cur_anim.frames = Array<const FrameTiming>(timings, n_timings);
 		}
 
-		sprite->clips = Array<const SDL_Rect>(clips, n_clips);
+		sprite->clips = Array<const GPU_Rect>(clips, n_clips);
 		sprite->framedata = Array<const Frame>(frames, n_frames);
 		sprite->animations = Array<const Animation>(animations, n_animations);
 

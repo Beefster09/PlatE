@@ -186,6 +186,12 @@
     <ClCompile Include="lib\angelscript-sdk\addon\scriptstdstring\scriptstdstring_utils.cpp">
       <Filter>Source Files\angelscript-addons</Filter>
     </ClCompile>
+    <ClCompile Include="src\tileset.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\assetmanager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\sprite.h">
@@ -345,6 +351,9 @@
       <Filter>Source Files\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="src\input.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\assetmanager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

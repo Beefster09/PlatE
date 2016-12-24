@@ -1,4 +1,4 @@
-
+#include "assetmanager.h"
 #include "storage.h"
 #include "fileutil.h"
 #include "error.h"
@@ -97,6 +97,12 @@ char* read_all(FILE* f) {
 	return buffer;
 }
 
+char* copy(const char* str) {
+	char* ret = new char[strlen(str)];
+	strcpy(ret, str);
+	return ret;
+}
+
 const char* read_string(FILE* stream, unsigned int len, MemoryPool& pool) {
 	char* str = pool.alloc<char>(len + 1);
 
@@ -106,4 +112,25 @@ const char* read_string(FILE* stream, unsigned int len, MemoryPool& pool) {
 
 	str[len] = 0;
 	return str;
+}
+
+GPU_Image* read_texture(FILE* stream, uint32_t filenamelen) {
+	char texname[1024];
+	fread(texname, 1, filenamelen, stream);
+	texname[filenamelen] = 0;
+
+	auto am = AssetManager::get();
+	GPU_Image* maybe = const_cast<GPU_Image*>(am.retrieve<GPU_Image>(texname));
+	if (maybe != nullptr) {
+		return maybe;
+	}
+
+	GPU_Image* real = GPU_LoadImage(texname);
+	if (real == nullptr) {
+		LOG_RELEASE("Unable to load texture from file %s (%s)\n", texname, GPU_PopErrorCode().details);
+		return nullptr;
+	}
+	am.store(texname, real);
+
+	return real;
 }

@@ -16,8 +16,8 @@ struct Vector2 {
 	Vector2 projected(Vector2 axis) const;
 	Vector2 rotated(float angle) const;
 	Vector2 floor() const;
-	inline Vector2 rotated90CW() const { return{ y, -x }; }
-	inline Vector2 rotated90CCW() const { return{ -y, x }; }
+	inline Vector2 rotated90CW() const { return{ -y, x }; }
+	inline Vector2 rotated90CCW() const { return{ y, -x }; }
 
 	Vector2 operator + (const Vector2&) const;
 	Vector2 operator - (const Vector2&) const;

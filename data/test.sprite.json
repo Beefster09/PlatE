@@ -1,6 +1,6 @@
 {
 	"name": "Test Json Sprite",
-	"spritesheet": "O_O.png",
+	"spritesheet": "assets/TestSprite.png",
 	"clips": [
 		{"x": 0,   "y": 0,   "w": 128, "h": 128},
 		{"x": 128, "y": 0,   "w": 128, "h": 128},
@@ -181,13 +181,39 @@
 				{
 					"type": "Hurtbox",
 					"hitbox": {
-						"type": "box",
-						"left": -48,
-						"top": -48,
-						"right": 48,
-						"bottom": 48
+						"type": "circle",
+						"center": {"x": 0, "y": 0},
+                        "radius": 48
 					}
-				}
+				},
+                {
+                    "type": "Damage",
+                    "hitbox": {
+                        "type": "composite",
+                        "hitboxes": [
+                            {
+                                "type": "line",
+                                "p1": {"x": -10, "y": -10},
+                                "p2": {"x": 10, "y": -10}
+                            },
+                            {
+                                "type": "oneway",
+                                "p1": {"x": -10, "y": 10},
+                                "p2": {"x": 10, "y": 10}
+                            },
+                            {
+                                "type": "polygon",
+                                "vertices": [
+                                    {"x": 0, "y": -40},
+                                    {"x": 8, "y": -32},
+                                    {"x": 5, "y": -24},
+                                    {"x": -5, "y": -24},
+                                    {"x": -8, "y": -32}
+                                ]
+                            }
+                        ]
+                    }
+                }
 			]
 		}
 	],

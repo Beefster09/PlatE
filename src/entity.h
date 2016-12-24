@@ -119,7 +119,7 @@ Result<> destroy_entity(EntitySystem* system, EntityId id);
 Result<> destroy_entity(EntitySystem* system, Entity* ent);
 
 // TODO/later: allow interactions between entity systems and level collision data
-void process_entities(int delta_time, EntitySystem* system);
+void process_entities(const float delta_time, EntitySystem* system);
 
 // self-explanatory
 void render_entities(GPU_Target* context, const EntitySystem* system);

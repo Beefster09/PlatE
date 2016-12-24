@@ -37,7 +37,9 @@ T read(FILE* stream) {
 Result<FILE*> open(const char* file, const char* mode);
 size_t size(FILE* f);
 char* read_all(FILE* f);
+char* copy(const char* str);
 
 Hitbox read_hitbox(FILE* stream, MemoryPool& pool);
 Array<const Collider> read_colliders(FILE* stream, uint32_t n_colliders, MemoryPool& pool);
+GPU_Image* read_texture(FILE* stream, uint32_t filenamelen);
 const char* read_string(FILE* stream, unsigned int len, MemoryPool& pool);

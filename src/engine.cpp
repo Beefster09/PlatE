@@ -1,5 +1,6 @@
 
-#include <SDL2\SDL_mutex.h>
+//#include <SDL2/SDL_mutex.h>
+#include <SDL2/SDL_timer.h>
 
 #include "engine.h"
 #include "entity.h"
@@ -14,6 +15,10 @@
 #include "scriptany\scriptany.h"
 
 using namespace PlatE;
+
+Engine Engine::singleton;
+
+const char* MAIN_SCRIPT_FILENAME = "scripts/main.as"; // Subject to change
 
 static void MessageCallback(const asSMessageInfo *msg, void *param)
 {
@@ -35,6 +40,22 @@ static void PrintLn(long i) {
 
 static void PrintLn(float f) {
 	printf("%g\n", f);
+}
+
+static float TimeSeconds() {
+	return Engine::get().get_time();
+}
+
+float Engine::get_time() {
+	return static_cast<float>(SDL_GetTicks() - init_time) / 1000.f;
+}
+
+static void Engine_pause() {
+	Engine::get().pause();
+}
+
+static void Engine_resume() {
+	Engine::get().resume();
 }
 
 static const float pi = static_cast<float>(M_PI);
@@ -74,11 +95,51 @@ Engine::Engine() {
 	// Game Stuff
 	RegisterVector2(script_engine);
 
+	// Global engine stuff
+	r = script_engine->RegisterGlobalFunction("float Engine_time_seconds()",
+		asFUNCTION(TimeSeconds), asCALL_CDECL); assert(r >= 0);
+	r = script_engine->RegisterGlobalFunction("void Engine_pause()",
+		asFUNCTION(Engine_pause), asCALL_CDECL); assert(r >= 0);
+	r = script_engine->RegisterGlobalFunction("void Engine_resume()",
+		asFUNCTION(Engine_resume), asCALL_CDECL); assert(r >= 0);
 	//context_pool = ContextPool(script_engine);
 }
 
+void Engine::init() {
+	load_main_script();
+	script_main_context = script_engine->CreateContext();
+
+	script_main_context->Prepare(scriptfunc_init);
+
+	int r = script_main_context->Execute();
+	if (r == asEXECUTION_FINISHED) {
+		script_main_context->Unprepare();
+	}
+	else {
+		perror("Fatal error: init script did not return.");
+		abort();
+	}
+
+	init_time = SDL_GetTicks();
+}
+
 void Engine::update(int delta_time) {
-	process_entities(delta_time, entity_system);
+	float delta_seconds = static_cast<float>(delta_time) / 1000.f;
+	if (!paused) {
+		process_entities(delta_seconds, entity_system);
+	}
+
+	script_main_context->Prepare(scriptfunc_update);
+	script_main_context->SetArgFloat(0, delta_seconds);
+
+	int r = script_main_context->Execute();
+	if (r == asEXECUTION_FINISHED) {
+		script_main_context->Unprepare();
+	}
+	else {
+		perror("Fatal error: tick script did not return.");
+		abort();
+	}
 }
 
 void Engine::render(GPU_Target* context) {
@@ -89,7 +150,7 @@ void Engine::event(const SDL_Event& event) {
 
 }
 
-Result<> Engine::load_script(const char* filename) {
+Result<asIScriptModule*> Engine::load_script(const char* filename) {
 	auto res = open(filename, "r");
 	if (res) {
 		const char* script = read_all(res);
@@ -106,13 +167,38 @@ Result<> Engine::load_script(const char* filename) {
 			return Errors::ScriptCompileError;
 		}
 		else {
-			return nullptr;
+			return module;
 		}
 	}
 	else return res.err;
 }
 
-Result<asDWORD> Engine::run_script_function(const char* modname, const char* funcname) {
+void Engine::load_main_script() {
+	auto main_script = load_script(MAIN_SCRIPT_FILENAME);
+	if (main_script) {
+		auto module = main_script.value;
+
+		scriptfunc_init = module->GetFunctionByDecl("void init()");
+
+		scriptfunc_update = module->GetFunctionByDecl("void update(float)");
+
+		if (scriptfunc_init == nullptr) {
+			perror("Fatal error: void init() is missing.\n");
+			abort();
+		}
+
+		if (scriptfunc_update == nullptr) {
+			perror("Fatal error: void tick(float) is missing.\n");
+			abort();
+		}
+	}
+	else {
+		perror("Fatal error: could not load main script!\n");
+		abort();
+	}
+}
+
+Result<asDWORD> Engine::run_script_function_byname(const char* modname, const char* funcname) {
 	asIScriptModule* module = script_engine->GetModule(modname);
 	if (module == nullptr) return Errors::ScriptNoSuchModule;
 	asIScriptFunction* function = module->GetFunctionByName(funcname);

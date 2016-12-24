@@ -6,6 +6,7 @@
 #include "entity.h"
 #include "either.h"
 #include "level.h"
+#include "assetmanager.h"
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
@@ -24,6 +25,14 @@ int main(int argc, char* argv[]) {
 		GPU_Target* context = GPU_Init(800, 480, 0);
 		if (context == nullptr) {
 			return EXIT_SDL_GPU_FAIL;
+		}
+
+		// Flush the events so the window will show
+		SDL_Event curEvent;
+		while (SDL_PollEvent(&curEvent)) {
+			if (curEvent.type == SDL_QUIT) {
+				return EXIT_SUCCESS;
+			}
 		}
 
 		atexit(GPU_Quit);
@@ -46,21 +55,7 @@ int main(int argc, char* argv[]) {
 			return 1;
 		}
 
-		Engine engine;
-
-		auto mod = engine.load_script("scripts/main.as");
-		if (!mod) {
-			printf("Failed to load script 'main.as': %s\n", mod.err.description);
-		}
-		else {
-			auto result = engine.run_script_function("scripts/main.as", "init");
-			if (!result) {
-				printf("error %d: %s\n", result.err.code, result.err.description);
-			}
-			else {
-				printf("Result of init: %d\n", result.value);
-			}
-		}
+		Engine& engine = Engine::get();
 
 		auto es1 = engine.init_entity_system(20);
 		if (es1) {
@@ -87,7 +82,8 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
-		SDL_Event curEvent;
+		engine.init();
+
 		uint32_t lastTime = SDL_GetTicks();
 		while (true) {
 			// process events
