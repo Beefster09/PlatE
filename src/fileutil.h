@@ -41,5 +41,7 @@ char* copy(const char* str);
 
 Hitbox read_hitbox(FILE* stream, MemoryPool& pool);
 Array<const Collider> read_colliders(FILE* stream, uint32_t n_colliders, MemoryPool& pool);
-GPU_Image* read_texture(FILE* stream, uint32_t filenamelen);
+GPU_Image* read_referenced_texture(FILE* stream, uint32_t filenamelen);
 const char* read_string(FILE* stream, unsigned int len, MemoryPool& pool);
+
+GPU_Image* load_texture(const char* texname);

@@ -338,7 +338,7 @@ public:
 	__forceinline operator Data* () { return items; }
 
 	__forceinline Data& operator () (size_t x, size_t y) {
-		assert(x >= 0 && x < w && y >= 0 && y < h && "Array bounds check failed")
+		assert(x >= 0 && x < w && y >= 0 && y < h && "Array bounds check failed");
 		return items[y * w + x];
 	}
 	__forceinline Data* begin() { return items; }

@@ -60,7 +60,8 @@ namespace PlatE {
 	class Engine {
 	private:
 		EntitySystem* entity_system;
-		Level* active_level;
+
+		const Level* active_level;
 		// Level* peripheral_level; // used for splicing levels together
 		// Viewport* camera;
 		// InputSystem* input;
@@ -100,6 +101,8 @@ namespace PlatE {
 		float get_time();
 		inline void pause() { paused = true; }
 		inline void resume() { paused = false; }
+
+		bool travel(std::string levelname);
 
 	private:
 		void load_main_script();

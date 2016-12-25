@@ -25,7 +25,7 @@ def main(*files):
                 print ("No bake defined for", infn)
         except Exception as e:
             print ("Baking failed:", str(e))
-            traceback.print_exc()
+            #traceback.print_exc()
 
 if __name__ == "__main__":
     main(*sys.argv[1:])

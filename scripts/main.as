@@ -1,11 +1,15 @@
 
 void init() {
 	println("Hello from init() script");
+
+    Engine.travel("data/test.level");
 }
 
 void update(float delta_seconds) {
-    //println(Engine_time_seconds());
-    if (Engine_time_seconds() > 1.0) {
-        Engine_pause();
+    if (Engine.time > 5.f) {
+        Engine.resume();
+    }
+    else if (Engine.time > 2.f) {
+        Engine.pause();
     }
 }

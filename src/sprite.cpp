@@ -3,6 +3,7 @@
 #include "sprite.h"
 #include "error.h"
 #include "fileutil.h"
+#include "assetmanager.h"
 #include <cstdio>
 #include <cerrno>
 #include <cstring>
@@ -11,7 +12,12 @@ __forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool&
 	uint32_t namelen, uint32_t texnamelen, uint32_t n_clips, uint32_t n_frames, uint32_t n_animations);
 
 Result<const Sprite*> load_sprite(const char* filename) {
-	// TODO/later managed assets
+	auto aman = AssetManager::get();
+	{
+		const Sprite* maybe = aman.retrieve<Sprite>(filename);
+		if (maybe != nullptr) return maybe;
+	}
+
 	auto file = open(filename, "rb");
 
 	if (!file) {
@@ -63,11 +69,6 @@ Result<const Sprite*> load_sprite(const char* filename) {
 		tn_frametimings * sizeof(FrameTiming) +
 		tn_stringbytes;
 
-	if (poolsize > SPRITE_MAX_SIZE) {
-		fclose(stream);
-		return Errors::SpriteDataTooLarge;
-	}
-
 	LOG_VERBOSE("Number of bytes needed for sprite data: %zd\n", poolsize);
 	MemoryPool pool(poolsize);
 
@@ -84,6 +85,8 @@ Result<const Sprite*> load_sprite(const char* filename) {
 
 	fclose(stream);
 
+	aman.store(filename, result.value);
+
 	return result;
 }
 
@@ -94,7 +97,7 @@ __forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool&
 
 		sprite->name = read_string(stream, namelen, pool);
 
-		sprite->texture = read_texture(stream, texnamelen);
+		sprite->texture = read_referenced_texture(stream, texnamelen);
 
 		GPU_Rect* clips = pool.alloc<GPU_Rect>(n_clips);
 		for (int i = 0; i < n_clips; ++i) {
@@ -153,4 +156,12 @@ __forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool&
 	catch (Error& err) {
 		return err;
 	}
+}
+
+Result<const Sprite*> read_referenced_sprite(FILE* stream, uint32_t len) {
+	char fn[1024];
+	fread(fn, 1, len, stream);
+	fn[len] = 0;
+
+	return load_sprite(fn);
 }

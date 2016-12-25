@@ -13,13 +13,10 @@
 
 #define SPRITE_MAGIC_NUMBER "PlatEsprite"
 #define SPRITE_MAGIC_NUMBER_LENGTH (sizeof(SPRITE_MAGIC_NUMBER) - 1)
-// 1 MB sprite data limit
-#define SPRITE_MAX_SIZE (1024 * 1024)
 
 namespace Errors {
 	const error_data
-		InvalidSpriteHeader = { 201, "Sprite does not begin with the string \"" SPRITE_MAGIC_NUMBER "\"" },
-		SpriteDataTooLarge = { 202, "Sprites are limited to be 1 MB (not including texture)" };
+		InvalidSpriteHeader = { 201, "Sprite does not begin with the string \"" SPRITE_MAGIC_NUMBER "\"" };
 }
 
 typedef Vector2 FrameOffset;
@@ -52,5 +49,7 @@ struct Sprite {
 
 Result<const Sprite*> load_sprite(const char* filename); // load from "compiled" format
 Result<void> unload_sprite(Sprite* sprite); // deallocates all associated resources
+
+Result<const Sprite*> read_referenced_sprite(FILE* stream, uint32_t len);
 
 #endif

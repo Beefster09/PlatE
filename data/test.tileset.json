@@ -1,6 +1,6 @@
 {
     "name": "Test tileset",
-    "tilesheet": "TestTileset.png",
+    "tilesheet": "assets/TestTileset.png",
     "tile_width": 64,
     "tile_height": 64,
     "tiles": [

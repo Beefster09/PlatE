@@ -13,13 +13,10 @@
 
 #define LEVEL_MAGIC_NUMBER "PlatElevel"
 #define LEVEL_MAGIC_NUMBER_LENGTH (sizeof(LEVEL_MAGIC_NUMBER) - 1)
-// 32 MB level data limit- should be big enough for anything sane
-#define LEVEL_MAX_SIZE (1024 * 1024 * 32)
 
 namespace Errors {
 	const error_data
-		InvalidLevelHeader = { 601, "Level does not begin with the string \"" LEVEL_MAGIC_NUMBER "\"" },
-		LevelDataTooLarge = { 602, "Level data is limited to be 32 MB" };
+		InvalidLevelHeader = { 601, "Level does not begin with the string \"" LEVEL_MAGIC_NUMBER "\"" };
 }
 
 /// Static tile-based level data. Tiles can be animated.
@@ -154,9 +151,15 @@ struct Level {
 // static to .cpp: RTree* build_spacial_index(Level*);
 
 Result<const Level*> load_level(const char* filename);
-// MAYBE:?
-//Level* load_level(const char* filename, MemoryPool mempool);
+
 Result<> unload_level(const Level*);
 
+void render_tilemap(GPU_Target* context, const Tilemap* map); // TODO: camera/viewport
 
-void render_tilemap(Tilemap* map);
+/// Range of tile indices, inclusive on both ends
+struct TileRange {
+	uint16_t left, right, top, bottom;
+};
+
+/// Returns the range of tiles within a certain AABB. Includes tiles that are only partially in the AABB.
+TileRange tiles_in(Tilemap* map, AABB& region);

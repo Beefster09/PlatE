@@ -42,39 +42,26 @@ static void PrintLn(float f) {
 	printf("%g\n", f);
 }
 
-static float TimeSeconds() {
-	return Engine::get().get_time();
-}
-
-float Engine::get_time() {
-	return static_cast<float>(SDL_GetTicks() - init_time) / 1000.f;
-}
-
-static void Engine_pause() {
-	Engine::get().pause();
-}
-
-static void Engine_resume() {
-	Engine::get().resume();
-}
-
 static const float pi = static_cast<float>(M_PI);
 static const float tau = static_cast<float>(M_PI * 2);
 
 Engine::Engine() {
 	entity_system = nullptr;
+	script_engine = nullptr;
+}
 
+void Engine::init() {
 	// init Scripting API
 	script_engine = asCreateScriptEngine();
-	
+
 	script_engine->SetMessageCallback(asFUNCTION(MessageCallback), 0, asCALL_CDECL);
 
 	int r;
 
 	RegisterScriptMath(script_engine);
 
-	r = script_engine->RegisterGlobalProperty("const float PI", const_cast<void*>((const void*)&pi)); assert(r >= 0);
-	r = script_engine->RegisterGlobalProperty("const float TAU", const_cast<void*>((const void*)&tau)); assert(r >= 0);
+	r = script_engine->RegisterGlobalProperty("const float PI", const_cast<float*>(&pi)); assert(r >= 0);
+	r = script_engine->RegisterGlobalProperty("const float TAU", const_cast<float*>(&tau)); assert(r >= 0);
 
 	RegisterScriptArray(script_engine, true);
 	RegisterStdString(script_engine);
@@ -96,22 +83,29 @@ Engine::Engine() {
 	RegisterVector2(script_engine);
 
 	// Global engine stuff
-	r = script_engine->RegisterGlobalFunction("float Engine_time_seconds()",
-		asFUNCTION(TimeSeconds), asCALL_CDECL); assert(r >= 0);
-	r = script_engine->RegisterGlobalFunction("void Engine_pause()",
-		asFUNCTION(Engine_pause), asCALL_CDECL); assert(r >= 0);
-	r = script_engine->RegisterGlobalFunction("void Engine_resume()",
-		asFUNCTION(Engine_resume), asCALL_CDECL); assert(r >= 0);
-	//context_pool = ContextPool(script_engine);
-}
+	r = script_engine->RegisterObjectType("__Engine__", 0, asOBJ_REF | asOBJ_NOCOUNT); assert(r >= 0);
 
-void Engine::init() {
+	r = script_engine->RegisterGlobalProperty("__Engine__ Engine", this);
+
+	r = script_engine->RegisterObjectMethod("__Engine__", "float get_time()",
+		asMETHOD(Engine, get_time), asCALL_THISCALL); assert(r >= 0);
+
+	r = script_engine->RegisterObjectMethod("__Engine__", "void pause()",
+		asMETHOD(Engine, pause), asCALL_THISCALL); assert(r >= 0);
+	r = script_engine->RegisterObjectMethod("__Engine__", "void resume()",
+		asMETHOD(Engine, resume), asCALL_THISCALL); assert(r >= 0);
+
+	r = script_engine->RegisterObjectMethod("__Engine__", "bool travel(string)",
+		asMETHOD(Engine, travel), asCALL_THISCALL); assert(r >= 0);
+
+	// Now onto customizable initialization
 	load_main_script();
+
 	script_main_context = script_engine->CreateContext();
 
 	script_main_context->Prepare(scriptfunc_init);
 
-	int r = script_main_context->Execute();
+	r = script_main_context->Execute();
 	if (r == asEXECUTION_FINISHED) {
 		script_main_context->Unprepare();
 	}
@@ -143,11 +137,16 @@ void Engine::update(int delta_time) {
 }
 
 void Engine::render(GPU_Target* context) {
+	render_tilemap(context, &active_level->layers[0]);
 	render_entities(context, entity_system);
 }
 
 void Engine::event(const SDL_Event& event) {
 
+}
+
+float Engine::get_time() {
+	return static_cast<float>(SDL_GetTicks() - init_time) / 1000.f;
 }
 
 Result<asIScriptModule*> Engine::load_script(const char* filename) {
@@ -183,13 +182,11 @@ void Engine::load_main_script() {
 		scriptfunc_update = module->GetFunctionByDecl("void update(float)");
 
 		if (scriptfunc_init == nullptr) {
-			perror("Fatal error: void init() is missing.\n");
-			abort();
+			LOG_RELEASE("Fatal error: void init() is missing.\n");
 		}
 
 		if (scriptfunc_update == nullptr) {
-			perror("Fatal error: void tick(float) is missing.\n");
-			abort();
+			LOG_RELEASE("Fatal error: void update(float) is missing.\n");
 		}
 	}
 	else {
@@ -244,68 +241,12 @@ Result<EntitySystem*> Engine::init_entity_system(size_t capacity) {
 	else return result.err;
 }
 
-//ContextPool::ContextPool(asIScriptEngine* engine) {
-//	this->engine = engine;
-//	
-//	lock = SDL_CreateMutex();
-//	assert(lock != nullptr);
-//
-//	pool = DenseBucket<entry>(CONTEXT_POOL_CAPACITY);
-//}
-//
-//ContextPool::~ContextPool() {
-//	if (lock != nullptr) SDL_DestroyMutex(lock);
-//
-//	pool.free();
-//}
-//
-///// Gets an RAII context handle. Synchronized.
-//ContextPool::handle& ContextPool::getContext() {
-//	if (/*SDL_LockMutex(lock) == 0*/ true) {
-//		for (auto& ctx : pool) {
-//			if (ctx.active) continue;
-//
-//			handle result(this, &ctx);
-//			if (/*SDL_UnlockMutex(lock) == 0*/true) {
-//				return result;
-//			}
-//			else {
-//				return handle();
-//			}
-//		}
-//		auto res = pool.add(entry{ false, engine->CreateContext() });
-//		if (res.isLeft) {
-//			return handle();
-//		}
-//		else {
-//			return handle(this, res.rightOrElse(nullptr));
-//		}
-//	}
-//	else {
-//		return handle();
-//	}
-//}
-//
-//ContextPool::handle::handle(ContextPool* pool, ContextPool::entry* ctx) {
-//	this->pool = pool;
-//	this->ctx = ctx;
-//	if (pool != nullptr && ctx != nullptr) {
-//		ctx->active = true;
-//	}
-//}
-//
-//ContextPool::handle::handle(handle&& other) :
-//	pool(nullptr), ctx(nullptr)
-//{
-//	pool = other.pool;
-//	ctx = other.ctx;
-//	other.ctx = nullptr;
-//	other.pool = nullptr;
-//}
-//
-//ContextPool::handle::~handle() {
-//	//assert(SDL_LockMutex(pool->lock) == 0 && "Unable to lock mutex in destructor");
-//	ctx->active = false;
-//	//assert(SDL_UnlockMutex(pool->lock) == 0 && "Unable to unlock mutex in destructor");
-//	printf("Handle returned to pool");
-//}
+bool Engine::travel(std::string levelname) {
+	auto res = load_level(levelname.c_str());
+
+	if (res) {
+		active_level = res.value;
+		return true;
+	}
+	else return false;
+}

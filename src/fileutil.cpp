@@ -114,11 +114,7 @@ const char* read_string(FILE* stream, unsigned int len, MemoryPool& pool) {
 	return str;
 }
 
-GPU_Image* read_texture(FILE* stream, uint32_t filenamelen) {
-	char texname[1024];
-	fread(texname, 1, filenamelen, stream);
-	texname[filenamelen] = 0;
-
+GPU_Image* load_texture(const char* texname) {
 	auto am = AssetManager::get();
 	GPU_Image* maybe = const_cast<GPU_Image*>(am.retrieve<GPU_Image>(texname));
 	if (maybe != nullptr) {
@@ -133,4 +129,12 @@ GPU_Image* read_texture(FILE* stream, uint32_t filenamelen) {
 	am.store(texname, real);
 
 	return real;
+}
+
+GPU_Image* read_referenced_texture(FILE* stream, uint32_t filenamelen) {
+	char texname[1024];
+	fread(texname, 1, filenamelen, stream);
+	texname[filenamelen] = 0;
+
+	return load_texture(texname);
 }

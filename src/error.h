@@ -46,7 +46,7 @@ inline Error DetailedError(const Error& err, const char* format, ...) {
 
 #if LOG_VERBOSITY >= LOGLEVEL_VERBOSE
 #define LOG_VERBOSE(fmt, ...) printf(fmt, __VA_ARGS__)
-#define ERR_VERBOSE(fmt, ...) fprintf(stderr, __VA_ARGS__)
+#define ERR_VERBOSE(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
 #else
 #define LOG_VERBOSE(fmt, ...)
 #define ERR_VERBOSE(fmt, ...)
@@ -70,7 +70,7 @@ inline Error DetailedError(const Error& err, const char* format, ...) {
 
 #if LOG_VERBOSITY >= LOGLEVEL_RELEASE
 #define LOG_RELEASE(fmt, ...) printf(fmt, __VA_ARGS__)
-#define ERR_RELEASE(fmt, ...) fprintf(fmt, stderr, __VA_ARGS__)
+#define ERR_RELEASE(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
 #else
 #define LOG_RELEASE(fmt, ...)
 #define LOG_RELEASE(fmt, ...)

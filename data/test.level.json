@@ -7,24 +7,20 @@
 		"bottom": 512
 	},
 	"tilemaps": [
+        {
+            "tileset": "data/test.tileset",
+            "tiles": [
+                [1, 1, 3, 4],
+                [0, 2, 2, 2],
+                [0, 0, 1, 1],
+                [4, 4, 0, 1]
+            ],
+            "z_order": -1,
+            "offset": {"x": 50, "y": 30},
+            "solid": true
+        }
 	],
 	"objects": [
-		{
-			"texture": "box.png",
-			"clip": {
-				"x": 0,
-				"y": 0,
-				"w": 32,
-				"h": 32
-			},
-			"display": {"x": 0, "y": 0},
-			"position": {
-				"x": 32,
-				"y": 0
-			},
-			"z_order": 0,
-			"collision": []
-		}
 	],
 	"entities": [
 	],

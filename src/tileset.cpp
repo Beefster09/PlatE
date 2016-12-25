@@ -59,11 +59,6 @@ Result<const Tileset*> load_tileset(const char* filename) {
 		tn_tileframes * sizeof(TileFrame) +
 		namelen + 1;
 
-	if (poolsize > TILESET_MAX_SIZE) {
-		fclose(stream);
-		return Errors::TilesetDataTooLarge;
-	}
-
 	LOG_VERBOSE("Number of bytes needed for tileset data: %zd\n", poolsize);
 	MemoryPool pool(poolsize);
 
@@ -71,21 +66,23 @@ Result<const Tileset*> load_tileset(const char* filename) {
 
 	LOG_VERBOSE("Read tileset data with %zd/%zd bytes of slack in memory pool\n", pool.get_slack(), pool.get_size());
 
+	fclose(stream);
+
 	if (!result) {
 		// clean up
 		pool.free();
+		return result.err;
 	}
+	else {
+		Tileset* tileset = result.value;
 
-	fclose(stream);
+		tileset->tile_width = tile_w;
+		tileset->tile_height = tile_h;
 
-	Tileset* tileset = result.value;
+		aman.store(filename, tileset);
 
-	tileset->tile_width = tile_w;
-	tileset->tile_height = tile_h;
-
-	aman.store(filename, tileset);
-
-	return tileset;
+		return tileset;
+	}
 }
 
 __forceinline static Result<Tileset*> read_tileset(FILE* stream, MemoryPool& pool,
@@ -94,7 +91,7 @@ __forceinline static Result<Tileset*> read_tileset(FILE* stream, MemoryPool& poo
 		Tileset* tileset = pool.alloc<Tileset>();
 
 		tileset->name = read_string(stream, namelen, pool);
-		tileset->tilesheet = read_texture(stream, texnamelen);
+		tileset->tilesheet = read_referenced_texture(stream, texnamelen);
 
 		Tile* tiles = pool.alloc<Tile>(n_tiles);
 		for (int i = 0; i < n_tiles; ++i) {
@@ -113,9 +110,19 @@ __forceinline static Result<Tileset*> read_tileset(FILE* stream, MemoryPool& poo
 			tiles[i].animation = Array<const TileFrame>(frames, n_frames);
 		}
 
+		tileset->tile_data = Array<const Tile>(tiles, n_tiles);
+
 		return tileset;
 	}
 	catch (Error& err) {
 		return err;
 	}
+}
+
+Result<const Tileset*> read_referenced_tileset(FILE* stream, uint32_t len) {
+	char fn[1024];
+	fread(fn, 1, len, stream);
+	fn[len] = 0;
+
+	return load_tileset(fn);
 }

@@ -6,13 +6,10 @@
 
 #define TILESET_MAGIC_NUMBER "PlatEtileset"
 #define TILESET_MAGIC_NUMBER_LENGTH (sizeof(TILESET_MAGIC_NUMBER) - 1)
-// 1 MB sprite data limit
-#define TILESET_MAX_SIZE (1024 * 1024)
 
 namespace Errors {
 	const error_data
-		InvalidTilesetHeader = { 201, "Tileset does not begin with the string \"" TILESET_MAGIC_NUMBER "\"" },
-		TilesetDataTooLarge = { 202, "Tilesets are limited to be 1 MB (not including texture)" };
+		InvalidTilesetHeader = { 201, "Tileset does not begin with the string \"" TILESET_MAGIC_NUMBER "\"" };
 }
 
 // tile 0 is reserved as a blank tile
@@ -68,7 +65,7 @@ struct Tileset {
 	const char* name;
 	GPU_Image* tilesheet; // Limit one texture per tileset to allow for batching - VERY critical to performance
 	uint16_t tile_width, tile_height;
-	Array<Tile> tile_data; // 1 indexed; tile 0 is reserved as a blank tile
+	Array<const Tile> tile_data; // 1 indexed; tile 0 is reserved as a blank tile
 	// Later?
 	// ShaderType shader;
 };
@@ -77,3 +74,5 @@ struct Tileset {
 Result<const Tileset*> load_tileset(const char* filename);
 
 Result<> unload_tileset(const Tileset*);
+
+Result<const Tileset*> read_referenced_tileset(FILE* stream, uint32_t len);

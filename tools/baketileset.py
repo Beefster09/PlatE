@@ -53,7 +53,7 @@ def bake(infile, outfile):
             len(texture),
             tileset["tile_width"],
             tileset["tile_height"],
-            len(tileset["tilesheet"]),
+            len(tileset["tiles"]),
             n_tileframes
         ))
 

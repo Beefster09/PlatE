@@ -48,13 +48,6 @@ int main(int argc, char* argv[]) {
 			return 1;
 		}
 
-		auto level = load_level("data/test.level");
-		if (!level) {
-			printf("Parsing failed: %s\n", level.err.description);
-			SDL_Delay(5000);
-			return 1;
-		}
-
 		Engine& engine = Engine::get();
 
 		auto es1 = engine.init_entity_system(20);

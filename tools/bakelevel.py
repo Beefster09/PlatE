@@ -67,6 +67,18 @@ EdgeTriggerSides = {
     "right": b'r'
 }
 
+'tests if nested list is regular (i.e. not jagged)'
+def regular(l2d):
+    if len(l2d) == 0:
+        return True
+
+    width = len(l2d[0])
+    for row in l2d:
+        if len(row) != width:
+            return False
+
+    return True
+
 def bake(infile, outfile):
     level = None
     with open(infile, 'r') as f:
@@ -74,24 +86,30 @@ def bake(infile, outfile):
             level = json.load(f)
         except Exception as e:
             raise Exception("Error in parsing '{}': {}".format(infile, str(e)))
-        
+
+    # Sanity check / header prep
+    name = level["name"].encode()
+
+    n_vertices = 0
+    nested_hitboxes = 0
+    n_tiles = 0
+    for index, tilemap in enumerate(level["tilemaps"]):
+        if len(tilemap['tiles']) == 0:
+            raise Exception("Tilemap #{} is empty".format(index))
+        if not regular(tilemap['tiles']):
+            raise Exception("Tilemap #{} has inconsistent widths and is therefore invalid".format(index))
+
+        n_tiles += len(tilemap["tiles"][0]) * len(tilemap["tiles"])
+
+    for obj in level["objects"]:
+        for collider in obj["collision"]:
+            h, v = count_nested_hitboxes_and_vertices(collider["hitbox"])
+            n_vertices += v
+            nested_hitboxes += h
+
     with open(outfile, "wb") as f:
         f.write(MAGIC_NUMBER)
-        
-        name = level["name"].encode()
-        
-        n_vertices = 0
-        nested_hitboxes = 0
-        n_tiles = 0
-        for tilemap in level["tilemaps"]:
-            n_tiles += len(tilemap["tiles"][0]) * len(tilemap["tiles"])
-        
-        for obj in level["objects"]:
-            for collider in obj["collision"]:
-                h, v = count_nested_hitboxes_and_vertices(collider["hitbox"])
-                n_vertices += v
-                nested_hitboxes += h
-        
+
         f.write(Header.pack(
             len(name),
             level["boundary"]["left"],
@@ -107,37 +125,43 @@ def bake(infile, outfile):
             nested_hitboxes,
             n_tiles
         ))
-        
+
         f.write(name)
-        
+
         for tilemap in level["tilemaps"]:
             tileset = tilemap["tileset"].encode()
-            
-            width = len(tilemap["tiles"][0])
+
+            scale = tilemap.get("scale", 1)
+            parallax = tilemap.get("parallax", 1)
+
+            if isinstance(scale, int) or isinstance(scale, float):
+                scale = {'x': scale, 'y': scale}
+
+            if isinstance(parallax, int) or isinstance(parallax, float):
+                parallax = {'x': parallax, "y": parallax}
+
             f.write(Tilemap.pack(
                 len(tileset),
-                width,
+                len(tilemap["tiles"][0]),
                 len(tilemap["tiles"]),
                 tilemap["z_order"],
                 tilemap["offset"]["x"],
                 tilemap["offset"]["y"],
-                tilemap["scale"]["x"],
-                tilemap["scale"]["y"],
-                tilemap["parallax"]["x"],
-                tilemap["parallax"]["y"],
+                scale["x"],
+                scale["y"],
+                parallax["x"],
+                parallax["y"],
                 tilemap.get("solid")
             ))
-            
+
             f.write(tileset)
-            
+
             for row in tilemap["tiles"]:
-                if len(row) != width:
-                    raise Exception("Inconsistent tilemap width")
                 array.array("H", row).tofile(f)
-            
+
         for obj in level["objects"]:
             texture = obj["texture"].encode()
-            
+
             f.write(SceneObject.pack(
                 len(texture),
                 obj["clip"]["x"],
@@ -154,23 +178,23 @@ def bake(infile, outfile):
                 obj.get("scale", {}).get("y", 1),
                 len(obj["collision"])
             ))
-            
+
             f.write(texture)
-            
+
             for collider in obj["collision"]:
                 write_collider(f, collider)
-                
+
         for ent in level["entities"]:
             entityclass = ent["class"].encode()
-            
+
             f.write(EntitySpawnPoint.pack(
                 ent["location"]["x"],
                 ent["location"]["y"],
                 len(entityclass)
             ))
-            
+
             f.write(entityclass)
-            
+
         for area in level["areas"]:
             f.write(LevelArea.pack(
                 area["boundary"]["left"],
@@ -180,7 +204,7 @@ def bake(infile, outfile):
                 area["priority"],
                 str2rgb(area["ui_color"])
             ))
-            
+
         for edgetrig in level["edge_triggers"]:
             f.write(EdgeTrigger.pack(
                 EdgeTriggerSides[edgetrig["side"].lower()],
@@ -188,9 +212,3 @@ def bake(infile, outfile):
                 edgetrig["size"],
                 edgetrig.get("strictness", 0)
             ))
-            
-            
-            
-            
-            
-            
