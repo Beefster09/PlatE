@@ -12,7 +12,7 @@ __forceinline static Result<Tileset*> read_tileset(FILE* stream, MemoryPool& poo
 	uint32_t namelen, uint32_t texnamelen, uint32_t n_tiles);
 
 Result<const Tileset*> load_tileset(const char* filename) {
-	auto aman = AssetManager::get();
+	auto& aman = AssetManager::get();
 	{
 		const Tileset* maybe = aman.retrieve<Tileset>(filename);
 		if (maybe != nullptr) return maybe;

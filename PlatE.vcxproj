@@ -321,7 +321,7 @@
     <ClInclude Include="src\fileutil.h" />
     <ClInclude Include="src\input.h" />
     <ClInclude Include="src\level.h" />
-    <ClInclude Include="src\macros.h" />
+    <ClInclude Include="src\util.h" />
     <ClInclude Include="src\direction.h" />
     <ClInclude Include="src\either.h" />
     <ClInclude Include="src\entity.h" />

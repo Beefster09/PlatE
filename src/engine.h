@@ -21,42 +21,6 @@ namespace Errors {
 
 namespace PlatE {
 
-	//class ContextPool {
-	//	class handle;
-	//	struct entry {
-	//		bool active;
-	//		asIScriptContext* context;
-	//	};
-
-	//	asIScriptEngine* engine;
-	//	SDL_mutex* lock;
-	//	DenseBucket<entry> pool;
-
-	//public:
-
-	//	class handle {
-	//		ContextPool* pool;
-	//		entry* ctx;
-
-	//	public:
-	//		handle(ContextPool* pool, entry* ctx);
-	//		handle(handle&& other); // MOVE only
-	//		inline handle() { pool = nullptr; ctx = nullptr; }
-	//		~handle();
-
-	//		inline operator bool() const { return pool != nullptr && ctx != nullptr; }
-	//		inline operator asIScriptContext*() const { return ctx->context; }
-	//		inline asIScriptContext* operator -> () { return ctx->context; }
-	//	};
-
-	//	ContextPool(asIScriptEngine* engine);
-	//	ContextPool() {}
-	//	~ContextPool();
-
-	//	/// Gets an RAII context handle. Synchronized.
-	//	handle& getContext();
-	//};
-
 	class Engine {
 	private:
 		EntitySystem* entity_system;
@@ -83,7 +47,8 @@ namespace PlatE {
 
 		static Engine singleton;
 	public:
-		Engine(Engine& other) = delete;
+		Engine(const Engine& other) = delete;
+		Engine(Engine&& other) = delete;
 		Engine& operator = (Engine& other) = delete;
 
 		__forceinline static Engine& get() { return singleton; }
@@ -102,7 +67,7 @@ namespace PlatE {
 		inline void pause() { paused = true; }
 		inline void resume() { paused = false; }
 
-		bool travel(std::string levelname);
+		bool travel(const std::string& levelname);
 
 	private:
 		void load_main_script();

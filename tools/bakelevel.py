@@ -121,9 +121,9 @@ def bake(infile, outfile):
             len(level["entities"]),
             len(level["areas"]),
             len(level["edge_triggers"]),
+            n_tiles,
             n_vertices,
-            nested_hitboxes,
-            n_tiles
+            nested_hitboxes
         ))
 
         f.write(name)

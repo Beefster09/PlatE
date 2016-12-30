@@ -2,7 +2,7 @@
 
 #include <cmath>
 #include "vectors.h"
-#include "macros.h"
+#include "util.h"
 
 /// 3x3 Transformation matrix that assumes homogeneous column vectors and a [0 0 1] bottom row.
 // This will be vital to collision detection and rendering logic.
@@ -127,14 +127,14 @@ struct Transform {
 
 	// true if this is an identity matrix
 	inline bool is_identity() const {
-		return FLOAT_EQ(_11, 1.f) && FLOAT_EQ(_12, 0.f) && FLOAT_EQ(_13, 0.f) &&
-			   FLOAT_EQ(_21, 0.f) && FLOAT_EQ(_22, 1.f) && FLOAT_EQ(_23, 0.f);
+		return float_eq(_11, 1.f) && float_eq(_12, 0.f) && float_eq(_13, 0.f) &&
+			   float_eq(_21, 0.f) && float_eq(_22, 1.f) && float_eq(_23, 0.f);
 	}
 
 	// true if this is a pure translation matrix
 	inline bool is_translate_only() const {
-		return FLOAT_EQ(_11, 1.f) && FLOAT_EQ(_12, 0.f) &&
-			   FLOAT_EQ(_21, 0.f) && FLOAT_EQ(_22, 1.f);
+		return float_eq(_11, 1.f) && float_eq(_12, 0.f) &&
+			   float_eq(_21, 0.f) && float_eq(_22, 1.f);
 	}
 
 	// true if this matrix scales evenly. (it might also rotate)
@@ -142,8 +142,8 @@ struct Transform {
 
 	// true if rects stay as rects even after translation
 	inline bool is_rect_invariant() const {
-		return (FLOAT_EQ(_12, 0.f) && FLOAT_EQ(_21, 0.f)) ||
-			   (FLOAT_EQ(_11, 0.f) && FLOAT_EQ(_22, 0.f));
+		return (float_eq(_12, 0.f) && float_eq(_21, 0.f)) ||
+			   (float_eq(_11, 0.f) && float_eq(_22, 0.f));
 		// Equivalent to a multiple of 90 degree rotation
 	}
 

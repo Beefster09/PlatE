@@ -122,5 +122,5 @@ float Transform::get_rotation() const {
 bool Transform::is_uniform_scale() const {
 	float sx2 = _11 * _11 + _12 * _12;
 	float sy2 = _21 * _21 + _22 * _22;
-	return FLOAT_EQ(sx2, sy2);
+	return float_eq(sx2, sy2);
 }

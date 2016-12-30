@@ -10,13 +10,16 @@
 #include <cstdint>
 #include <array>
 
-
 #define LEVEL_MAGIC_NUMBER "PlatElevel"
 #define LEVEL_MAGIC_NUMBER_LENGTH (sizeof(LEVEL_MAGIC_NUMBER) - 1)
 
+#define LEVEL_BALLPARK_CHECKED true
+#define LEVEL_BALLPARK_REQUIRED true
+
 namespace Errors {
 	const error_data
-		InvalidLevelHeader = { 601, "Level does not begin with the string \"" LEVEL_MAGIC_NUMBER "\"" };
+		InvalidLevelHeader = { 601, "Level does not begin with the string \"" LEVEL_MAGIC_NUMBER "\"" },
+		InvalidLevelHeaderSizes = { 601, "Level header sizes not consistent with the size of the file." };
 }
 
 /// Static tile-based level data. Tiles can be animated.

@@ -2,7 +2,7 @@
 #include "entity.h"
 #include "error.h"
 #include "transform.h"
-#include "macros.h"
+#include "util.h"
 
 #include <algorithm>
 #include <cmath>
@@ -338,7 +338,7 @@ void render_entities(GPU_Target* context, const EntitySystem* system) {
 		GPU_BlitTransformX(
 			sprite->texture, const_cast<GPU_Rect*>(frame->clip), context,
 			e->position.x, e->position.y, -display.x, -display.y,
-			RAD_TO_DEG(e->rotation), e->scale.x, e->scale.y
+			rad_to_deg(e->rotation), e->scale.x, e->scale.y
 		);
 
 		render_colliders(context, e->tx, e->frame->collision);

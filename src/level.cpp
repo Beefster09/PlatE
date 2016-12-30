@@ -3,6 +3,7 @@
 #include "storage.h"
 #include "error.h"
 #include "fileutil.h"
+#include "assetmanager.h"
 #include "SDL_gpu.h"
 
 __forceinline static Result<const Level*> read_level(FILE* stream, MemoryPool& pool,
@@ -10,13 +11,20 @@ __forceinline static Result<const Level*> read_level(FILE* stream, MemoryPool& p
 	uint32_t n_entities, uint32_t n_areas, uint32_t n_edge_triggers);
 
 Result<const Level*> load_level(const char* filename) {
-	// TODO/later managed assets
+	auto& aman = AssetManager::get();
+	{
+		const Level* maybe = aman.retrieve<Level>(filename);
+		if (maybe != nullptr) return maybe;
+	}
+
 	auto file = open(filename, "rb");
 
 	if (!file) {
 		return file.err;
 	}
 	FILE* stream = file;
+
+	size_t filesize = size(file);
 
 	// Check the magic number
 	{
@@ -61,6 +69,12 @@ Result<const Level*> load_level(const char* filename) {
 		tn_colliders * sizeof(Collider) +
 		tn_nested_hitboxes * sizeof(Hitbox);
 
+	if (LEVEL_BALLPARK_CHECKED && !ballpark(poolsize, filesize)) {
+		fprintf(stderr, "Size suggested by header (%zd bytes) is significantly different than the file's size. (%zd bytes) "
+			"Perhaps the asset is corrupted or incorrectly formatted.\n", poolsize, filesize);
+		if (LEVEL_BALLPARK_REQUIRED) return Errors::InvalidLevelHeaderSizes;
+	}
+
 	LOG_VERBOSE("Number of bytes needed for level data: %zd\n", poolsize);
 	MemoryPool pool(poolsize);
 
@@ -69,12 +83,15 @@ Result<const Level*> load_level(const char* filename) {
 
 	LOG_VERBOSE("Read level data with %zd/%zd bytes of slack in memory pool\n", pool.get_slack(), pool.get_size());
 
-	if (!result) {
+	fclose(stream);
+
+	if (result) {
+		aman.store(filename, result.value);
+	}
+	else {
 		// Clean up from the error
 		pool.free();
 	}
-
-	fclose(stream);
 
 	return result;
 }

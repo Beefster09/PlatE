@@ -12,7 +12,7 @@ __forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool&
 	uint32_t namelen, uint32_t texnamelen, uint32_t n_clips, uint32_t n_frames, uint32_t n_animations);
 
 Result<const Sprite*> load_sprite(const char* filename) {
-	auto aman = AssetManager::get();
+	auto& aman = AssetManager::get();
 	{
 		const Sprite* maybe = aman.retrieve<Sprite>(filename);
 		if (maybe != nullptr) return maybe;
@@ -78,14 +78,15 @@ Result<const Sprite*> load_sprite(const char* filename) {
 
 	LOG_VERBOSE("Read sprite data with %zd/%zd bytes of slack in memory pool\n", pool.get_slack(), pool.get_size());
 
-	if (!result) {
+	fclose(stream);
+
+	if (result) {
+		aman.store(filename, result.value);
+	}
+	else {
 		// Clean up from the error
 		pool.free();
 	}
-
-	fclose(stream);
-
-	aman.store(filename, result.value);
 
 	return result;
 }
@@ -101,10 +102,10 @@ __forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool&
 
 		GPU_Rect* clips = pool.alloc<GPU_Rect>(n_clips);
 		for (int i = 0; i < n_clips; ++i) {
-			clips[i].x = read<uint32_t>(stream);
-			clips[i].y = read<uint32_t>(stream);
-			clips[i].w = read<uint32_t>(stream);
-			clips[i].h = read<uint32_t>(stream);
+			clips[i].x = (float) read<uint32_t>(stream);
+			clips[i].y = (float) read<uint32_t>(stream);
+			clips[i].w = (float) read<uint32_t>(stream);
+			clips[i].h = (float) read<uint32_t>(stream);
 		}
 
 		Frame* frames = pool.alloc<Frame>(n_frames);

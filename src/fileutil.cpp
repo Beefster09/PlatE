@@ -98,7 +98,7 @@ char* read_all(FILE* f) {
 }
 
 char* copy(const char* str) {
-	char* ret = new char[strlen(str)];
+	char* ret = new char[strlen(str) + 1];
 	strcpy(ret, str);
 	return ret;
 }
@@ -115,7 +115,7 @@ const char* read_string(FILE* stream, unsigned int len, MemoryPool& pool) {
 }
 
 GPU_Image* load_texture(const char* texname) {
-	auto am = AssetManager::get();
+	auto& am = AssetManager::get();
 	GPU_Image* maybe = const_cast<GPU_Image*>(am.retrieve<GPU_Image>(texname));
 	if (maybe != nullptr) {
 		return maybe;

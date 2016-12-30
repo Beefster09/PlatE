@@ -95,7 +95,7 @@ void Engine::init() {
 	r = script_engine->RegisterObjectMethod("__Engine__", "void resume()",
 		asMETHOD(Engine, resume), asCALL_THISCALL); assert(r >= 0);
 
-	r = script_engine->RegisterObjectMethod("__Engine__", "bool travel(string)",
+	r = script_engine->RegisterObjectMethod("__Engine__", "bool travel(const string &in)",
 		asMETHOD(Engine, travel), asCALL_THISCALL); assert(r >= 0);
 
 	// Now onto customizable initialization
@@ -137,7 +137,10 @@ void Engine::update(int delta_time) {
 }
 
 void Engine::render(GPU_Target* context) {
-	render_tilemap(context, &active_level->layers[0]);
+	if (active_level != nullptr) {
+		render_tilemap(context, &(active_level->layers[0]));
+	}
+
 	render_entities(context, entity_system);
 }
 
@@ -241,7 +244,7 @@ Result<EntitySystem*> Engine::init_entity_system(size_t capacity) {
 	else return result.err;
 }
 
-bool Engine::travel(std::string levelname) {
+bool Engine::travel(const std::string& levelname) {
 	auto res = load_level(levelname.c_str());
 
 	if (res) {

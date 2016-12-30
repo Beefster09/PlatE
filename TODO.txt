@@ -3,7 +3,7 @@ Up next:
   [X] Data structures
   [X] Bake JSON
   [X] Read in
-  [ ] Rendering and collision of level data
+  [X] Tilemap rendering
 [ ] Slope following
   [ ] Contact normal/tangent
   [ ] Falling off ledges/handing off to adjacent slopes
@@ -13,14 +13,7 @@ Up next:
   [ ] Configuration
 [ ] Asset manager
   [ ] Keep track of what is loaded and prevent double-loading
-[ ] Scripting
-  [X] Angelscript engine init
-  [X] Register Vector2
-  [ ] Register other key types
-  [ ] Engine behavior hooks
-  [ ] System for hooking into entity behavior
-    [ ] Way to inspect initializers and pass parameters to them
-  [ ] Adding input event hooks
+[ ] Relative paths for assets referencing other assets
 [ ] Game global config
 
 High-Level 1.0 Features
@@ -49,9 +42,11 @@ High-Level 1.0 Features
 [ ] GUI engine
   [ ] Tilable/stretchable frames
   [ ] Text boxes with options for letter-by-letter, word-by-word, etc...
-  [ ] Edge/component - relative positioning
+  [ ] Edge/component - relative positioning (right, left, top, bottom, center, etc...)
 [ ] Automatic asset management (quasi-GC on Sprites, EntityClasses, etc...)
 [ ] Console commands
+[ ] Game timers that can be initialized, started, and stopped from scripts.
+  [ ] Can be saved and loaded from game saves.
 [ ] Scripting via AngelScript
   [ ] Thread-safe
     [ ] Per-frame entities updates limit scope to ONLY the currently processed entity
@@ -65,4 +60,4 @@ High-Level 1.0 Features
   [ ] Press/Release/Trigger events
   [ ] Input history with pattern matching (fightstick type stuff)
   [ ] Configuration
-[ ] Basic editor (probably in a different language)
+[ ] Basic editor (probably in a different programming language)

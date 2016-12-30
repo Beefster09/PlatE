@@ -4,7 +4,7 @@
 #include "storage.h"
 #include "either.h"
 #include "error.h"
-#include "macros.h"
+#include "util.h"
 #include "hitbox.h"
 #include <SDL2\SDL_endian.h>
 #include <type_traits>
