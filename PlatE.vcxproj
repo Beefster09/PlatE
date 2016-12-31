@@ -274,6 +274,7 @@
     <ClCompile Include="src\hitbox.cpp" />
     <ClCompile Include="src\level.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\rng.cpp" />
     <ClCompile Include="src\sprite.cpp" />
     <ClCompile Include="src\tileset.cpp" />
     <ClCompile Include="src\transform.cpp" />
@@ -321,6 +322,7 @@
     <ClInclude Include="src\fileutil.h" />
     <ClInclude Include="src\input.h" />
     <ClInclude Include="src\level.h" />
+    <ClInclude Include="src\rng.h" />
     <ClInclude Include="src\util.h" />
     <ClInclude Include="src\direction.h" />
     <ClInclude Include="src\either.h" />

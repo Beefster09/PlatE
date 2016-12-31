@@ -36,8 +36,6 @@ namespace PlatE {
 		asIScriptFunction* scriptfunc_init;
 		asIScriptFunction* scriptfunc_update;
 
-		asIScriptContext* script_main_context;
-
 		//ContextPool context_pool;
 
 		bool paused = false; // MAYBE: some sort of enum so that GUI stuff works when paused

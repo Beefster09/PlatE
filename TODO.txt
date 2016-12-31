@@ -47,6 +47,8 @@ High-Level 1.0 Features
 [ ] Console commands
 [ ] Game timers that can be initialized, started, and stopped from scripts.
   [ ] Can be saved and loaded from game saves.
+[ ] PRNG accessible from scripts
+  [ ] Seeds may optionally be saved in game saves. (maybe)
 [ ] Scripting via AngelScript
   [ ] Thread-safe
     [ ] Per-frame entities updates limit scope to ONLY the currently processed entity

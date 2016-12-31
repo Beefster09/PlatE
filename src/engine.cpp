@@ -6,6 +6,7 @@
 #include "entity.h"
 #include "vectors.h"
 #include "fileutil.h"
+#include "rng.h"
 
 #include "angelscript.h"
 #include "scriptmath\scriptmath.h"
@@ -34,16 +35,23 @@ static void PrintLn(const std::string& str) {
 	printf("%s\n", str.c_str());
 }
 
-static void PrintLn(long i) {
-	printf("%ld\n", i);
+static void PrintLn(int64_t i) {
+	printf("%lld\n", i);
 }
 
 static void PrintLn(float f) {
 	printf("%g\n", f);
 }
 
+static void PrintLn(bool b) {
+	printf("%s\n", b ? "true" : "false");
+}
+
 static const float pi = static_cast<float>(M_PI);
 static const float tau = static_cast<float>(M_PI * 2);
+
+// Temporary for testing purposes
+static Random _global_rand_ = Random();
 
 Engine::Engine() {
 	entity_system = nullptr;
@@ -75,17 +83,22 @@ void Engine::init() {
 	r = script_engine->RegisterGlobalFunction("void println(string& in)",
 		asFUNCTIONPR(PrintLn, (const std::string&), void), asCALL_CDECL); assert(r >= 0);
 	r = script_engine->RegisterGlobalFunction("void println(int64)",
-		asFUNCTIONPR(PrintLn, (long), void), asCALL_CDECL); assert(r >= 0);
+		asFUNCTIONPR(PrintLn, (int64_t), void), asCALL_CDECL); assert(r >= 0);
 	r = script_engine->RegisterGlobalFunction("void println(float)",
 		asFUNCTIONPR(PrintLn, (float), void), asCALL_CDECL); assert(r >= 0);
+	r = script_engine->RegisterGlobalFunction("void println(bool)",
+		asFUNCTIONPR(PrintLn, (bool), void), asCALL_CDECL); assert(r >= 0);
 
 	// Game Stuff
 	RegisterVector2(script_engine);
+	Random::RegisterType(script_engine);
+
+	r = script_engine->RegisterGlobalProperty("Random rand", &_global_rand_); assert(r >= 0);
 
 	// Global engine stuff
 	r = script_engine->RegisterObjectType("__Engine__", 0, asOBJ_REF | asOBJ_NOCOUNT); assert(r >= 0);
 
-	r = script_engine->RegisterGlobalProperty("__Engine__ Engine", this);
+	r = script_engine->RegisterGlobalProperty("__Engine__ Engine", this); assert(r >= 0);
 
 	r = script_engine->RegisterObjectMethod("__Engine__", "float get_time()",
 		asMETHOD(Engine, get_time), asCALL_THISCALL); assert(r >= 0);
@@ -101,13 +114,13 @@ void Engine::init() {
 	// Now onto customizable initialization
 	load_main_script();
 
-	script_main_context = script_engine->CreateContext();
+	auto ctx = script_engine->RequestContext();
 
-	script_main_context->Prepare(scriptfunc_init);
+	ctx->Prepare(scriptfunc_init);
 
-	r = script_main_context->Execute();
+	r = ctx->Execute();
 	if (r == asEXECUTION_FINISHED) {
-		script_main_context->Unprepare();
+		ctx->Unprepare();
 	}
 	else {
 		perror("Fatal error: init script did not return.");
@@ -123,12 +136,14 @@ void Engine::update(int delta_time) {
 		process_entities(delta_seconds, entity_system);
 	}
 
-	script_main_context->Prepare(scriptfunc_update);
-	script_main_context->SetArgFloat(0, delta_seconds);
+	auto ctx = script_engine->RequestContext();
 
-	int r = script_main_context->Execute();
+	ctx->Prepare(scriptfunc_update);
+	ctx->SetArgFloat(0, delta_seconds);
+
+	int r = ctx->Execute();
 	if (r == asEXECUTION_FINISHED) {
-		script_main_context->Unprepare();
+		ctx->Unprepare();
 	}
 	else {
 		perror("Fatal error: tick script did not return.");
