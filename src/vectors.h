@@ -69,6 +69,10 @@ SDL_Rect to_rect(const Vector2& p1, const Vector2& p2);
 AABB to_aabb(Line& line);
 
 Vector2 lerp(const Vector2& p1, const Vector2& p2, float t);
+Vector2 ease(const Vector2& p1, const Vector2& p2, float t);
+
+float lerp(float a, float b, float t);
+float ease(float a, float b, float t);
 
 // AngelScript hooks
 void Vector2ListConstructor(float* list, Vector2* self);

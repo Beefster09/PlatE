@@ -50,9 +50,6 @@ static void PrintLn(bool b) {
 static const float pi = static_cast<float>(M_PI);
 static const float tau = static_cast<float>(M_PI * 2);
 
-// Temporary for testing purposes
-static Random _global_rand_ = Random();
-
 Engine::Engine() {
 	entity_system = nullptr;
 	script_engine = nullptr;
@@ -91,9 +88,7 @@ void Engine::init() {
 
 	// Game Stuff
 	RegisterVector2(script_engine);
-	Random::RegisterType(script_engine);
-
-	r = script_engine->RegisterGlobalProperty("Random rand", &_global_rand_); assert(r >= 0);
+	RegisterRandomTypes(script_engine);
 
 	// Global engine stuff
 	r = script_engine->RegisterObjectType("__Engine__", 0, asOBJ_REF | asOBJ_NOCOUNT); assert(r >= 0);

@@ -126,6 +126,18 @@ Vector2 lerp(const Vector2& p1, const Vector2& p2, float t) {
 	return p1 + (p2 - p1) * t;
 }
 
+Vector2 ease(const Vector2& p1, const Vector2& p2, float t) {
+	return p1 + ((p2 - p1) * (1.f - cosf(t * M_PI)) / 2.f);
+}
+
+float lerp(float a, float b, float t) {
+	return a + (b - a) * t;
+}
+
+float ease(float a, float b, float t) {
+	return a + ((b - a) * (1.f - cosf(t * M_PI)) / 2.f);
+}
+
 // ==== SCRIPTING INTERFACE ====
 
 std::string to_string(const Vector2& vec) {
@@ -222,8 +234,15 @@ void RegisterVector2(asIScriptEngine* engine) {
 		asFUNCTIONPR(distance, (const Vector2&, const Vector2&), float), asCALL_CDECL); assert(r >= 0);
 	r = engine->RegisterGlobalFunction("Vector2 Vector2_polar (float angle, float length)",
 		asFUNCTION(Vector2::fromPolar), asCALL_CDECL); assert(r >= 0);
+
 	r = engine->RegisterGlobalFunction("Vector2 lerp (Vector2 &in, Vector2 &in, float)",
 		asFUNCTIONPR(lerp, (const Vector2&, const Vector2&, float), Vector2), asCALL_CDECL); assert(r >= 0);
+	r = engine->RegisterGlobalFunction("Vector2 ease (Vector2 &in, Vector2 &in, float)",
+		asFUNCTIONPR(ease, (const Vector2&, const Vector2&, float), Vector2), asCALL_CDECL); assert(r >= 0);
+	r = engine->RegisterGlobalFunction("Vector2 lerp (float, float, float)",
+		asFUNCTIONPR(lerp, (float, float, float), float), asCALL_CDECL); assert(r >= 0);
+	r = engine->RegisterGlobalFunction("Vector2 ease (float, float, float)",
+		asFUNCTIONPR(ease, (float, float, float), float), asCALL_CDECL); assert(r >= 0);
 
 	// Constants
 
