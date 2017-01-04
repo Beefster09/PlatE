@@ -29,14 +29,11 @@ namespace PlatE {
 		// Level* peripheral_level; // used for splicing levels together
 		// Viewport* camera;
 		// InputSystem* input;
-		// AssetManager asset_manager;
 
 		asIScriptEngine* script_engine;
 
 		asIScriptFunction* scriptfunc_init;
 		asIScriptFunction* scriptfunc_update;
-
-		//ContextPool context_pool;
 
 		bool paused = false; // MAYBE: some sort of enum so that GUI stuff works when paused
 		uint32_t init_time = 0;
@@ -50,8 +47,6 @@ namespace PlatE {
 		Engine& operator = (Engine& other) = delete;
 
 		__forceinline static Engine& get() { return singleton; }
-
-		Result<EntitySystem*> init_entity_system(size_t size = ENTITY_SYSTEM_DEFAULT_SIZE);
 
 		void init();
 		void update(int delta_time);

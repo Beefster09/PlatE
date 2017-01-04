@@ -76,7 +76,8 @@ struct Result<void> {
 
 	Result(const Error& err) : isSuccess(false), err(err) {}
 	Result(nullptr_t null) : isSuccess(true), err(SUCCESS) {}
-	Result() : isSuccess(true), err(SUCCESS) {}
 
 	operator bool() const { return isSuccess; }
+
+	static const Result<void> success;
 };

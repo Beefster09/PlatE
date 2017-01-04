@@ -64,11 +64,6 @@ struct SceneObject {
 /// Points that spawn entities when within the culling range of the viewport
 struct EntitySpawnPoint {
 	Vector2 location;
-	const EntityClass* e_class; // Entity class
-
-	// Spawn Parameters:
-	// ---- Something like:
-	// SpawnParams params;
 };
 
 /// Script triggers along the edge of the level.

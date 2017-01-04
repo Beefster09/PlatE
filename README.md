@@ -9,9 +9,6 @@ Of course. The selling point. Other than the obvious of being open-source MIT-li
   + The physics engine is designed to be _simple_ and give a very platformy feel.
     * Well except for the hitbox system, which is inspired by fighting games.
     * Unity, Unreal, Cocos2dx, and others use more sophisticated rigid body physics. While that will be the right tool for some games, it can often be unwieldy overkill when it comes to 2D platformers. Not to mention that some of those engines struggle with some of the simple things we expect out of platformers, such as slopes. So often with those engines, you end up implementing your own physics to get the feel that is right for your game. (or so I've been told)
-  + The entity system is data-oriented (think particle systems), making it fast and parallelizable.
-    * This helps avoid using certain tricks commonly used in other engines such as object pooling, as it is essentially an object pool in itself.
-	* Memory allocation by the engine is minimized, leading to far less memory fragmentation.
   + Specialized: Limited, yet flexible
     * They say limitation is the mother of creativity.
 	* It's better to have something that does a 95% job at 15% of tasks than to have something that does a 15% job at 95% of tasks. Most other game engines are so nebulously multi-purpose that you end up re-inventing the wheel or spend hours trying to comprehend basic things about the system.

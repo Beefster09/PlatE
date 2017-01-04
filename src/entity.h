@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <cmath>
 #include <cassert>
+#include <vector>
+
 #include "sprite.h"
 #include "hitbox.h"
 #include "either.h"
@@ -10,62 +12,53 @@
 #include "vectors.h"
 #include "storage.h"
 #include "transform.h"
+#include "executor.h"
+
+#include "angelscript.h"
+
 #include "SDL_gpu.h"
 
 #define ENTITY_SYSTEM_DEFAULT_SIZE 256
 
 namespace Errors {
 	const error_data
-		EntitySystemInvalidSize = { 300, "Entity system must have at least 1 max entity" },
-		EntitySystemCapacityReached = { 301, "Entity system has reached its maximum entity count" },
-		EntitySystemInvalidState = { 499, "Entity system has been corrupted or tampered with!" },
-		NoSuchEntity = { 310, "Entity does not exist in this system!" };
+		EntityNotFound = { 404, "Entity does not exist in this system!" },
+		EntityMissingInit          = { 301, "Entity behavior component does not have an appropriate init function." },
+		EntityInitException        = { 302, "Entity behavior component init() threw an exception." },
+		EntityInitUnknownFailure   = { 309, "Entity behavior component init() failed in an unexpected way." },
+		EntityUpdateException      = { 312, "Entity behavior component update() threw an exception." },
+		EntityUpdateUnknownFailure = { 319, "Entity behavior component init() failed in an unexpected way." };
 }
 
-// Classes of entities. Should be const when loaded.
-// Contains metadata about behavior and initialization.
-struct EntityClass {
-	const char* name;
-	const Sprite* initial_sprite;
-	size_t initial_animation;
-
-	//  \- BEHAVIOR -/
-	// Script* init_script;
-	// Script* update_script;
-	// Script* event_handlers;
-	// Array<Parameter> spawn_params;
-};
-
-const EntityClass* get_entity_class(const char* name);
-
 typedef uint32_t EntityId;
+
+const int EntityInvisibleZ = INT_MIN;
 
 // Instances of entities
 struct Entity {
 // === Metadata ===
-	EntityId id;
-	const EntityClass* e_class;
+	const EntityId id;
 
 // === Physics Data ===
-	Point2 position;
+	Point2 position       = { 0.f,0.f };
 
-	Vector2 velocity;
-	Vector2 acceleration;
+	Vector2 velocity      = { 0.f,0.f };
+	Vector2 acceleration  = { 0.f,0.f };
 
 	// Needed for tunnelling prevention and effects such as motion blur.
-	Point2 last_pos;
-	float last_dt;
+	Point2 last_pos       = { 0.f,0.f };
 
 	// Other movement stuffs
-	Vector2 max_speed; // Maximum speed on each axis
-	Vector2 gravity;   // Additional acceleration to apply when in midair
+	Vector2 max_speed = { INFINITY, INFINITY }; // Maximum speed on each axis
+	Vector2 gravity   = { 0.f,0.f };   // Additional acceleration to apply when in midair
 
 	struct GroundLink {
 		enum : char {
+			NONE = 0,
 			MIDAIR = 'm',
 			ENTITY = 'e',
 			LEVEL = 'l'
-		} type;
+		} type = NONE;
 		union {
 			Entity* entity;
 			void* level;
@@ -75,51 +68,73 @@ struct Entity {
 		Vector2 contact_normal;
 	} ground;
 
-	int z_order; // needed for drawing
-
 // === Transform Data ===
-	float rotation;
-	Vector2 scale;
+	float rotation = 0.f;
+	Vector2 scale = { 1.f, 1.f };
 
 	// Cached transformation matrix. Calculated during physics/movement step and after update.
-	Transform tx;
+	Transform tx = Transform::identity;
 
-// === Sprite Data ===
-	const Sprite* sprite;
-	const Animation* animation;
-	uint32_t anim_frame;
-	float frame_time;
-	const Frame* frame;
+// === Render Data ===
+	const Sprite* sprite = nullptr;
+	const Animation* animation = nullptr;
+	const Frame* frame = nullptr;
+	uint32_t anim_frame = 0;
+	float frame_time = 0.f;
 
-	// Scripting / Events
-	// Data for storing
+	int z_order = EntityInvisibleZ;
+
+// === Enable/Disable flags ===
+	bool physics_enabled = true;
+	bool collision_enabled = true;
+	bool animation_enabled = true;
+	bool rendering_enabled = true;
+
+// === Script Interface ===
+	asIScriptObject* rootcomp = nullptr;
+	asITypeInfo* rootclass = nullptr;
+	asIScriptFunction* updatefunc = nullptr;
+
+// === Functionality ===
+	Entity(EntityId id, asIScriptObject* behavior);
+	~Entity();
+
+	// In order to keep errors as return values (not throwing exceptions), init must be separate;
+	Result<> init(asIScriptEngine* engine);
+	Result<> update(asIScriptEngine* engine, float delta_time);
+
+	void render(GPU_Target* screen) const;
 };
 
-// Things to think about:
-//  * How is this supposed to interact with players?
-//    - probably scripts
-//  * Should particles and bullets be managed by an entity system?
-//  * Should they be fixed-size or expandable?
-struct EntitySystem {
-	SparseBucket<Entity> entities;
-
-	// Densely allocated
-	Entity** z_ordered_entities;
+class EntitySystem {
+	typedef std::vector<Entity*> EntityList;
+	typedef EntityList::iterator EIter;
+private:
+	BucketAllocator<Entity> allocator;
+	EntityList entities;
+	EntityId next_id;
 
 	EventBuffer* event_buffer;
 
-	uint32_t next_id;
+public:
+	Executor executor;
+
+	EntitySystem();
+	EntitySystem(const EntitySystem&) = delete;
+	EntitySystem(EntitySystem&&) = default;
+
+	~EntitySystem();
+
+	Result<Entity*> spawn(asIScriptObject* rootcomp);
+	Result<> destroy(EntityId id);
+	Result<> destroy(Entity* ent);
+
+	void update(asIScriptEngine* engine, const float delta_time);
+
+	/// Iterator set for entities - allows for interleaved rendering
+	std::pair<EIter, EIter> render_iter();
 };
 
-Result<EntitySystem*> create_entity_system(size_t capacity = ENTITY_SYSTEM_DEFAULT_SIZE);
-Result<> destroy_entity_system(EntitySystem* system);
+void RegisterEntityTypes(asIScriptEngine* engine);
 
-Result<Entity*> spawn_entity(EntitySystem* system, const EntityClass* e_class, Point2 position);
-Result<> destroy_entity(EntitySystem* system, EntityId id);
-Result<> destroy_entity(EntitySystem* system, Entity* ent);
-
-// TODO/later: allow interactions between entity systems and level collision data
-void process_entities(const float delta_time, EntitySystem* system);
-
-// self-explanatory
-void render_entities(GPU_Target* context, const EntitySystem* system);
+// TODO: SOA/SIMD particle system

@@ -133,28 +133,35 @@ public:
 
 #define BUCKET_DEFAULT_CAPACITY 256
 
-template <class Data>
+template <typename Data, bool autoexpand = false>
 class DenseBucket {
+	static_assert(std::is_trivially_copyable<Data>::value, "Data is not trivially copyable");
+	static_assert(std::is_move_assignable<Data>::value, "Data is not move assignable");
 private:
-	size_t capacity;
+	size_t capacity_;
 	size_t n_items;
 	Data* items;
 
 public:
 	__forceinline DenseBucket() {}
-	DenseBucket(size_t capacity) {
-		this->capacity = capacity;
+	DenseBucket(size_t capacity_) {
+		this->capacity_ = capacity_;
 		n_items = 0;
-		items = new Data[capacity];
+		items = new Data[capacity_];
 	}
 
 	__forceinline void free() {
 		delete[] items;
 	}
 
-	Result<Data*> add(Data& data) {
-		if (n_items >= capacity) {
-			return Errors::BucketFull;
+	Data* add(Data& data) {
+		if (n_items >= capacity_) {
+			if (autoexpand) {
+				reserve(capacity_ << 1);
+			}
+			else {
+				return nullptr;
+			}
 		}
 		items[n_items] = data;
 		Data* result = items + n_items;
@@ -162,16 +169,18 @@ public:
 		return result;
 	}
 
-	Result<> remove(Data* item) {
-		auto offset = item - items;
-		if (offset < 0 || offset >= n_items) {
-			return Errors::BucketIllegalRemove;
+	bool remove(size_t index) {
+		if (index < 0 || index >= n_items) {
+			return false;
 		}
-		items[offset] = items[--n_items];
-		return nullptr;
+		if (!std::is_pod<Data>::value) {
+			items[index].Data::~Data();
+		}
+		items[index] = items[--n_items];
+		return true;
 	}
 
-	void resize(size_t new_capacity) {
+	void reserve(size_t new_capacity) {
 		Data* new_items = new Data[new_capacity];
 		memcpy(new_items, items, n_items * sizeof(Data));
 		delete[] items;
@@ -182,14 +191,15 @@ public:
 	__forceinline Data* end() { return items + n_items; }
 
 	__forceinline size_t size() const { return n_items; }
-	Data* at(size_t index) { return (index >= 0 && index < n_items) ? items + index : nullptr; }
-	Data* operator [] (size_t index) { return items + index; }
+	__forceinline size_t capacity() const { return capacity_; }
+
+	Data& operator [] (size_t index) { return items[index]; }
 };
 
 template <class Data>
 class SparseBucket {
 private:
-	size_t capacity;
+	size_t capacity_;
 	size_t n_items;
 	Array<bool> occupation;
 	Data* items;
@@ -198,7 +208,7 @@ private:
 public:
 	__forceinline SparseBucket() {}
 	SparseBucket(size_t capacity) {
-		this->capacity = capacity;
+		capacity_ = capacity;
 		n_items = 0;
 		// minimize allocations
 		int occ_mask_len = (capacity + 7) / 8;
@@ -210,8 +220,13 @@ public:
 		next_index = 0;
 	}
 
-	void free() {
-		delete[] (void*) items;
+	~SparseBucket() {
+		if (!std::is_pod<Data>::value) {
+			for (Data& d : *this) {
+				d.Data::~Data();
+			}
+		}
+		delete[] items;
 	}
 
 	void print_contents() {
@@ -222,8 +237,30 @@ public:
 		printf("\n");
 	}
 
-	Result<Data*> add(Data& data) {
-		if (n_items >= capacity) {
+	/// reserve a spot but don't set the data
+	Result<Data*> add() {
+		if (n_items >= capacity_) {
+			return Errors::BucketFull;
+		}
+
+		// Set the bit in the occupy mask
+		occupation.set(next_index);
+
+		Data* result = items + next_index;
+
+		++n_items;
+		if (n_items >= capacity_) return result;
+
+		// Find next available index
+		do {
+			next_index = (next_index + 1) % capacity_;
+		} while (occupation[next_index]);
+
+		return result;
+	}
+
+	Result<Data*> add(const Data& data) {
+		if (n_items >= capacity_) {
 			return Errors::BucketFull;
 		}
 
@@ -234,18 +271,18 @@ public:
 		Data* result = items + next_index;
 
 		++n_items;
-		if (n_items >= capacity) return result;
+		if (n_items >= capacity_) return result;
 
 		// Find next available index
 		do {
-			next_index = (next_index + 1) % capacity;
+			next_index = (next_index + 1) % capacity_;
 		} while (occupation[next_index]);
 
 		return result;
 	}
 
 	Result<> remove(Data* item) {
-		auto offset = item - items;
+		ptrdiff_t offset = item - items;
 		if (offset < 0 || offset >= n_items || !occupation[offset]) {
 			return Errors::BucketIllegalRemove;
 		}
@@ -253,24 +290,13 @@ public:
 		occupation.unset(offset);
 
 		// Avoid searching next time if this bucket was *just* full.
-		if (n_items >= capacity) {
+		if (n_items >= capacity_) {
 			next_index = offset;
 		}
 
 		--n_items;
 		return nullptr;
 	}
-
-	//void resize(size_t new_capacity) {
-	//	occupation.resize(new_capacity);
-	//	for (int i = capacity; i < new_capacity; ++i) {
-	//		occupation.unset(i); // not efficient :-/
-	//	}
-	//	Data* new_items = new Data[new_capacity];
-	//	memcpy(new_items, items, capacity * sizeof(Data));
-	//	delete[] items;
-	//	items = new_items;
-	//}
 
 	class iterator {
 		SparseBucket* b;
@@ -297,16 +323,21 @@ public:
 		iterator& operator ++ () {
 			do {
 				++index;
-				if (index >= b->capacity) break;
+				if (index >= b->capacity_) break;
 			} while (!b->occupation[index]);
 			return *this;
 		}
 	};
 
 	__forceinline iterator begin() { return iterator(this); }
-	__forceinline iterator end() { return iterator(this, capacity); }
+	__forceinline iterator end() { return iterator(this, capacity_); }
 
 	__forceinline size_t size() const { return n_items; }
+	__forceinline size_t capacity() const { return capacity_; }
+
+	inline bool contains_ptr(Data* ptr) const {
+		return ptr >= items && ptr < items + n_items;
+	}
 };
 
 template <class Data>
@@ -514,4 +545,93 @@ public:
 	}
 
 	__forceinline void clear() { nextAlloc = pool; }
+};
+
+template<class T, int MaxEmptyBuckets = 1, int NewBucketSize = 64, int BucketGroupInitialSize = 16>
+class BucketAllocator{
+public:
+	typedef SparseBucket<T> Bucket;
+	typedef DenseBucket<Bucket*, true> BucketGroup;
+private:
+	BucketGroup unfull_buckets, full_buckets;
+	int empty_count = 0;
+public:
+	BucketAllocator() : full_buckets(BucketGroupInitialSize), unfull_buckets(BucketGroupInitialSize) {}
+	BucketAllocator(BucketAllocator&&) = delete;
+	BucketAllocator(const BucketAllocator&) = delete;
+
+	~BucketAllocator() {
+		for (Bucket* bucket : full_buckets) {
+			delete bucket;
+		}
+		for (Bucket* bucket : unfull_buckets) {
+			delete bucket;
+		}
+		// destructors clean up the rest.
+	}
+
+	T* alloc() {
+		if (unfull_buckets.size() == 0) {
+			Bucket* bucket = new Bucket(NewBucketSize);
+			unfull_buckets.add(bucket);
+			++empty_count;
+		}
+		Bucket* bucket = unfull_buckets[0];
+		if (bucket->size() == 0) { // the empty bucket is no longer empty
+			--empty_count;
+		}
+		T* ptr = bucket->add();
+		if (bucket->size() >= bucket->capacity()) {
+			full_buckets.add(bucket);
+			unfull_buckets.remove(0);
+		}
+		return ptr;
+	}
+
+	bool free(T* ptr) {
+		Bucket* owning_bucket = nullptr;
+		int ob_ind = -1;
+		size_t n_buckets = full_buckets.size();
+		for (int i = 0; i < n_buckets; ++i) {
+			Bucket* bucket = full_buckets[i];
+			if (bucket->contains_ptr(ptr)) {
+				owning_bucket = bucket;
+				ob_ind = i;
+				break;
+			}
+		}
+		if (owning_bucket == nullptr) {
+			size_t n_buckets = unfull_buckets.size();
+			for (int i = 0; i < n_buckets; ++i) {
+				Bucket* bucket = full_buckets[i];
+				if (bucket->contains_ptr(ptr)) {
+					owning_bucket = bucket;
+					ob_ind = i;
+					break;
+				}
+			}
+			if (owning_bucket == nullptr) {
+				return false; // pointer not owned; unable to deallocate
+			}
+
+			// found in unfull bucket
+			owning_bucket->remove(ptr);
+
+			if (owning_bucket->size() == 0) {
+				if (++empty_count > MaxEmptyBuckets) { // remove bucket if there is already another empty one
+					unfull_buckets.remove(ob_ind);
+					delete owning_bucket;
+					--empty_count;
+				}
+			}
+		}
+		else {
+			owning_bucket->remove(ptr);
+
+			// bucket has space now, so move it to the unfull group
+			unfull_buckets.add(owning_bucket);
+			full_buckets.remove(ob_ind);
+		}
+		return true;
+	}
 };

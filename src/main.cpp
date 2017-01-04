@@ -22,10 +22,11 @@ int main(int argc, char* argv[]) {
 	if (SDL_Init(SDL_INIT_CUSTOM) >= 0) {
 		atexit(SDL_Quit);
 
-		GPU_Target* context = GPU_Init(800, 480, 0);
-		if (context == nullptr) {
+		GPU_Target* screen = GPU_Init(800, 480, 0);
+		if (screen == nullptr) {
 			return EXIT_SDL_GPU_FAIL;
 		}
+		atexit(GPU_Quit);
 
 		// Flush the events so the window will show
 		SDL_Event curEvent;
@@ -35,45 +36,9 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
-		atexit(GPU_Quit);
-
 		CollisionType::init("");
 
-		// test display
-
-		auto test = load_sprite("data/test.sprite");
-		if (!test) {
-			printf("Parsing failed: %s\n", test.err.description);
-			SDL_Delay(5000);
-			return 1;
-		}
-
 		Engine& engine = Engine::get();
-
-		auto es1 = engine.init_entity_system(20);
-		if (es1) {
-			EntitySystem* system = es1.value;
-
-			const EntityClass* temp_class = new EntityClass{
-				"LOLOLOLOL",
-				test.value,
-				0
-			};
-
-			auto blah = spawn_entity(system, temp_class, {100, 400});
-
-			if (blah) {
-				blah.value->velocity = { 300, -1000 };
-				blah.value->gravity = { 0, 1500 };
-			}
-
-			auto blah2 = spawn_entity(system, temp_class, { 400, 350 });
-
-			if (blah2) {
-				blah2.value->velocity = { 25, -10 };
-				blah2.value->gravity = { 0, 20 };
-			}
-		}
 
 		engine.init();
 
@@ -92,11 +57,11 @@ int main(int argc, char* argv[]) {
 			engine.update(updateTime - lastTime);
 
 			// render
-			GPU_Clear(context);
+			GPU_Clear(screen);
 
-			engine.render(context);
+			engine.render(screen);
 
-			GPU_Flip(context);
+			GPU_Flip(screen);
 
 			// TODO: better FPS/delay calculation
 			int delay = 16 - (SDL_GetTicks() - lastTime);

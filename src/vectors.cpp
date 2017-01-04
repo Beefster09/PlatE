@@ -154,6 +154,10 @@ void Vector2ListConstructor(float* list, Vector2* self) {
 	new(self) Vector2{ list[0], list[1] };
 }
 
+void Vector2Constructor(float x, float y, void* memory) {
+	new(memory) Vector2{ x, y };
+}
+
 void RegisterVector2(asIScriptEngine* engine) {
 	int r;
 
@@ -163,6 +167,8 @@ void RegisterVector2(asIScriptEngine* engine) {
 	// Initializer
 	r = engine->RegisterObjectBehaviour("Vector2", asBEHAVE_LIST_CONSTRUCT, "void f(const int& in) {float, float}",
 		asFUNCTION(Vector2ListConstructor), asCALL_CDECL_OBJLAST); assert(r >= 0);
+	r = engine->RegisterObjectBehaviour("Vector2", asBEHAVE_CONSTRUCT, "void f(float, float)",
+		asFUNCTION(Vector2Constructor), asCALL_CDECL_OBJLAST); assert(r >= 0);
 
 	// Properties
 	r = engine->RegisterObjectProperty("Vector2", "float x", asOFFSET(Vector2, x)); assert(r >= 0);

@@ -195,6 +195,12 @@
     <ClCompile Include="src\rng.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\either.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\executor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\sprite.h">
@@ -360,6 +366,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rng.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\executor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

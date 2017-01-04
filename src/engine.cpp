@@ -89,6 +89,7 @@ void Engine::init() {
 	// Game Stuff
 	RegisterVector2(script_engine);
 	RegisterRandomTypes(script_engine);
+	RegisterEntityTypes(script_engine);
 
 	// Global engine stuff
 	r = script_engine->RegisterObjectType("__Engine__", 0, asOBJ_REF | asOBJ_NOCOUNT); assert(r >= 0);
@@ -106,6 +107,11 @@ void Engine::init() {
 	r = script_engine->RegisterObjectMethod("__Engine__", "bool travel(const string &in)",
 		asMETHOD(Engine, travel), asCALL_THISCALL); assert(r >= 0);
 
+	// ==================================================================
+	// Now that the script engine is ready, we can init the entity system
+	entity_system = new EntitySystem();
+	r = script_engine->RegisterGlobalProperty("__EntitySystem__ EntitySystem", entity_system); assert(r >= 0);
+
 	// Now onto customizable initialization
 	load_main_script();
 
@@ -116,9 +122,10 @@ void Engine::init() {
 	r = ctx->Execute();
 	if (r == asEXECUTION_FINISHED) {
 		ctx->Unprepare();
+		script_engine->ReturnContext(ctx);
 	}
 	else {
-		perror("Fatal error: init script did not return.");
+		perror("Fatal error: global init script did not return.");
 		abort();
 	}
 
@@ -128,7 +135,7 @@ void Engine::init() {
 void Engine::update(int delta_time) {
 	float delta_seconds = static_cast<float>(delta_time) / 1000.f;
 	if (!paused) {
-		process_entities(delta_seconds, entity_system);
+		entity_system->update(script_engine, delta_seconds);
 	}
 
 	auto ctx = script_engine->RequestContext();
@@ -139,19 +146,25 @@ void Engine::update(int delta_time) {
 	int r = ctx->Execute();
 	if (r == asEXECUTION_FINISHED) {
 		ctx->Unprepare();
+		script_engine->ReturnContext(ctx);
 	}
 	else {
-		perror("Fatal error: tick script did not return.");
+		perror("Fatal error: global tick script did not return.");
 		abort();
 	}
 }
 
-void Engine::render(GPU_Target* context) {
+void Engine::render(GPU_Target* screen) {
 	if (active_level != nullptr) {
-		render_tilemap(context, &(active_level->layers[0]));
+		render_tilemap(screen, &(active_level->layers[0]));
 	}
 
-	render_entities(context, entity_system);
+	// TODO: interleaving
+
+	auto entities = entity_system->render_iter();
+	for (auto iter = entities.first; iter != entities.second; ++iter) {
+		(*iter)->render(screen);
+	}
 }
 
 void Engine::event(const SDL_Event& event) {
@@ -235,23 +248,6 @@ void PlatE::exit() {
 	SDL_Event event;
 	event.type = SDL_QUIT;
 	SDL_PushEvent(&event);
-}
-
-Result<EntitySystem*> Engine::init_entity_system(size_t capacity) {
-	auto result = create_entity_system(capacity);
-
-	if (result) {
-		if (entity_system != nullptr) {
-			auto res = destroy_entity_system(entity_system);
-			if (!res) {
-				return res.err;
-			}
-		}
-
-		entity_system = result.value;
-		return result.value;
-	}
-	else return result.err;
 }
 
 bool Engine::travel(const std::string& levelname) {
