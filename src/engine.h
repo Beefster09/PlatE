@@ -2,7 +2,7 @@
 
 #include "SDL_gpu.h"
 #include <SDL2/SDL_events.h>
-#include "either.h"
+#include "result.h"
 #include "error.h"
 #include "entity.h"
 #include "level.h"
@@ -17,26 +17,30 @@ namespace Errors {
 		ScriptFunctionDidNotReturn = {2020, "A script function was expected to return a value but it didn't."};
 }
 
-#define CONTEXT_POOL_CAPACITY 32
+constexpr float default_fps_min = 20;
+constexpr float default_fps_max = 120;
 
 namespace PlatE {
 
 	class Engine {
 	private:
-		EntitySystem* entity_system;
+		EntitySystem* entity_system = nullptr;
 
-		const Level* active_level;
+		const Level* active_level = nullptr;
 		// Level* peripheral_level; // used for splicing levels together
 		// Viewport* camera;
 		// InputSystem* input;
 
-		asIScriptEngine* script_engine;
+		asIScriptEngine* script_engine = nullptr;
 
-		asIScriptFunction* scriptfunc_init;
-		asIScriptFunction* scriptfunc_update;
+		asIScriptFunction* scriptfunc_init = nullptr;
+		asIScriptFunction* scriptfunc_update = nullptr;
 
 		bool paused = false; // MAYBE: some sort of enum so that GUI stuff works when paused
 		uint32_t init_time = 0;
+
+		float min_timestep, max_timestep;
+		float tick_remainder = 0.f;
 
 		Engine();
 
@@ -59,6 +63,10 @@ namespace PlatE {
 		float get_time();
 		inline void pause() { paused = true; }
 		inline void resume() { paused = false; }
+
+		void set_fps_range(float low, float high);
+
+		int get_delay(int ticks_passed);
 
 		bool travel(const std::string& levelname);
 

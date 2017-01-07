@@ -22,10 +22,8 @@ public:
 	explicit cstr_key(const char* str, bool copy_cstr = false);
 	void operator = (cstr_key&& other); // move assignment with ownership stealing
 
-	__forceinline bool operator == (const cstr_key& other) const {
-		if (cstr == other.cstr) return true;
-		if (hash != other.hash) return false;
-		return strcmp(cstr, other.cstr);
+	inline bool operator == (const cstr_key& other) const {
+		return strcmp(cstr, other.cstr) == 0;
 	}
 	__forceinline size_t get_hash() const { return hash; }
 	__forceinline const char* c_str() const { return cstr; }
@@ -51,7 +49,7 @@ private:
 	AssetManager() : assets(1024) {}
 
 	void store_raw(const char* filename, const void* asset, const std::type_index& type);
-	const AssetEntry* retrieve_raw(const char* filename);
+	const AssetEntry* retrieve_raw(const char* filename) const;
 
 	static AssetManager singleton;
 public:
@@ -71,13 +69,13 @@ public:
 	}
 
 	template <class T>
-	const T* retrieve(const char* filename) {
+	const T* retrieve(const char* filename) const {
 		const AssetEntry* asset = retrieve_raw(filename);
-		if (asset == nullptr) return nullptr;
+		if (asset == nullptr) return nullptr; // missing
 		if (asset->type == typeid(T)) {
 			return static_cast<const T*>(asset->asset);
 		}
-		else return nullptr;
+		else return nullptr; // wrong type
 	}
 
 };

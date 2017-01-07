@@ -7,7 +7,7 @@
 #include "storage.h"
 #include "vectors.h"
 #include "hitbox.h"
-#include "either.h"
+#include "result.h"
 #include "error.h"
 #include "SDL_gpu.h"
 
@@ -26,7 +26,7 @@ struct Frame {
 	FrameOffset display; // Relative position of the upper-left corner of the texture from the origin
 	FrameOffset foot; // Relative position of the "foot" coordinate which is used to follow slopes.
 	Array<const FrameOffset> offsets; // Other offsets that might be of interest
-	CollisionData collision;
+	Array<const Collider> colliders; // Additional collision information such as hitboxes and hurtboxes
 };
 
 struct FrameTiming {
@@ -37,6 +37,11 @@ struct FrameTiming {
 struct Animation {
 	const char* name;
 	Array<const FrameTiming> frames;
+
+	struct Solidity {
+		Hitbox hitbox;
+		bool fixed; // hitbox will be scaled and translated with its entity, but will not be rotated.
+	} solidity;
 };
 
 struct Sprite {

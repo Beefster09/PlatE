@@ -24,7 +24,10 @@ void Executor::operator() () {
 		if (thunk) {
 			thunk();
 		}
+
+		
 		if (--n_immediate_thunks == 0) {
+			std::unique_lock<std::mutex> lock(complete_mutex);
 			complete.notify_all();
 		}
 	}

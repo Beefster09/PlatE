@@ -6,7 +6,7 @@
 #include <cstring>
 #include <cassert>
 
-Hitbox::Hitbox(Hitbox& other) {
+Hitbox::Hitbox(const Hitbox& other) {
 	type = other.type;
 	switch (type) {
 	case BOX:
@@ -28,34 +28,100 @@ Hitbox::Hitbox(Hitbox& other) {
 	}
 }
 
-Array2D<bool> CollisionType::table = Array2D<bool>();
-Array<const CollisionType> CollisionType::types = Array<const CollisionType>();
+Hitbox::Hitbox(Hitbox&& other) {
+	type = other.type;
+	switch (type) {
+	case BOX:
+		box = std::move(other.box);
+		return;
+	case CIRCLE:
+		circle = std::move(other.circle);
+		return;
+	case LINE:
+	case ONEWAY:
+		line = std::move(other.line);
+		return;
+	case POLYGON:
+		polygon = std::move(other.polygon);
+		return;
+	case COMPOSITE:
+		composite = std::move(other.composite);
+		return;
+	}
+}
 
-const CollisionType* CollisionType::by_name(const char* name) {
-	for (const CollisionType& cgroup : CollisionType::types) {
+void Hitbox::operator = (const Hitbox& other) {
+	type = other.type;
+	switch (type) {
+	case BOX:
+		box = other.box;
+		return;
+	case CIRCLE:
+		circle = other.circle;
+		return;
+	case LINE:
+	case ONEWAY:
+		line = other.line;
+		return;
+	case POLYGON:
+		polygon = other.polygon;
+		return;
+	case COMPOSITE:
+		composite = other.composite;
+		return;
+	}
+}
+
+void Hitbox::operator == (Hitbox&& other) {
+	type = other.type;
+	switch (type) {
+	case BOX:
+		box = std::move(other.box);
+		return;
+	case CIRCLE:
+		circle = std::move(other.circle);
+		return;
+	case LINE:
+	case ONEWAY:
+		line = std::move(other.line);
+		return;
+	case POLYGON:
+		polygon = std::move(other.polygon);
+		return;
+	case COMPOSITE:
+		composite = std::move(other.composite);
+		return;
+	}
+}
+
+Array2D<bool> ColliderGroup::table = Array2D<bool>();
+Array<const ColliderGroup> ColliderGroup::types = Array<const ColliderGroup>();
+
+const ColliderGroup* ColliderGroup::by_name(const char* name) {
+	for (const ColliderGroup& cgroup : ColliderGroup::types) {
 		if (strcmp(name, cgroup.name) == 0) return &cgroup;
 	}
-	printf("Warning: '%s' is not a valid CollisionType.\n", name);
+	printf("Warning: '%s' is not a valid ColliderGroup.\n", name);
 	return nullptr;
 }
 
-void CollisionType::init(const char* config_file) {
+void ColliderGroup::init(const char* config_file) {
 	int n_cgroups = 5;
 
 	// TODO: count user types
 
-	CollisionType* types = new CollisionType[n_cgroups];
+	ColliderGroup* types = new ColliderGroup[n_cgroups];
 
 	// init intrinsics
-	types[0] = CollisionType("Entity",  0, { 127, 127, 127 });
-	types[1] = CollisionType("Level",   1, {  32, 192,   0 });
-	types[2] = CollisionType("Damage",  2, { 255,   0,   0 });
-	types[3] = CollisionType("Hurtbox", 3, { 255, 255,  64 });
-	types[4] = CollisionType("Block",   4, { 192,   0, 255 });
+	types[0] = ColliderGroup("Entity",  0, { 127, 127, 127 });
+	types[1] = ColliderGroup("Level",   1, {  32, 192,   0 });
+	types[2] = ColliderGroup("Damage",  2, { 255,   0,   0 });
+	types[3] = ColliderGroup("Hurtbox", 3, { 255, 255,  64 });
+	types[4] = ColliderGroup("Block",   4, { 192,   0, 255 });
 
 	// TODO: parse user types
 
-	CollisionType::types = Array<const CollisionType>(types, n_cgroups);
+	ColliderGroup::types = Array<const ColliderGroup>(types, n_cgroups);
 
 	table = Array2D<bool>(n_cgroups, n_cgroups);
 	table.clear();
@@ -129,6 +195,7 @@ void render_hitbox(GPU_Target* context, const Transform& tx, const Hitbox& hitbo
 		break;
 	case Hitbox::POLYGON:
 	{
+		if (hitbox.polygon.vertices.size() > 32) break;
 		Vector2 vertexBuf[32];
 		int i = 0;
 		for (auto vertex : hitbox.polygon.vertices) {
@@ -148,8 +215,8 @@ void render_hitbox(GPU_Target* context, const Transform& tx, const Hitbox& hitbo
 }
 
 
-void render_colliders(GPU_Target* context, const Transform& tx, const CollisionData& collision) {
-	for (const Collider& collider: collision) {
+void render_colliders(GPU_Target* context, const Transform& tx, const Array<const Collider>& colliders) {
+	for (const Collider& collider: colliders) {
 		render_hitbox(context, tx, collider.hitbox, collider.type->color);
 	}
 }

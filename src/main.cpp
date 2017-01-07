@@ -4,7 +4,7 @@
 #include "sprite.h"
 #include "hitbox.h"
 #include "entity.h"
-#include "either.h"
+#include "result.h"
 #include "level.h"
 #include "assetmanager.h"
 #include <stdio.h>
@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
-		CollisionType::init("");
+		ColliderGroup::init("");
 
 		Engine& engine = Engine::get();
 
@@ -64,8 +64,7 @@ int main(int argc, char* argv[]) {
 			GPU_Flip(screen);
 
 			// TODO: better FPS/delay calculation
-			int delay = 16 - (SDL_GetTicks() - lastTime);
-			delay = (delay < 0) ? 0 : delay;
+			int delay = engine.get_delay(SDL_GetTicks() - lastTime);
 			lastTime = updateTime;
 			SDL_Delay(delay);
 		}

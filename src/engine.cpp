@@ -51,8 +51,7 @@ static const float pi = static_cast<float>(M_PI);
 static const float tau = static_cast<float>(M_PI * 2);
 
 Engine::Engine() {
-	entity_system = nullptr;
-	script_engine = nullptr;
+	set_fps_range(default_fps_min, default_fps_max);
 }
 
 void Engine::init() {
@@ -86,7 +85,10 @@ void Engine::init() {
 	r = script_engine->RegisterGlobalFunction("void println(bool)",
 		asFUNCTIONPR(PrintLn, (bool), void), asCALL_CDECL); assert(r >= 0);
 
-	// Game Stuff
+	// Error handling (async callbacks)
+	r = script_engine->RegisterFuncdef("void ErrorCallback(int, const string &in)"); assert(r >= 0);
+
+	// Game types
 	RegisterVector2(script_engine);
 	RegisterRandomTypes(script_engine);
 	RegisterEntityTypes(script_engine);
@@ -108,7 +110,7 @@ void Engine::init() {
 		asMETHOD(Engine, travel), asCALL_THISCALL); assert(r >= 0);
 
 	// ==================================================================
-	// Now that the script engine is ready, we can init the entity system
+	// Now that the script engine is ready, we can initialize the entity system
 	entity_system = new EntitySystem();
 	r = script_engine->RegisterGlobalProperty("__EntitySystem__ EntitySystem", entity_system); assert(r >= 0);
 
@@ -134,6 +136,10 @@ void Engine::init() {
 
 void Engine::update(int delta_time) {
 	float delta_seconds = static_cast<float>(delta_time) / 1000.f;
+	if (delta_seconds > max_timestep) delta_seconds = max_timestep;
+
+	entity_system->executor.run_deferred();
+
 	if (!paused) {
 		entity_system->update(script_engine, delta_seconds);
 	}
@@ -173,6 +179,19 @@ void Engine::event(const SDL_Event& event) {
 
 float Engine::get_time() {
 	return static_cast<float>(SDL_GetTicks() - init_time) / 1000.f;
+}
+
+void Engine::set_fps_range(float low, float high) {
+	min_timestep = 1000.f / high;
+	max_timestep = 1000.f / low;
+	tick_remainder = 0.f;
+}
+
+int Engine::get_delay(int ticks_passed) {
+	float ticks;
+	tick_remainder = modf(min_timestep + tick_remainder, &ticks);
+	int delay = static_cast<int>(ticks) - ticks_passed;
+	return delay > 0 ? delay : 0;
 }
 
 Result<asIScriptModule*> Engine::load_script(const char* filename) {

@@ -43,7 +43,8 @@ Hitbox read_hitbox(FILE* stream, MemoryPool& pool) {
 		break;
 	}
 	default:
-		throw Errors::InvalidHitboxType;
+		char type[2] = { result.type == 0 ? '0' : result.type, 0 };
+		throw Error(Errors::InvalidHitboxType, std::string(type));
 	}
 
 	return result;
@@ -55,13 +56,11 @@ Array<const Collider> read_colliders(FILE* stream, uint32_t n_colliders, MemoryP
 		Collider& cur_coll = colliders[i];
 
 		size_t typestrlen = read<uint32_t>(stream);
-		cur_coll.solid = read<bool>(stream);
-		cur_coll.ccd = read<bool>(stream);
 
 		char namebuffer[51];
 		fread(namebuffer, 1, typestrlen, stream);
 		namebuffer[typestrlen] = 0;
-		cur_coll.type = CollisionType::by_name(namebuffer);
+		cur_coll.type = ColliderGroup::by_name(namebuffer);
 
 		cur_coll.hitbox = read_hitbox(stream, pool);
 	}

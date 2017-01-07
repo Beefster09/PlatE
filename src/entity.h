@@ -7,8 +7,7 @@
 
 #include "sprite.h"
 #include "hitbox.h"
-#include "either.h"
-#include "event.h"
+#include "result.h"
 #include "vectors.h"
 #include "storage.h"
 #include "transform.h"
@@ -23,21 +22,21 @@
 namespace Errors {
 	const error_data
 		EntityNotFound = { 404, "Entity does not exist in this system!" },
-		EntityMissingInit          = { 301, "Entity behavior component does not have an appropriate init function." },
-		EntityInitException        = { 302, "Entity behavior component init() threw an exception." },
-		EntityInitUnknownFailure   = { 309, "Entity behavior component init() failed in an unexpected way." },
-		EntityUpdateException      = { 312, "Entity behavior component update() threw an exception." },
-		EntityUpdateUnknownFailure = { 319, "Entity behavior component init() failed in an unexpected way." };
+		EntityMissingInit          = { 301, "Entity behavior component does not have an appropriate init function" },
+		EntityInitException        = { 302, "Entity behavior component init() threw an exception" },
+		EntityInitUnknownFailure   = { 309, "Entity behavior component init() failed in an unexpected way" },
+		EntityUpdateException      = { 312, "Entity behavior component update() threw an exception" },
+		EntityUpdateUnknownFailure = { 319, "Entity behavior component update() failed in an unexpected way" };
 }
 
 typedef uint32_t EntityId;
-
-const int EntityInvisibleZ = INT_MIN;
+class EntitySystem;
 
 // Instances of entities
 struct Entity {
 // === Metadata ===
 	const EntityId id;
+	EntitySystem* system;
 
 // === Physics Data ===
 	Point2 position       = { 0.f,0.f };
@@ -49,31 +48,11 @@ struct Entity {
 	Point2 last_pos       = { 0.f,0.f };
 
 	// Other movement stuffs
-	Vector2 max_speed = { INFINITY, INFINITY }; // Maximum speed on each axis
-	Vector2 gravity   = { 0.f,0.f };   // Additional acceleration to apply when in midair
-
-	struct GroundLink {
-		enum : char {
-			NONE = 0,
-			MIDAIR = 'm',
-			ENTITY = 'e',
-			LEVEL = 'l'
-		} type = NONE;
-		union {
-			Entity* entity;
-			void* level;
-		};
-		// Where this entity's foot position is relative to the linked origin.
-		Vector2 foot_pos;
-		Vector2 contact_normal;
-	} ground;
+	AABB vel_range = { -INFINITY, INFINITY, -INFINITY, INFINITY }; // Velocity range
 
 // === Transform Data ===
 	float rotation = 0.f;
 	Vector2 scale = { 1.f, 1.f };
-
-	// Cached transformation matrix. Calculated during physics/movement step and after update.
-	Transform tx = Transform::identity;
 
 // === Render Data ===
 	const Sprite* sprite = nullptr;
@@ -82,13 +61,14 @@ struct Entity {
 	uint32_t anim_frame = 0;
 	float frame_time = 0.f;
 
-	int z_order = EntityInvisibleZ;
+	int z_order = 0;
 
 // === Enable/Disable flags ===
 	bool physics_enabled = true;
 	bool collision_enabled = true;
 	bool animation_enabled = true;
 	bool rendering_enabled = true;
+	bool solid = true;
 
 // === Script Interface ===
 	asIScriptObject* rootcomp = nullptr;
@@ -104,20 +84,24 @@ struct Entity {
 	Result<> update(asIScriptEngine* engine, float delta_time);
 
 	void render(GPU_Target* screen) const;
+
+	inline Transform get_transform() const {
+		return Transform::scal_rot_trans(scale, rotation, position);
+	}
 };
 
 class EntitySystem {
 	typedef std::vector<Entity*> EntityList;
 	typedef EntityList::iterator EIter;
+
 private:
 	BucketAllocator<Entity> allocator;
 	EntityList entities;
 	EntityId next_id;
 
-	EventBuffer* event_buffer;
-
 public:
 	Executor executor;
+	bool ordered = false;
 
 	EntitySystem();
 	EntitySystem(const EntitySystem&) = delete;

@@ -6,7 +6,7 @@
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
 #include "direction.h"
-#include "either.h"
+#include "result.h"
 #include "vectors.h"
 #include "storage.h"
 #include "transform.h"
@@ -43,55 +43,51 @@ struct Hitbox {
 	};
 
 	Hitbox() {}
-	Hitbox(Hitbox& other);
+	Hitbox(const Hitbox& other);
+	Hitbox(Hitbox&& other);
+
+	void operator = (const Hitbox& other);
+	void operator == (Hitbox&& other);
 };
 
-struct CollisionType {
+struct ColliderGroup {
 	const char* name;
 	int id;
 	SDL_Color color;
 
 private:
 	static Array2D<bool> table;
-	static Array<const CollisionType> types;
+	static Array<const ColliderGroup> types;
 
 public:
 	static void init (const char* config_file);
-	inline static bool acts_on(const CollisionType* a, const CollisionType* b) {
+	inline static bool acts_on(const ColliderGroup* a, const ColliderGroup* b) {
 		if (a == nullptr || b == nullptr) {
 			return false;
 		}
 		return table(a->id, b->id);
 	}
-	static const CollisionType* by_name (const char* name);
+	static const ColliderGroup* by_name (const char* name);
 
 private:
-	inline CollisionType(const char* name, int id, SDL_Color color) :
+	inline ColliderGroup(const char* name, int id, SDL_Color color) :
 		name(name), id(id), color(color) {}
 
-	inline CollisionType() {}
+	inline ColliderGroup() {}
 };
 
 struct Collider {
 	/// type data that determines what things actually collide
-	const CollisionType* type;
+	const ColliderGroup* type;
 
 	/// The inherently meaningful data that the engine handles.
 	Hitbox hitbox;
 
-	/// Solidity ensures that physics depenetrates entities
-	bool solid : 1;
-
-	/// Is continuous collision detection enabled
-	/// CCD prevents fast-moving objects from tunneling, but is more expensive to calculate
-	bool ccd : 1;
-
 	// priority?
 };
 
-typedef Array<const Collider> CollisionData;
-
-void render_colliders(GPU_Target* context, const Transform& tx, const CollisionData& colliders);
+void render_hitbox(GPU_Target* context, const Transform& tx, const Hitbox& hitbox, const SDL_Color& color);
+void render_colliders(GPU_Target* context, const Transform& tx, const Array<const Collider>& colliders);
 
 // Collision detection :O
 bool hitboxes_overlap(

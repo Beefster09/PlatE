@@ -35,7 +35,8 @@ Offset = struct.Struct("<2f")
 # Animation
 #  length of the name of the animation
 #  number of frames in the animation
-Animation = struct.Struct("<II")
+#  solidity.fixed
+AnimationNoHitbox = struct.Struct("<II?")
 
 # Animation Frame
 #  duration to display
@@ -50,13 +51,13 @@ def bake(infile, outfile):
             sprite = json.load(f)
         except Exception as e:
             raise Exception("Error in parsing '{}': {}".format(infile, str(e)))
-        
+
     with open(outfile, "wb") as f:
         f.write(MAGIC_NUMBER)
-        
+
         name = sprite["name"].encode()
         texture = sprite["spritesheet"].encode()
-            
+
         n_stringbytes = alignstrlen(name)
         n_offsets = 0
         n_colliders = 0
@@ -69,12 +70,15 @@ def bake(infile, outfile):
                 h, v = count_nested_hitboxes_and_vertices(collider["hitbox"])
                 nested_hitboxes += h
                 n_vertices += v
-            
+
         n_frametimings = 0
         for anim in sprite["animations"]:
             n_stringbytes += alignstrlen(anim["name"])
             n_frametimings += len(anim["frames"])
-        
+            h, v = count_nested_hitboxes_and_vertices(anim["solidity"]['hitbox'])
+            nested_hitboxes += h
+            n_vertices += v
+
         f.write(Header.pack(
             len(name),
             len(texture),
@@ -88,10 +92,10 @@ def bake(infile, outfile):
             n_frametimings,
             n_stringbytes
         ))
-        
+
         f.write(name)
         f.write(texture)
-        
+
         for clip in sprite["clips"]:
             f.write(ClipRect.pack(
                 clip["x"],
@@ -99,7 +103,7 @@ def bake(infile, outfile):
                 clip["w"],
                 clip["h"]
             ))
-            
+
         for frame in sprite["frames"]:
             f.write(Frame.pack(
                 frame["clip"],
@@ -110,34 +114,30 @@ def bake(infile, outfile):
                 len(frame["offsets"]),
                 len(frame["collision"])
             ))
-            
+
             for offset in frame["offsets"]:
                 f.write(Offset.pack(
                     offset["x"],
                     offset["y"]
                 ))
-                
+
             for collider in frame["collision"]:
                 write_collider(f, collider)
-                
-                
+
+
         for anim in sprite["animations"]:
             name = anim["name"].encode()
-            
-            f.write(Animation.pack(
+
+            f.write(AnimationNoHitbox.pack(
                 len(name),
-                len(anim["frames"])
+                len(anim["frames"]),
+                anim['solidity'].get("fixed", False)
             ))
             f.write(name)
-            
+            write_hitbox(f, anim['solidity']['hitbox'])
+
             for frame in anim["frames"]:
                 f.write(AnimFrame.pack(
                     frame["duration"],
                     frame["frame"]
                 ))
- 
-
-
-
-
- 

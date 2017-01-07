@@ -67,7 +67,6 @@ void cstr_key::operator = (cstr_key&& other) {
 	}
 }
 
-
 void cstr_key::copy_if_unowned() {
 	if (!owns_buffer) {
 		cstr = copy(cstr);
@@ -83,8 +82,8 @@ void AssetManager::store_raw(const char* filename, const void* asset, const std:
 	assets.insert(std::make_pair(cstr_key(filename, true), AssetEntry{ asset, type, 0 }));
 }
 
-const AssetEntry* AssetManager::retrieve_raw(const char* filename) {
-	cstr_key key(filename);
+const AssetEntry* AssetManager::retrieve_raw(const char* filename) const {
+	const cstr_key key(filename);
 
 	AssetMap::const_iterator iter = assets.find(key);
 	if (iter == assets.end()) return nullptr;

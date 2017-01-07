@@ -15,17 +15,6 @@
 			"offsets": [],
 			"collision": [
 				{
-					"type": "Entity",
-					"hitbox": {
-						"type": "box",
-						"left": -64,
-						"top": -64,
-						"right": 64,
-						"bottom": 64
-					},
-					"solid": true
-				},
-				{
 					"type": "Hurtbox",
 					"hitbox": {
 						"type": "box",
@@ -65,17 +54,6 @@
 			"foot":    {"x": 0,   "y": 64},
 			"offsets": [],
 			"collision": [
-				{
-					"type": "Entity",
-					"hitbox": {
-						"type": "box",
-						"left": -64,
-						"top": -64,
-						"right": 64,
-						"bottom": 64
-					},
-					"solid": true
-				},
 				{
 					"type": "Hurtbox",
 					"hitbox": {
@@ -117,17 +95,6 @@
 			"offsets": [],
 			"collision": [
 				{
-					"type": "Entity",
-					"hitbox": {
-						"type": "box",
-						"left": -64,
-						"top": -64,
-						"right": 64,
-						"bottom": 64
-					},
-					"solid": true
-				},
-				{
 					"type": "Hurtbox",
 					"hitbox": {
 						"type": "box",
@@ -167,17 +134,6 @@
 			"foot":    {"x": 0,   "y": 64},
 			"offsets": [],
 			"collision": [
-				{
-					"type": "Entity",
-					"hitbox": {
-						"type": "box",
-						"left": -64,
-						"top": -64,
-						"right": 64,
-						"bottom": 64
-					},
-					"solid": true
-				},
 				{
 					"type": "Hurtbox",
 					"hitbox": {
@@ -222,20 +178,50 @@
 			"name": "standing",
 			"frames": [
 				{"duration": 0.0, "frame": 3}
-			]
+			],
+            "solidity": {
+                "hitbox": {
+					"type": "box",
+					"left": -64,
+					"top": -64,
+					"right": 64,
+					"bottom": 64
+				},
+                "fixed": true
+            }
 		},
 		{
 			"name": "wat",
 			"frames": [
 				{"duration": 0.0, "frame": 2}
-			]
+			],
+            "solidity": {
+                "hitbox": {
+					"type": "box",
+					"left": -64,
+					"top": -64,
+					"right": 64,
+					"bottom": 64
+				},
+                "fixed": true
+            }
 		},
 		{
 			"name": "wat2",
 			"frames": [
 				{"duration": 0.5, "frame": 0},
 				{"duration": 0.25, "frame": 1}
-			]
+			],
+            "solidity": {
+                "hitbox": {
+					"type": "box",
+					"left": -64,
+					"top": -64,
+					"right": 64,
+					"bottom": 64
+				},
+                "fixed": true
+            }
 		}
 	]
 }

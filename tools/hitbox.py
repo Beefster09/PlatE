@@ -3,9 +3,7 @@ import struct
 
 # Collider data without the Hitbox (due to hitboxes being variable length)
 #  length of the name of the collider type
-#  solid
-#  ccd
-ColliderNoHitbox = struct.Struct("<I??")
+ColliderNoHitbox = struct.Struct("<I")
 
 # Stuff for hitboxes
 HitboxBox       = b'b'
@@ -85,14 +83,14 @@ def write_hitbox(f, hitbox):
         f.write(HitboxArrayLen.pack(len(hitbox["hitboxes"])))
         for sub in hitbox["hitboxes"]:
             write_hitbox(f, sub)
+    else:
+        raise Exception("Invalid hitbox type: " + type)
 
 def write_collider(f, collider):
     ctype = collider["type"].encode()
 
     f.write(ColliderNoHitbox.pack(
-        len(ctype),
-        collider.get("solid"),
-        collider.get("ccd")
+        len(ctype)
     ))
 
     f.write(ctype)

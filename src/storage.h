@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <type_traits>
 #include <memory>
-#include "either.h"
+#include "result.h"
 #include "error.h"
 #include "util.h"
 
@@ -25,8 +25,10 @@ public:
 	__forceinline Array() {}
 	Array(Data* data, size_t size) : n_items(size), items(data) {}
 	Array(size_t size) : n_items(size), items((Data*) operator new(size * sizeof(Data))) {}
-	Array(Array& arr) = default;
-	Array& operator = (Array& arr) = default;
+	Array(const Array& arr) = default;
+	Array(Array&& arr) = default;
+	Array& operator = (const Array& arr) = default;
+	Array& operator = (Array&& arr) = default;
 
 	/// Be VERY cautious when using this function as it could cause memory to be invalidated somewhere else.
 	/// Only use this if you know you are the sole user/owner of an array.
@@ -221,12 +223,7 @@ public:
 	}
 
 	~SparseBucket() {
-		if (!std::is_pod<Data>::value) {
-			for (Data& d : *this) {
-				d.Data::~Data();
-			}
-		}
-		delete[] items;
+		operator delete(items);
 	}
 
 	void print_contents() {
@@ -281,13 +278,31 @@ public:
 		return result;
 	}
 
-	Result<> remove(Data* item) {
-		ptrdiff_t offset = item - items;
+	Result<> remove(int offset) {
 		if (offset < 0 || offset >= n_items || !occupation[offset]) {
 			return Errors::BucketIllegalRemove;
 		}
 		// Unset the bit :O
 		occupation.unset(offset);
+		items[offset].~Data();
+
+		// Avoid searching next time if this bucket was *just* full.
+		if (n_items >= capacity_) {
+			next_index = offset;
+		}
+
+		--n_items;
+		return nullptr;
+	}
+
+	Result<> remove(Data* ptr) {
+		int offset = static_cast<int>(ptr - items) / sizeof(Data);
+		if (offset < 0 || offset >= n_items || !occupation[offset]) {
+			return Errors::BucketIllegalRemove;
+		}
+		// Unset the bit :O
+		occupation.unset(offset);
+		items[offset].~Data();
 
 		// Avoid searching next time if this bucket was *just* full.
 		if (n_items >= capacity_) {
@@ -562,12 +577,17 @@ public:
 
 	~BucketAllocator() {
 		for (Bucket* bucket : full_buckets) {
+			for (T& item : *bucket) {
+				item.~T();
+			}
 			delete bucket;
 		}
 		for (Bucket* bucket : unfull_buckets) {
+			for (T& item : *bucket) {
+				item.~T();
+			}
 			delete bucket;
 		}
-		// destructors clean up the rest.
 	}
 
 	T* alloc() {
@@ -591,6 +611,7 @@ public:
 	bool free(T* ptr) {
 		Bucket* owning_bucket = nullptr;
 		int ob_ind = -1;
+		// check full buckets first, since they are more likely to contain the pointer.
 		size_t n_buckets = full_buckets.size();
 		for (int i = 0; i < n_buckets; ++i) {
 			Bucket* bucket = full_buckets[i];
@@ -603,7 +624,7 @@ public:
 		if (owning_bucket == nullptr) {
 			size_t n_buckets = unfull_buckets.size();
 			for (int i = 0; i < n_buckets; ++i) {
-				Bucket* bucket = full_buckets[i];
+				Bucket* bucket = unfull_buckets[i];
 				if (bucket->contains_ptr(ptr)) {
 					owning_bucket = bucket;
 					ob_ind = i;

@@ -2,7 +2,7 @@
 
 #include <cstdio>
 #include "storage.h"
-#include "either.h"
+#include "result.h"
 #include "error.h"
 #include "util.h"
 #include "hitbox.h"
@@ -12,7 +12,7 @@
 
 namespace Errors {
 	const error_data
-		CannotOpenFile = { 1, "File could not be opened ;'(" },
+		CannotOpenFile = { 1, "File could not be opened." },
 		IncompleteFileRead = { 2, "Did not get all the bytes expected from an fread call." };
 }
 
@@ -22,7 +22,7 @@ T read(FILE* stream) {
 	alignas(T) unsigned char buffer[sizeof(T)];
 
 	if (!fread(buffer, sizeof(T), 1, stream) && checked) {
-		throw Errors::IncompleteFileRead;
+		throw Error(Errors::IncompleteFileRead, typeid(T).name()); // one of the few exceptions actually used in the codebase.
 	}
 
 	// V - TODO? - V

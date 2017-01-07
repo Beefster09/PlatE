@@ -1,6 +1,6 @@
 
 #include "vectors.h"
-#include "SDL2/SDL_rect.h"
+#include "SDL_gpu.h"
 #include <string>
 
 Vector2 Vector2::operator + (const Vector2 &that) const {
@@ -85,6 +85,28 @@ void Vector2::rotate(float angle) {
 	this->y = x * s + y * c;
 }
 
+Vector2 Vector2::clamped(const AABB& box) const {
+	Vector2 newvec;
+
+	if (x < box.left) newvec.x = box.left;
+	else if (x > box.right) newvec.x = box.right;
+	else newvec.x = x;
+
+	if (y < box.top) newvec.y = box.top;
+	else if (y > box.bottom) newvec.y = box.bottom;
+	else newvec.y = y;
+
+	return newvec;
+}
+
+void Vector2::clamp(const AABB& box) {
+	if (x < box.left) x = box.left;
+	else if (x > box.right) x = box.right;
+
+	if (y < box.top) y = box.top;
+	else if (y > box.bottom) y = box.bottom;
+}
+
 const Vector2 Vector2::up = { 0.f, -1.f };
 const Vector2 Vector2::down = { 0.f, 1.f };
 const Vector2 Vector2::left = { -1.f, 0.f };
@@ -105,14 +127,67 @@ void Vector2::round_down() {
 	y = floorf(y);
 }
 
-SDL_Rect to_rect(const Vector2& p1, const Vector2& p2) {
-	SDL_Rect result;
-	result.x = (int) floorf(fminf(p1.x, p2.x));
-	result.y = (int) floorf(fminf(p1.y, p2.y));
-	result.w = (int) fabs(floorf(p2.x - p1.x));
-	result.h = (int) fabs(floorf(p2.y - p1.y));
+// AABB
 
-	return result;
+AABB AABB::operator | (const AABB& other) const {
+	return{
+		SDL_min(left, other.left),
+		SDL_max(right, other.right),
+		SDL_min(top, other.top),
+		SDL_max(bottom, other.bottom)
+	};
+}
+
+AABB AABB::operator & (const AABB& other) const {
+	return{
+		SDL_max(left, other.left),
+		SDL_min(right, other.right),
+		SDL_max(top, other.top),
+		SDL_min(bottom, other.bottom)
+	};
+}
+
+AABB AABB::operator + (const Vector2& vec) const {
+	return{
+		left + vec.x,
+		right + vec.x,
+		top + vec.y,
+		bottom + vec.y
+	};
+}
+
+AABB AABB::operator - (const Vector2& vec) const {
+	return{
+		left - vec.x,
+		right - vec.x,
+		top - vec.y,
+		bottom - vec.y
+	};
+}
+
+void AABB::operator += (const Vector2& vec) {
+	left += vec.x;
+	right += vec.x;
+	top += vec.y;
+	bottom += vec.y;
+}
+
+void AABB::operator -= (const Vector2& vec) {
+	left -= vec.x;
+	right -= vec.x;
+	top -= vec.y;
+	bottom -= vec.y;
+}
+
+// utilities
+
+GPU_Rect to_rect(const Vector2& p1, const Vector2& p2) {
+	return {
+		SDL_min(p1.x, p2.x),
+		SDL_max(p1.y, p2.y),
+		fabsf(p2.x - p1.x),
+		fabsf(p2.y - p1.y)
+	};
 }
 
 void aabb_to_poly(const AABB& aabb, Point2* arr) {
@@ -161,9 +236,13 @@ void Vector2Constructor(float x, float y, void* memory) {
 void RegisterVector2(asIScriptEngine* engine) {
 	int r;
 
+	// Types
 	r = engine->RegisterObjectType("Vector2", sizeof(Vector2),
 		asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<Vector2>() | asOBJ_APP_CLASS_ALLFLOATS); assert(r >= 0);
+	r = engine->RegisterObjectType("AABB", sizeof(AABB),
+		asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<AABB>() | asOBJ_APP_CLASS_ALLFLOATS); assert(r >= 0);
 
+	// === Vector2 Interface ===
 	// Initializer
 	r = engine->RegisterObjectBehaviour("Vector2", asBEHAVE_LIST_CONSTRUCT, "void f(const int& in) {float, float}",
 		asFUNCTION(Vector2ListConstructor), asCALL_CDECL_OBJLAST); assert(r >= 0);
@@ -202,6 +281,7 @@ void RegisterVector2(asIScriptEngine* engine) {
 		asMETHOD(Vector2, dot), asCALL_THISCALL); assert(r >= 0);
 	r = engine->RegisterObjectMethod("Vector2", "float cross(const Vector2 &in) const",
 		asMETHOD(Vector2, cross), asCALL_THISCALL); assert(r >= 0);
+
 	r = engine->RegisterObjectMethod("Vector2", "float get_magnitude() const",
 		asMETHOD(Vector2, magnitude), asCALL_THISCALL); assert(r >= 0);
 	r = engine->RegisterObjectMethod("Vector2", "float get_angle() const",
@@ -210,9 +290,11 @@ void RegisterVector2(asIScriptEngine* engine) {
 		asMETHOD(Vector2, floor), asCALL_THISCALL); assert(r >= 0);
 	r = engine->RegisterObjectMethod("Vector2", "Vector2 get_normalized() const",
 		asMETHOD(Vector2, normalized), asCALL_THISCALL); assert(r >= 0);
-	r = engine->RegisterObjectMethod("Vector2", "Vector2 projected(Vector2 axis) const",
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 projected(Vector2) const",
 		asMETHOD(Vector2, projected), asCALL_THISCALL); assert(r >= 0);
-	r = engine->RegisterObjectMethod("Vector2", "Vector2 rotated(float angle) const",
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 clamped(const AABB &in) const",
+		asMETHOD(Vector2, clamped), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "Vector2 rotated(float) const",
 		asMETHOD(Vector2, rotated), asCALL_THISCALL); assert(r >= 0);
 	r = engine->RegisterObjectMethod("Vector2", "Vector2 get_rotated90CW() const",
 		asMETHOD(Vector2, rotated90CW), asCALL_THISCALL); assert(r >= 0);
@@ -223,8 +305,10 @@ void RegisterVector2(asIScriptEngine* engine) {
 		asMETHOD(Vector2, normalize), asCALL_THISCALL); assert(r >= 0);
 	r = engine->RegisterObjectMethod("Vector2", "void round_down()",
 		asMETHOD(Vector2, round_down), asCALL_THISCALL); assert(r >= 0);
-	r = engine->RegisterObjectMethod("Vector2", "void rotate(float angle)",
+	r = engine->RegisterObjectMethod("Vector2", "void rotate(float)",
 		asMETHOD(Vector2, rotate), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("Vector2", "void clamp(const AABB &in)",
+		asMETHOD(Vector2, clamp), asCALL_THISCALL); assert(r >= 0);
 
 	r = engine->RegisterObjectMethod("Vector2", "string to_string() const",
 		asFUNCTIONPR(to_string, (const Vector2&), std::string), asCALL_CDECL_OBJFIRST); assert(r >= 0);
@@ -245,12 +329,35 @@ void RegisterVector2(asIScriptEngine* engine) {
 		asFUNCTIONPR(lerp, (const Vector2&, const Vector2&, float), Vector2), asCALL_CDECL); assert(r >= 0);
 	r = engine->RegisterGlobalFunction("Vector2 ease (Vector2 &in, Vector2 &in, float)",
 		asFUNCTIONPR(ease, (const Vector2&, const Vector2&, float), Vector2), asCALL_CDECL); assert(r >= 0);
+
+	// === AABB Interface ===
+
+	r = engine->RegisterObjectProperty("AABB", "float left", asOFFSET(AABB, left)); assert(r >= 0);
+	r = engine->RegisterObjectProperty("AABB", "float right", asOFFSET(AABB, right)); assert(r >= 0);
+	r = engine->RegisterObjectProperty("AABB", "float top", asOFFSET(AABB, top)); assert(r >= 0);
+	r = engine->RegisterObjectProperty("AABB", "float bottom", asOFFSET(AABB, bottom)); assert(r >= 0);
+
+	r = engine->RegisterObjectMethod("AABB", "bool contains(const Vector2 &in) const",
+		asMETHOD(AABB, contains), asCALL_THISCALL); assert(r >= 0);
+
+	r = engine->RegisterObjectMethod("AABB", "AABB opOr(const AABB &in) const",
+		asMETHOD(AABB, operator |), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("AABB", "AABB opAnd(const AABB &in) const",
+		asMETHOD(AABB, operator &), asCALL_THISCALL); assert(r >= 0);
+
+	r = engine->RegisterObjectMethod("AABB", "void opOrAssign(const AABB &in)",
+		asMETHOD(AABB, operator |=), asCALL_THISCALL); assert(r >= 0);
+	r = engine->RegisterObjectMethod("AABB", "void opAndAssign(const AABB &in)",
+		asMETHOD(AABB, operator &=), asCALL_THISCALL); assert(r >= 0);
+
+	// === Utility Functions ===
+
 	r = engine->RegisterGlobalFunction("Vector2 lerp (float, float, float)",
 		asFUNCTIONPR(lerp, (float, float, float), float), asCALL_CDECL); assert(r >= 0);
 	r = engine->RegisterGlobalFunction("Vector2 ease (float, float, float)",
 		asFUNCTIONPR(ease, (float, float, float), float), asCALL_CDECL); assert(r >= 0);
 
-	// Constants
+	// === Constants ===
 
 	r = engine->RegisterGlobalProperty("const Vector2 Vector2_zero", const_cast<Vector2*>(&Vector2::zero)); assert(r >= 0);
 	r = engine->RegisterGlobalProperty("const Vector2 Vector2_up", const_cast<Vector2*>(&Vector2::up)); assert(r >= 0);

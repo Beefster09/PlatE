@@ -267,9 +267,9 @@
     <ClCompile Include="lib\angelscript-sdk\source\as_variablescope.cpp" />
     <ClCompile Include="src\assetmanager.cpp" />
     <ClCompile Include="src\direction.cpp" />
-    <ClCompile Include="src\either.cpp" />
+    <ClCompile Include="src\error.cpp" />
+    <ClCompile Include="src\result.cpp" />
     <ClCompile Include="src\entity.cpp" />
-    <ClCompile Include="src\event.cpp" />
     <ClCompile Include="src\engine.cpp" />
     <ClCompile Include="src\executor.cpp" />
     <ClCompile Include="src\fileutil.cpp" />
@@ -328,10 +328,9 @@
     <ClInclude Include="src\rng.h" />
     <ClInclude Include="src\util.h" />
     <ClInclude Include="src\direction.h" />
-    <ClInclude Include="src\either.h" />
+    <ClInclude Include="src\result.h" />
     <ClInclude Include="src\entity.h" />
     <ClInclude Include="src\error.h" />
-    <ClInclude Include="src\event.h" />
     <ClInclude Include="src\engine.h" />
     <ClInclude Include="src\hitbox.h" />
     <ClInclude Include="src\sprite.h" />

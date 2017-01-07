@@ -39,9 +39,6 @@
     <ClCompile Include="src\entity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\event.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\direction.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -195,10 +192,13 @@
     <ClCompile Include="src\rng.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\either.cpp">
+    <ClCompile Include="src\executor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\executor.cpp">
+    <ClCompile Include="src\result.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\error.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -209,16 +209,10 @@
     <ClInclude Include="src\hitbox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\either.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\error.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\entity.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\event.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\direction.h">
@@ -369,6 +363,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\executor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\result.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

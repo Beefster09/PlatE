@@ -124,7 +124,7 @@ __forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool&
 			}
 			cur_frame.offsets = Array<const Vector2>(offsets, n_offsets);
 
-			cur_frame.collision = read_colliders(stream, n_colliders, pool);
+			cur_frame.colliders = read_colliders(stream, n_colliders, pool);
 		}
 
 		Animation* animations = pool.alloc<Animation>(n_animations);
@@ -134,8 +134,10 @@ __forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool&
 
 			size_t namelen = read<uint32_t>(stream);
 			size_t n_timings = read<uint32_t>(stream);
+			cur_anim.solidity.fixed = read<bool>(stream);
 
 			cur_anim.name = read_string(stream, namelen, pool);
+			cur_anim.solidity.hitbox = read_hitbox(stream, pool);
 
 			FrameTiming* timings = pool.alloc<FrameTiming>(n_timings);
 			for (int j = 0; j < n_timings; ++j) {

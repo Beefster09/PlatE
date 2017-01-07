@@ -1,5 +1,6 @@
 #pragma once
 
+#include "result.h"
 #include "tileset.h"
 #include "vectors.h"
 #include "storage.h"
@@ -137,7 +138,13 @@ struct Level {
 		AABB bounding_rect;
 
 		size_t n_children;
-		Either<const SceneObject*, RTree*> children[RTREE_MAX_CHILDREN];
+		struct {
+			union {
+				SceneObject* obj;
+				RTree* subtree;
+			};
+			bool isLeaf;
+		} children[RTREE_MAX_CHILDREN];
 	};
 
 	RTree* spacial_index;
