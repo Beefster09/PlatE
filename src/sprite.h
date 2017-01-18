@@ -24,7 +24,6 @@ typedef Vector2 FrameOffset;
 struct Frame {
 	const GPU_Rect* clip; // Points to the same data as the toplevel sprite's texture regions
 	FrameOffset display; // Relative position of the upper-left corner of the texture from the origin
-	FrameOffset foot; // Relative position of the "foot" coordinate which is used to follow slopes.
 	Array<const FrameOffset> offsets; // Other offsets that might be of interest
 	Array<const Collider> colliders; // Additional collision information such as hitboxes and hurtboxes
 };
@@ -38,8 +37,11 @@ struct Animation {
 	const char* name;
 	Array<const FrameTiming> frames;
 
+
 	struct Solidity {
 		Hitbox hitbox;
+		float head; // top of hitbox (used for negative slopes; precalculated, not stored)
+		float foot; // bottom of hitbox (used for positive slopes; precalculated, not stored)
 		bool fixed; // hitbox will be scaled and translated with its entity, but will not be rotated.
 	} solidity;
 };

@@ -19,6 +19,7 @@ namespace Errors {
 
 struct Hitbox {
 	enum Type : char {
+		NONE      =  0,  // No hitbox
 		BOX       = 'b', // Sprite-aligned bounding box
 		CIRCLE    = 'c', // Hit-bubble
 		LINE      = 'l', // Line
@@ -47,7 +48,7 @@ struct Hitbox {
 	Hitbox(Hitbox&& other);
 
 	void operator = (const Hitbox& other);
-	void operator == (Hitbox&& other);
+	void operator = (Hitbox&& other);
 };
 
 struct ColliderGroup {
@@ -91,8 +92,8 @@ void render_colliders(GPU_Target* context, const Transform& tx, const Array<cons
 
 // Collision detection :O
 bool hitboxes_overlap(
-	const Hitbox* a, const Transform& aTx, Vector2 aDis,
-	const Hitbox* b, const Transform& bTx, Vector2 bDis
+	const Hitbox& a, const Transform& aTx, Vector2 aDis,
+	const Hitbox& b, const Transform& bTx, Vector2 bDis
 );
 
 #endif

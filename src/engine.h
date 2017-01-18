@@ -26,10 +26,9 @@ namespace PlatE {
 	private:
 		EntitySystem* entity_system = nullptr;
 
-		const Level* active_level = nullptr;
+		LevelInstance* active_level = nullptr;
 		// Level* peripheral_level; // used for splicing levels together
 		// Viewport* camera;
-		// InputSystem* input;
 
 		asIScriptEngine* script_engine = nullptr;
 

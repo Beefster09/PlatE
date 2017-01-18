@@ -113,7 +113,6 @@ __forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool&
 			Frame& cur_frame = frames[i];
 			cur_frame.clip = &clips[read<uint32_t>(stream)];
 			cur_frame.display = read<Vector2>(stream);
-			cur_frame.foot = read<Vector2>(stream);
 
 			size_t n_offsets = read<uint32_t>(stream);
 			size_t n_colliders = read<uint32_t>(stream);
@@ -122,7 +121,7 @@ __forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool&
 			for (int j = 0; j < n_offsets; ++j) {
 				offsets[j] = read<Vector2>(stream);
 			}
-			cur_frame.offsets = Array<const Vector2>(offsets, n_offsets);
+			new(&cur_frame.offsets) Array<const Vector2>(offsets, n_offsets);
 
 			cur_frame.colliders = read_colliders(stream, n_colliders, pool);
 		}
@@ -139,6 +138,36 @@ __forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool&
 			cur_anim.name = read_string(stream, namelen, pool);
 			cur_anim.solidity.hitbox = read_hitbox(stream, pool);
 
+			// precalculate head and foot y coordinates (x is always 0)
+			switch (cur_anim.solidity.hitbox.type) {
+				// this is all a bit noisy in source, but the offsets should get optimized quite well by the compiler
+			case Hitbox::BOX:
+				cur_anim.solidity.head = cur_anim.solidity.hitbox.box.top;
+				cur_anim.solidity.foot = cur_anim.solidity.hitbox.box.bottom;
+				break;
+			case Hitbox::CIRCLE:
+				cur_anim.solidity.head = cur_anim.solidity.hitbox.circle.center.y - cur_anim.solidity.hitbox.circle.radius;
+				cur_anim.solidity.foot = cur_anim.solidity.hitbox.circle.center.y + cur_anim.solidity.hitbox.circle.radius;
+				break;
+			case Hitbox::LINE:
+			case Hitbox::ONEWAY:
+				cur_anim.solidity.head = SDL_min(cur_anim.solidity.hitbox.line.p1.y, cur_anim.solidity.hitbox.line.p2.y);
+				cur_anim.solidity.foot = SDL_max(cur_anim.solidity.hitbox.line.p1.y, cur_anim.solidity.hitbox.line.p2.y);
+				break;
+			case Hitbox::POLYGON:
+				cur_anim.solidity.head = cur_anim.solidity.hitbox.polygon.aabb.top;
+				cur_anim.solidity.foot = cur_anim.solidity.hitbox.polygon.aabb.bottom;
+				break;
+			case Hitbox::COMPOSITE:
+				cur_anim.solidity.head = cur_anim.solidity.hitbox.composite.aabb.top;
+				cur_anim.solidity.foot = cur_anim.solidity.hitbox.composite.aabb.bottom;
+				break;
+			default:
+				cur_anim.solidity.head = 0.f;
+				cur_anim.solidity.foot = 0.f;
+				break;
+			}
+
 			FrameTiming* timings = pool.alloc<FrameTiming>(n_timings);
 			for (int j = 0; j < n_timings; ++j) {
 				FrameTiming& timing = timings[j];
@@ -147,12 +176,12 @@ __forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool&
 				timing.frame = &frames[read<uint32_t>(stream)];
 			}
 
-			cur_anim.frames = Array<const FrameTiming>(timings, n_timings);
+			new(&cur_anim.frames) Array<const FrameTiming>(timings, n_timings);
 		}
 
-		sprite->clips = Array<const GPU_Rect>(clips, n_clips);
-		sprite->framedata = Array<const Frame>(frames, n_frames);
-		sprite->animations = Array<const Animation>(animations, n_animations);
+		new(&sprite->clips) Array<const GPU_Rect>(clips, n_clips);
+		new(&sprite->framedata) Array<const Frame>(frames, n_frames);
+		new(&sprite->animations) Array<const Animation>(animations, n_animations);
 
 		return sprite;
 	}

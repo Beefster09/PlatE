@@ -1,14 +1,20 @@
 
-
+bool first = true;
 class Simple : EntityComponent {
     string sprite;
     Vector2 pos, vel, grav;
+    TestController@ cont;
 
     Simple(string sprite, Vector2 pos, Vector2 vel, Vector2 grav) {
         this.sprite = sprite;
         this.pos = pos;
         this.vel = vel;
         this.grav = grav;
+
+        if (first) {
+            @cont = get_TestController_instance(0);
+            first = false;
+        }
     }
 
     void init(Entity@ ent) {
@@ -16,9 +22,37 @@ class Simple : EntityComponent {
         ent.position = pos;
         ent.velocity = vel;
         ent.acceleration = grav;
+
+        if (cont !is null) {
+            cont.bind(ent);
+        }
     }
 
     void update(Entity@ ent, float delta_seconds) {
+    }
+
+    void on_press_Up(Entity@ ent) {
+        println("+Up");
+    }
+
+    void on_release_Up(Entity@ ent) {
+        println("-Up");
+    }
+
+    void on_press_Down(Entity@ ent) {
+        println("+Down");
+    }
+
+    void on_release_Down(Entity@ ent) {
+        println("-Down");
+    }
+
+    void on_press_OK(Entity@ ent) {
+        println("+OK");
+    }
+
+    void on_release_OK(Entity@ ent) {
+        println("-OK");
     }
 }
 

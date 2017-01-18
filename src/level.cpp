@@ -134,10 +134,10 @@ __forceinline static Result<const Level*> read_level(FILE* stream, MemoryPool& p
 			for (int xy = 0; xy < area; ++xy) {
 				tiles[xy] = read<uint16_t>(stream);
 			}
-			tmap.tiles = Array2D<uint16_t>(tiles, width, height);
+			new(&tmap.tiles) Array2D<uint16_t>(tiles, width, height);
 		}
 
-		level->layers = Array<const Tilemap>(tilemaps, n_tilemaps);
+		new(&level->layers) Array<const Tilemap>(tilemaps, n_tilemaps);
 
 		SceneObject* objects = pool.alloc<SceneObject>(n_objects);
 		for (int i = 0; i < n_objects; ++i) {
@@ -176,7 +176,7 @@ __forceinline static Result<const Level*> read_level(FILE* stream, MemoryPool& p
 			assert(false && "NOT IMPLEMENTED!");
 		}
 
-		level->objects = Array<const SceneObject>(objects, n_objects);
+		new(&level->objects) Array<const SceneObject>(objects, n_objects);
 
 		return level;
 	}
@@ -185,19 +185,18 @@ __forceinline static Result<const Level*> read_level(FILE* stream, MemoryPool& p
 	}
 }
 
-#define TILE_RENDER_BATCH_SIZE 500
-
 void render_tilemap(GPU_Target* context, const Tilemap* map) {
 	const Tileset* tset = map->tileset;
 	GPU_Image* texture = tset->tilesheet;
 	auto& tdata = tset->tile_data;
-	auto tiles = map->tiles;
+	auto& tiles = map->tiles;
 	auto w = tiles.width();
 	auto h = tiles.height();
 	float width = static_cast<float>(tset->tile_width);
 	float height = static_cast<float>(tset->tile_height);
+	uint16_t n_tiles = tset->tile_data.size();
 	
-	GPU_Rect dest = { 0.f, 0.f, width, height };
+	GPU_Rect dest = { 0.f, 0.f, width * fabsf(map->scale.x), height * fabsf(map->scale.y)};
 	GPU_Rect src = { 0.f, 0.f, width, height };
 
 	for (size_t x_ind = 0; x_ind < w; ++x_ind) {
@@ -205,6 +204,11 @@ void render_tilemap(GPU_Target* context, const Tilemap* map) {
 		for (size_t y_ind = 0; y_ind < h; ++y_ind) {
 			uint16_t t = tiles(x_ind, y_ind);
 			if (t != TILE_BLANK) {
+				if (t > n_tiles) {
+					assert(false);
+					ERR("Tile index out of bounds (%hd > %hd)\n", t, n_tiles);
+					continue;
+				}
 				dest.y = y_ind * height + map->offset.y;
 
 				--t; // Because tiles are 1-indexed
@@ -214,8 +218,201 @@ void render_tilemap(GPU_Target* context, const Tilemap* map) {
 				src.x = frame.x_ind * width;
 				src.y = frame.y_ind * height;
 
-				GPU_BlitRectX(texture, &src, context, &dest, 0.f, 0.f, 0.f, GPU_FLIP_NONE);
+				GPU_BlitRectX(texture, &src, context, &dest, 0.f, 0.f, 0.f, frame.flip);
 			}
 		}
 	}
+}
+
+LevelInstance* instantiate_level(const Level* level) {
+	size_t poolsize = sizeof(LevelInstance);
+	size_t n_layers = level->layers.size();
+
+	for (auto& layer : level->layers) {
+		poolsize += sizeof(uint16_t) * layer.tiles.size();
+		poolsize += sizeof(TileAnimationState) * layer.tileset->tile_data.size();
+	}
+	poolsize += (sizeof(Tilemap) + sizeof(Array<TileAnimationState>)) * n_layers;
+
+	MemoryPool pool(poolsize);
+
+	LevelInstance* inst = pool.alloc<LevelInstance>();
+
+	inst->base = level;
+
+	Tilemap* layers = pool.alloc<Tilemap>(n_layers);
+	Array<TileAnimationState>* anim_states = pool.alloc<Array<TileAnimationState>>(n_layers);
+	for (int i = 0; i < n_layers; ++i) {
+		auto& layer = layers[i];
+		const auto& orig = level->layers[i];
+		size_t mapsize = orig.tiles.size();
+
+		uint16_t* tilemap_raw = pool.alloc<uint16_t>(mapsize);
+
+		memcpy(tilemap_raw, orig.tiles.data(), mapsize * sizeof(uint16_t));
+
+		new(&layer.tiles) Array2D<uint16_t>(tilemap_raw, orig.tiles.width(), orig.tiles.height());
+		layer.tileset = orig.tileset;
+		layer.offset = orig.offset;
+		layer.parallax = orig.parallax;
+		layer.scale = orig.scale;
+		layer.solid = orig.solid;
+		layer.z_order = orig.z_order;
+
+		size_t n_tilestates = orig.tileset->tile_data.size();
+		TileAnimationState* anim_state = pool.alloc<TileAnimationState>(n_tilestates);
+
+		const Tile* tile = orig.tileset->tile_data;
+		for (int j = 0; j < n_tilestates; ++j, ++tile) {
+			anim_state[j] = {
+				tile,
+				0.f,
+				0
+			};
+		}
+
+		new(&anim_states[i]) Array<TileAnimationState>(anim_state, n_tilestates);
+	}
+
+	new(&inst->layers) Array<Tilemap>(layers, n_layers);
+	new(&inst->anim_state) Array<Array<TileAnimationState>>(anim_states, n_layers);
+
+	return inst;
+}
+
+TileRange tiles_in(const Tilemap& map, const AABB& region) {
+	AABB mregion = region - map.offset;
+	float w = map.tileset->tile_width;
+	float h = map.tileset->tile_height;
+	mregion.left /= w;
+	mregion.right /= w;
+	mregion.top /= h;
+	mregion.bottom /= h;
+
+	TileRange range = {
+		0,
+		static_cast<uint16_t>(map.tiles.width() - 1),
+		0,
+		static_cast<uint16_t>(map.tiles.height() - 1)
+	};
+
+	if (mregion.left > range.left) {
+		range.left = static_cast<uint16_t>(floorf(mregion.left));
+	}
+	if (mregion.right < range.right) {
+		range.right = static_cast<uint16_t>(ceilf(mregion.right));
+	}
+	if (mregion.top > range.top) {
+		range.top = static_cast<uint16_t>(floorf(mregion.top));
+	}
+	if (mregion.bottom < range.bottom) {
+		range.bottom = static_cast<uint16_t>(ceilf(mregion.bottom));
+	}
+
+	return range;
+}
+
+bool entity_tilemap_collision(const Entity* e, const Tilemap& map) {
+	if (!e->solid) return false;
+
+	const Hitbox& hitbox = e->animation->solidity.hitbox;
+	if (hitbox.type == Hitbox::BOX && (float_eq(e->rotation, 0.f) || e->animation->solidity.fixed)) {
+		auto range = tiles_in(map, e->get_transform() * hitbox.box);
+		float w = map.tileset->tile_width;
+		float h = map.tileset->tile_height;
+
+		for (int x = range.left; x <= range.right; ++x) {
+			for (int y = range.top; y <= range.bottom; ++y) {
+				uint16_t t_ind = map.tiles(x, y);
+				if (t_ind == TILE_BLANK) continue;
+
+				const Tile& tile = map.tileset->tile_data[t_ind - 1];
+
+				if (tile.solidity.type == Tile::Solidity::None) {
+					continue;
+				}
+
+				Vector2 offset = {
+					fmaf((float) x, w, map.offset.x),
+					fmaf((float) y, h, map.offset.y)
+				};
+
+				switch (tile.solidity.type) {
+				case Tile::Solidity::Full:
+					return true;
+				case Tile::Solidity::Partial:
+				{
+					const auto& partial = tile.solidity.partial;
+					if (partial.vertical) {
+						if (partial.topleft) {
+							if (hitbox.box.top < offset.y + partial.position ||
+								hitbox.box.bottom > offset.y ||
+								hitbox.box.left < offset.x + w ||
+								hitbox.box.right > offset.x) {
+								return true;
+							}
+						}
+						else {
+							if (hitbox.box.top < offset.y + h||
+								hitbox.box.bottom > offset.y + partial.position ||
+								hitbox.box.left < offset.x + w ||
+								hitbox.box.right > offset.x) {
+								return true;
+							}
+						}
+					}
+					else {
+						if (partial.topleft) {
+							if (hitbox.box.top < offset.y + h ||
+								hitbox.box.bottom > offset.y ||
+								hitbox.box.left < offset.x + partial.position||
+								hitbox.box.right > offset.x) {
+								return true;
+							}
+						}
+						else {
+							if (hitbox.box.top < offset.y + h ||
+								hitbox.box.bottom > offset.y ||
+								hitbox.box.left < offset.x + w ||
+								hitbox.box.right > offset.x + partial.position) {
+								return true;
+							}
+						}
+					}
+					break;
+				}
+				case Tile::Solidity::Slope:
+				{
+					const auto& slope = tile.solidity.slope;
+					if (slope.above) {
+						// TODO
+						if (hitbox.box.bottom > offset.y ||
+							hitbox.box.left < offset.x + w ||
+							hitbox.box.right > offset.x) {
+							return true;
+						}
+					}
+					else {
+						// TODO
+						if (hitbox.box.top < offset.y + h ||
+							hitbox.box.left < offset.x + w ||
+							hitbox.box.right > offset.x) {
+							return true;
+						}
+					}
+				}
+				case Tile::Solidity::Complex:
+					if (hitboxes_overlap(
+						hitbox, e->get_transform(), e->position - e->last_pos,
+						tile.solidity.complex, Transform::translation(map.offset), { 0.f, 0.f }
+					)) {
+						return true;
+					}
+				default:
+					break;
+				}
+			}
+		}
+	}
+	return false;
 }

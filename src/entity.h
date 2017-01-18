@@ -31,6 +31,7 @@ namespace Errors {
 
 typedef uint32_t EntityId;
 class EntitySystem;
+struct ControllerInstance;
 
 // Instances of entities
 struct Entity {
@@ -75,6 +76,9 @@ struct Entity {
 	asITypeInfo* rootclass = nullptr;
 	asIScriptFunction* updatefunc = nullptr;
 
+// === Input Binding ===
+	ControllerInstance* controller = nullptr;
+
 // === Functionality ===
 	Entity(EntityId id, asIScriptObject* behavior);
 	~Entity();
@@ -89,6 +93,8 @@ struct Entity {
 		return Transform::scal_rot_trans(scale, rotation, position);
 	}
 };
+
+struct LevelInstance;
 
 class EntitySystem {
 	typedef std::vector<Entity*> EntityList;
@@ -113,7 +119,7 @@ public:
 	Result<> destroy(EntityId id);
 	Result<> destroy(Entity* ent);
 
-	void update(asIScriptEngine* engine, const float delta_time);
+	void update(asIScriptEngine* engine, LevelInstance* level, const float delta_time);
 
 	/// Iterator set for entities - allows for interleaved rendering
 	std::pair<EIter, EIter> render_iter();

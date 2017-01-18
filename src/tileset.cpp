@@ -37,7 +37,7 @@ Result<const Tileset*> load_tileset(const char* filename) {
 
 	// Read the header to determine how much we need to allocate in the memory pool
 	uint32_t namelen, texnamelen, n_tiles,
-		tn_tileframes;
+		tn_tileframes, tn_hitboxes, tn_vertices;
 	uint16_t tile_w, tile_h;
 
 	try {
@@ -47,6 +47,8 @@ Result<const Tileset*> load_tileset(const char* filename) {
 		tile_h = read<uint16_t>(stream);
 		n_tiles = read<uint32_t>(stream);
 		tn_tileframes = read<uint32_t>(stream);
+		tn_hitboxes = read<uint32_t>(stream);
+		tn_vertices = read<uint32_t>(stream);
 	}
 	catch (Error& err) {
 		fclose(stream);
@@ -57,6 +59,8 @@ Result<const Tileset*> load_tileset(const char* filename) {
 		sizeof(Tileset) +
 		n_tiles * sizeof(Tile) +
 		tn_tileframes * sizeof(TileFrame) +
+		tn_hitboxes * sizeof(Hitbox) +
+		tn_vertices * sizeof(Vector2) +
 		namelen + 1;
 
 	LOG_VERBOSE("Number of bytes needed for tileset data: %zd\n", poolsize);
@@ -95,22 +99,48 @@ __forceinline static Result<Tileset*> read_tileset(FILE* stream, MemoryPool& poo
 
 		Tile* tiles = pool.alloc<Tile>(n_tiles);
 		for (int i = 0; i < n_tiles; ++i) {
+			auto& tile = tiles[i];
+
 			uint32_t n_frames = read<uint32_t>(stream);
 			uint32_t n_properties = read<uint32_t>(stream);
+
+			auto sType = read<Tile::Solidity::Type>(stream);
+			tile.solidity.type = sType;
+			switch (sType) {
+			case Tile::Solidity::None:
+				break;
+			case Tile::Solidity::Partial:
+				tile.solidity.partial.position = read<float>(stream);
+				tile.solidity.partial.vertical = read<bool>(stream);
+				tile.solidity.partial.topleft = read<bool>(stream);
+				break;
+			case Tile::Solidity::Slope:
+				tile.solidity.slope.position = read<float>(stream);
+				tile.solidity.slope.slope = read<float>(stream);
+				tile.solidity.slope.above = read<bool>(stream);
+				break;
+			case Tile::Solidity::Complex:
+				tile.solidity.complex = read_hitbox(stream, pool);
+				break;
+			default:
+				break;
+			}
 
 			TileFrame* frames = pool.alloc<TileFrame>(n_frames);
 			for (int j = 0; j < n_frames; ++j) {
 				frames[j] = {
 					read<uint16_t>(stream),
 					read<uint16_t>(stream),
-					read<float>(stream)
+					read<float>(stream),
+					read<uint8_t>(stream)
 				};
+				frames[j].flip &= 0x03;
 			}
 
-			tiles[i].animation = Array<const TileFrame>(frames, n_frames);
+			new(&tile.animation) Array<const TileFrame>(frames, n_frames);
 		}
 
-		tileset->tile_data = Array<const Tile>(tiles, n_tiles);
+		new(&tileset->tile_data) Array<const Tile>(tiles, n_tiles);
 
 		return tileset;
 	}

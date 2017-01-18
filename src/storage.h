@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <cstdio>
 #include <type_traits>
+#include <initializer_list>
 #include <memory>
+#include <new>
 #include "result.h"
 #include "error.h"
 #include "util.h"
@@ -22,13 +24,22 @@ class Array {
 	size_t n_items;
 
 public:
-	__forceinline Array() {}
+	Array() : n_items(0), items(nullptr) {}
 	Array(Data* data, size_t size) : n_items(size), items(data) {}
 	Array(size_t size) : n_items(size), items((Data*) operator new(size * sizeof(Data))) {}
 	Array(const Array& arr) = default;
 	Array(Array&& arr) = default;
 	Array& operator = (const Array& arr) = default;
 	Array& operator = (Array&& arr) = default;
+
+	Array(std::initializer_list<Data> ilist) {
+		n_items = ilist.size();
+		items = new Data[n_items];
+		int i = 0;
+		for (const auto& val : ilist) {
+			items[i++] = val;
+		}
+	}
 
 	/// Be VERY cautious when using this function as it could cause memory to be invalidated somewhere else.
 	/// Only use this if you know you are the sole user/owner of an array.
@@ -55,6 +66,8 @@ public:
 	__forceinline const Data* begin() const { return items; }
 	__forceinline const Data* end() const { return items + n_items; }
 
+	__forceinline const Data* data() const { return items; }
+
 	__forceinline operator Data* () { return items; }
 
 	__forceinline Data& operator [] (unsigned int index) {
@@ -65,6 +78,8 @@ public:
 	__forceinline Data* end() { return items + n_items; }
 
 	__forceinline size_t size() const { return n_items; }
+
+	__forceinline Data* data() { return items; }
 };
 
 template <>
@@ -375,11 +390,13 @@ public:
 	__forceinline operator const Data* () const { return items; }
 
 	__forceinline const Data& operator () (size_t x, size_t y) const {
-		assert (index.x >= 0 && index.x < w && index.y >= 0 && index.y < h && "Array bounds check failed")
-		return items[index.y * w + index.x];
+		assert(x >= 0 && x < w && y >= 0 && y < h && "Array bounds check failed");
+		return items[y * w + x];
 	}
 	__forceinline const Data* begin() const { return items; }
 	__forceinline const Data* end() const { return items + w * h; }
+
+	__forceinline const Data* data() const { return items; }
 
 	__forceinline operator Data* () { return items; }
 
@@ -394,6 +411,8 @@ public:
 
 	__forceinline size_t width() const { return w; }
 	__forceinline size_t height() const { return h; }
+
+	__forceinline Data* data() { return items; }
 };
 
 template <>

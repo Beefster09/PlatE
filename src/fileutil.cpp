@@ -42,8 +42,10 @@ Hitbox read_hitbox(FILE* stream, MemoryPool& pool) {
 		result.composite.hitboxes = Array<const Hitbox>(subs, n_subs);
 		break;
 	}
+	case Hitbox::NONE:
+		break;
 	default:
-		char type[2] = { result.type == 0 ? '0' : result.type, 0 };
+		char type[2] = { result.type, 0 };
 		throw Error(Errors::InvalidHitboxType, std::string(type));
 	}
 
@@ -94,12 +96,6 @@ char* read_all(FILE* f) {
 	size_t bytes_read = fread(buffer, 1, len, f);
 	buffer[bytes_read] = 0;
 	return buffer;
-}
-
-char* copy(const char* str) {
-	char* ret = new char[strlen(str) + 1];
-	strcpy(ret, str);
-	return ret;
 }
 
 const char* read_string(FILE* stream, unsigned int len, MemoryPool& pool) {

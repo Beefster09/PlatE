@@ -7,6 +7,7 @@
 #include "result.h"
 #include "level.h"
 #include "assetmanager.h"
+#include "input.h"
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
@@ -27,6 +28,35 @@ int main(int argc, char* argv[]) {
 			return EXIT_SDL_GPU_FAIL;
 		}
 		atexit(GPU_Quit);
+
+		{
+			VirtualController* cont_type = create_controller_type(
+				"TestController",
+				{},
+				{ "Up", "Down", "Left", "Right", "OK", "Cancel" }
+			);
+
+			ControllerInstance* inst = create_controller("TestController", "test_controller");
+			RealInput input;
+
+			input.set_key(SDL_SCANCODE_UP);
+			bind_button(inst, 0, input);
+
+			input.set_key(SDL_SCANCODE_W);
+			bind_button(inst, 0, input);
+
+			input.set_key(SDL_SCANCODE_DOWN);
+			bind_button(inst, 1, input);
+
+			input.set_key(SDL_SCANCODE_S);
+			bind_button(inst, 1, input);
+
+			input.set_key(SDL_SCANCODE_RETURN);
+			bind_button(inst, 4, input);
+
+			input.set_key(SDL_SCANCODE_SPACE);
+			bind_button(inst, 4, input);
+		}
 
 		// Flush the events so the window will show
 		SDL_Event curEvent;
@@ -52,7 +82,6 @@ int main(int argc, char* argv[]) {
 				engine.event(curEvent);
 			}
 
-			// update... TODO: ability to choose delta time or static FPS
 			uint32_t updateTime = SDL_GetTicks();
 			engine.update(updateTime - lastTime);
 
@@ -63,7 +92,6 @@ int main(int argc, char* argv[]) {
 
 			GPU_Flip(screen);
 
-			// TODO: better FPS/delay calculation
 			int delay = engine.get_delay(SDL_GetTicks() - lastTime);
 			lastTime = updateTime;
 			SDL_Delay(delay);

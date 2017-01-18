@@ -20,7 +20,7 @@
 namespace Errors {
 	const error_data
 		InvalidLevelHeader = { 601, "Level does not begin with the string \"" LEVEL_MAGIC_NUMBER "\"" },
-		InvalidLevelHeaderSizes = { 601, "Level header sizes not consistent with the size of the file." };
+		InvalidLevelHeaderSizes = { 602, "Level header sizes not consistent with the size of the file." };
 }
 
 /// Static tile-based level data. Tiles can be animated.
@@ -38,13 +38,13 @@ struct Tilemap {
 
 	/// amount this tilemap moves relative to the level.
 	// for example:
-	// if {0, 0} it will stay stationary always
+	// if {0, 0} it will stay stationary always, essentially putting it in viewport space
 	// if {1, 1} it will move at the same rate as the level
 	// if {0.5, 0.5} it will move half the speed of the viewport
 	// etc...
 	Vector2 parallax;
 
-	bool solid : 1; // only check for collisions if this is true
+	bool solid; // only check for collisions if this is true
 };
 
 /// Static elements of the level. Logic cannot be attached.
@@ -150,6 +150,13 @@ struct Level {
 	RTree* spacial_index;
 };
 
+/// Mutable variant of a Level
+struct LevelInstance {
+	const Level* base;
+	Array<Tilemap> layers;
+	Array<Array<TileAnimationState>> anim_state;
+};
+
 // Note to self: scripts will probably be able to splice to Levels together
 // They will definitely be able to trigger side-warps
 
@@ -167,4 +174,9 @@ struct TileRange {
 };
 
 /// Returns the range of tiles within a certain AABB. Includes tiles that are only partially in the AABB.
-TileRange tiles_in(Tilemap* map, AABB& region);
+TileRange tiles_in(const Tilemap& map, const AABB& region);
+
+LevelInstance* instantiate_level(const Level* level);
+inline void destroy_level_instance(LevelInstance* inst) { operator delete(inst); }
+
+bool entity_tilemap_collision(const Entity* e, const Tilemap& map);

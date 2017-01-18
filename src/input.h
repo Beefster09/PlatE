@@ -1,132 +1,141 @@
 #pragma once
 
 #include "storage.h"
-#include "direction.h"
-#include <SDL2\SDL_keyboard.h>
-#include <SDL2\SDL_keycode.h>
+#include "entity.h"
 
-/// The script-readable axis data
-struct VirtualAxis {
-	const char* name;
-	float position;
-	float last_pos;
-	float velocity; // Instantaneous velocity
-	int last_poll; // needed to calculate velocity
-};
+#include "angelscript.h"
 
-/// The script-readable button data
-struct VirtualButton {
-	const char* name;
-	int last_press;
+#include <SDL2/SDL_keyboard.h>
+#include <SDL2/SDL_keycode.h>
 
-	bool state : 1;
-	bool last_state : 1;
-	bool pressed : 1;
-	bool released : 1;
-};
+#include <array>
 
-/// Describes how to get physical input managed by SDL
+/// Describes how to get physical input via SDL
 struct RealInput {
-	enum Type {
+	enum Type : uint32_t {
+		NONE = 0,
 		KEYBOARD,
 		GAMEPAD_BUTTON,
 		GAMEPAD_AXIS,
-		GAMEPAD_HAT,
 		MOUSE
 	} type;
 
 	union {
 		SDL_Scancode key;
 		struct {
-			short gamepad;
-			short button;
+			uint16_t gamepad;
+			uint16_t button;
 		} gbutton;
 		struct {
-			short gamepad;
-			short axis;
+			uint16_t gamepad;
+			uint16_t axis;
 		} gaxis;
-		struct {
-			short gamepad;
-			char hat;
-			char dir;
-		} ghat;
+		uint32_t mbutton;
+		uint32_t _raw_;
 	};
+
+	inline RealInput() {
+		type = NONE;
+		_raw_ = 0;
+	}
+
+	inline void clear() {
+		type = NONE;
+		_raw_ = 0;
+	}
+
+	inline void operator = (const RealInput& other) {
+		if (other.type == NONE) {
+			clear();
+		}
+		else {
+			*reinterpret_cast<uint64_t*>(this) = *reinterpret_cast<const uint64_t*>(&other);
+		}
+	}
+
+	inline bool operator == (const RealInput& other) const {
+		return *reinterpret_cast<const uint64_t*>(this) == *reinterpret_cast<const uint64_t*>(&other);
+	}
+
+	inline void set_key(SDL_Scancode key) {
+		type = KEYBOARD;
+		this->key = key;
+	}
+
+	inline void set_mouse(uint32_t mbutton) {
+		type = MOUSE;
+		this->mbutton = mbutton;
+	}
+
+	void set_button(int button);
+	void set_axis(int axis);
+	void set_hat(int hat);
+
+	static const RealInput Empty;
 };
 
-/// The bridge between real and virtual inputs (engine-managed)
-struct InputBinding {
-	RealInput input;
-	enum {
-		BUTTON,
-		AXIS_PLUS,
-		AXIS_MINUS
-	} type;
-	union {
-		VirtualButton* button;
-		VirtualAxis* axis;
-	};
+static_assert(sizeof(RealInput) == sizeof(uint64_t), "RealInput must evaluate to 64-bit size");
+
+/// The script-readable axis data
+struct VirtualAxisState {
+	std::array<RealInput, 3> bindings_positive;
+	std::array<RealInput, 3> bindings_negative;
+
+	float position;
+	float velocity; // Instantaneous velocity
 };
 
-/// Controller with inputs.
-/// Can be attached to different engine pieces (including Entities and GUI elements)
-/// Accessible by scripts
+/// The script-readable button data
+struct VirtualButtonState {
+	std::array<RealInput, 3> bindings;
+
+	bool state;
+	bool pressed;
+	bool released;
+};
+
+/// Controller class / metadata that defines what inputs are available and their names
 struct VirtualController {
-	const char* name;
-	VirtualAxis x, y;
-	Array<VirtualAxis> axes;
-	Array<VirtualButton> buttons;
-	void* attachment; // TODO: make into tagged union
-	bool enabled;
+	Array<const char*> axis_names;
+	Array<const char*> button_names;
 };
 
-struct InputEvent {
-	enum Type {
-		BUTTON_PRESS,
-		BUTTON_RELEASE,
-		DIRECTION_PRESS,
-		DIRECTION_RELEASE,
-		AXIS_TAP
-	};
+struct ButtonEventCallbacks {
+	asIScriptFunction* on_press;
+	asIScriptFunction* on_release;
 };
 
-void bind_button(DenseBucket<InputBinding>& bindings, RealInput& real, VirtualController& virt, int index);
-void bind_axis(DenseBucket<InputBinding>& bindings, RealInput& real, VirtualController& virt, int sign, int index);
+/// An instance of a controller that holds the actual data that gets updated by the engine
+struct ControllerInstance {
+	const VirtualController* type;
 
-void update_virtual_controllers(DenseBucket<InputBinding>& bindings, Array<VirtualController*>& controllers);
+	Array<VirtualAxisState> axes;
+	Array<VirtualButtonState> buttons;
 
-//struct InputElement {
-//	enum {
-//		NOTHING,
-//		BUTTON,
-//		BUTTON_PRESS,
-//		BUTTON_RELEASE,
-//		DIRECTION,
-//		DIRECTION_PRESS,
-//		DIRECTION_RELEASE,
-//		AXIS_NEUTRAL,
-//		AXIS_TILT,
-//		AXIS_TAP   // Tap/smash inputs
-//	} type;
-//
-//	union {
-//		int button;
-//		Direction dir;
-//		struct {
-//			short index;
-//			short sign;
-//		} axis;
-//	};
-//};
-//
-///// Fightstick input patterns
-//struct InputPattern {
-//	uint32_t window; // ms window to input the pattern
-//	uint32_t cancel_filter; // types that break the pattern
-//	Array<InputElement> sequence;
-//	bool relative_to_facing; /// If true, interpret right as forward and left as back.
-//	// This raises some implications requiring facing direction to be built-in and
-//	// somehow accessible from the pattern matcher
-//};
+// Entity-script binding
+	Entity* attachment;
+	Array<ButtonEventCallbacks> callbacks;
+};
 
-//void bind_pattern(void* bindings, InputPattern& pattern, void* callback);
-//InputPattern parse_pattern(const char* pattern_str);
+ControllerInstance* create_controller(const char* vcname, const char* instname);
+
+void bind_controller_to_entity(ControllerInstance* cont, Entity* e);
+void unbind_controller(ControllerInstance* cont);
+
+/// Bind real inputs.
+/// The rule is that no two inputs across all controller instances of the same type can share a binding
+/// Unbind by passing RealInput::Empty to input
+bool bind_button(ControllerInstance* cont, int b_index, RealInput input, int slot = -1);
+bool bind_axis(ControllerInstance* cont, int a_index, int sign, RealInput input, int slot = -1);
+
+void update_inputs(float dt);
+
+ControllerInstance* get_controller_by_name(const char* name);
+
+std::vector<ControllerInstance*> get_controllers_by_typename(const char* name);
+
+void RegisterInputTypes(asIScriptEngine* engine);
+int RegisterControllerTypes(asIScriptEngine* engine);
+
+// TEMP
+VirtualController* create_controller_type(const char* name, Array<const char*> axis_names, Array<const char*> button_names);

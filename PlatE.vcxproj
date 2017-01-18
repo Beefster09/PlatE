@@ -266,8 +266,10 @@
     <ClCompile Include="lib\angelscript-sdk\source\as_typeinfo.cpp" />
     <ClCompile Include="lib\angelscript-sdk\source\as_variablescope.cpp" />
     <ClCompile Include="src\assetmanager.cpp" />
+    <ClCompile Include="src\cstrkey.cpp" />
     <ClCompile Include="src\direction.cpp" />
     <ClCompile Include="src\error.cpp" />
+    <ClCompile Include="src\input.cpp" />
     <ClCompile Include="src\result.cpp" />
     <ClCompile Include="src\entity.cpp" />
     <ClCompile Include="src\engine.cpp" />
@@ -321,6 +323,7 @@
     <ClInclude Include="lib\angelscript-sdk\source\as_typeinfo.h" />
     <ClInclude Include="lib\angelscript-sdk\source\as_variablescope.h" />
     <ClInclude Include="src\assetmanager.h" />
+    <ClInclude Include="src\cstrkey.h" />
     <ClInclude Include="src\executor.h" />
     <ClInclude Include="src\fileutil.h" />
     <ClInclude Include="src\input.h" />

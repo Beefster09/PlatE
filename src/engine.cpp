@@ -1,5 +1,4 @@
 
-//#include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_timer.h>
 
 #include "engine.h"
@@ -7,6 +6,7 @@
 #include "vectors.h"
 #include "fileutil.h"
 #include "rng.h"
+#include "input.h"
 
 #include "angelscript.h"
 #include "scriptmath\scriptmath.h"
@@ -92,6 +92,8 @@ void Engine::init() {
 	RegisterVector2(script_engine);
 	RegisterRandomTypes(script_engine);
 	RegisterEntityTypes(script_engine);
+	RegisterInputTypes(script_engine);
+	r = RegisterControllerTypes(script_engine); assert(r >= 0);
 
 	// Global engine stuff
 	r = script_engine->RegisterObjectType("__Engine__", 0, asOBJ_REF | asOBJ_NOCOUNT); assert(r >= 0);
@@ -138,10 +140,12 @@ void Engine::update(int delta_time) {
 	float delta_seconds = static_cast<float>(delta_time) / 1000.f;
 	if (delta_seconds > max_timestep) delta_seconds = max_timestep;
 
+	update_inputs(delta_seconds);
+
 	entity_system->executor.run_deferred();
 
 	if (!paused) {
-		entity_system->update(script_engine, delta_seconds);
+		entity_system->update(script_engine, active_level, delta_seconds);
 	}
 
 	auto ctx = script_engine->RequestContext();
@@ -273,7 +277,10 @@ bool Engine::travel(const std::string& levelname) {
 	auto res = load_level(levelname.c_str());
 
 	if (res) {
-		active_level = res.value;
+		if (active_level != nullptr) {
+			destroy_level_instance(active_level);
+		}
+		active_level = instantiate_level(res.value);
 		return true;
 	}
 	else return false;

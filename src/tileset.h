@@ -18,6 +18,7 @@ namespace Errors {
 struct TileFrame {
 	uint16_t x_ind, y_ind;
 	float duration;
+	uint8_t flip;
 };
 
 struct TileProperty {
@@ -55,21 +56,23 @@ struct Tile {
 			} slope;
 			Hitbox complex;
 		};
-
-		Solidity() {}
-		Solidity(Solidity& other) = default;
 	} solidity;
 };
 
 struct Tileset {
 	const char* name;
-	GPU_Image* tilesheet; // Limit one texture per tileset to allow for batching - VERY critical to performance
+	GPU_Image* tilesheet;
 	uint16_t tile_width, tile_height;
 	Array<const Tile> tile_data; // 1 indexed; tile 0 is reserved as a blank tile
 	// Later?
 	// ShaderType shader;
 };
 
+struct TileAnimationState {
+	const Tile* data;
+	float frame_time;
+	uint16_t anim_frame;
+};
 
 Result<const Tileset*> load_tileset(const char* filename);
 

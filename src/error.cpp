@@ -38,5 +38,5 @@ std::string GetExceptionDetails(asIScriptContext* ctx) {
 	details += ", line #";
 	details += std::to_string(ctx->GetExceptionLineNumber());
 	details += ")";
-	return std::move(details);
+	return details;
 }

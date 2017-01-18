@@ -6,6 +6,7 @@ import struct
 ColliderNoHitbox = struct.Struct("<I")
 
 # Stuff for hitboxes
+HitboxNone      = b'\0'
 HitboxBox       = b'b'
 HitboxLine      = b'l'
 HitboxOneway    = b'o'
@@ -38,8 +39,11 @@ def count_nested_hitboxes_and_vertices(hitbox):
         return 0, 0
 
 def write_hitbox(f, hitbox):
-    type = hitbox["type"]
-    if type == "box":
+    type = hitbox.get("type", "none").lower()
+    
+    if type == "none":
+        f.write(HitboxNone)
+    elif type == "box":
         f.write(HitboxBox)
         f.write(Box.pack(
             hitbox["left"],

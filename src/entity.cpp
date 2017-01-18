@@ -3,12 +3,14 @@
 #include "error.h"
 #include "transform.h"
 #include "util.h"
+#include "level.h"
 
 #include <algorithm>
 #include <cmath>
 
 static void detect_collisions(Entity* a, Entity* b, Executor& executor);
 static void move_to_contact_position(Entity* a, Entity* b);
+static void entity_level_collision(Entity* e, LevelInstance* level);
 
 Entity::Entity(EntityId id, asIScriptObject* behavior) : id(id) {
 	assert(behavior != nullptr);
@@ -162,11 +164,11 @@ Result<> EntitySystem::destroy(EntityId id) {
 // Move entities and advance animations in parallel
 // Collision detection in parallel -> generating events in shared buffer
 // Process events in main thread (cross-entity interactions are not threadsafe)
-void EntitySystem::update(asIScriptEngine* engine, const float dt) {
+void EntitySystem::update(asIScriptEngine* engine, LevelInstance* level, const float dt) {
 
 	// 'Dumb' update step- each entity behaves as if it's the only thing in existence [Parallelizable]
 	for (Entity* e : entities) {
-		executor.exec([e, engine, dt]() {
+		executor.exec([e, engine, dt, level]() {
 			e->last_pos = e->position;
 
 			// Animations
@@ -204,6 +206,9 @@ void EntitySystem::update(asIScriptEngine* engine, const float dt) {
 
 				e->position += dt * e->velocity - error;
 			}
+
+			// Level overlap
+			entity_level_collision(e, level);
 		});
 	}
 
@@ -267,14 +272,21 @@ static void move_to_contact_position(Entity* a, Entity* b) {
 	Hitbox hitA = a->animation->solidity.hitbox;
 	Hitbox hitB = b->animation->solidity.hitbox;
 
+	Transform aTx = a->get_transform();
+	Transform bTx = b->get_transform();
+
 	// Displacement with other entity as frame of reference
 	Vector2 relDis = aDis - bDis;
 
+	if (relDis.x == 0.f && relDis.y == 0.f) {
+		relDis.y = 1.f; // pretend A is moving down
+	}
+
 	// Simplest case is easy to compute
-	if (hitA.type == Hitbox::Type::BOX && hitB.type == Hitbox::Type::BOX &&
+	if (hitA.type == Hitbox::BOX && hitB.type == Hitbox::BOX &&
 		float_eq(a->rotation, 0.f) && float_eq(b->rotation, 0.f)) {
-		AABB boxA = hitA.box + a->position;
-		AABB boxB = hitB.box + b->position;
+		AABB boxA = aTx * hitA.box;
+		AABB boxB = bTx * hitB.box;
 
 		Vector2 overlap;
 		if (relDis.x > 0.f) {
@@ -284,7 +296,7 @@ static void move_to_contact_position(Entity* a, Entity* b) {
 			overlap.x = boxA.left - boxB.right;
 		}
 		else {
-			overlap.x = 0;
+			overlap.x = 0.f;
 		}
 
 		if (relDis.y > 0.f) {
@@ -294,38 +306,41 @@ static void move_to_contact_position(Entity* a, Entity* b) {
 			overlap.y = boxA.top - boxB.bottom;
 		}
 		else {
-			overlap.y = 0;
+			overlap.y = 0.f;
 		}
+
+		if (overlap.x == 0.f && overlap.y == 0.f) return;
 
 		// This is a bit magical. Draw a picture.
 		if (relDis.cross(overlap) * overlap.x * overlap.y > 0) {
 			// x error
-			float xNetDis = aDis.x + bDis.x;
-			a->position.x -= overlap.x * (aDis.x / xNetDis);
-			b->position.x += overlap.x * (bDis.x / xNetDis);
+			a->position.x -= overlap.x * (aDis.x / relDis.x);
+			b->position.x += overlap.x * (bDis.x / relDis.x);
 		}
 		else {
 			// y error
-			float yNetDis = aDis.y + bDis.y;
-			a->position.y -= overlap.y * (aDis.y / yNetDis);
-			b->position.y += overlap.y * (bDis.y / yNetDis);
+			a->position.y -= overlap.y * (aDis.y / relDis.y);
+			b->position.y += overlap.y * (bDis.y / relDis.y);
 		}
 	}
-	else { // This one's a bit harder
+	else if (hitA.type == Hitbox::CIRCLE && hitB.type == Hitbox::CIRCLE &&
+		float_eq(a->scale.x, a->scale.y) && float_eq(b->scale.x, b->scale.y)) {
+		
+	}
+	else { // The general case is... insane
 		// TODO
 	}
 }
 
 static void detect_collisions(Entity* a, Entity* b, Executor& executor) {
-
 	Transform aTx = a->get_transform();
 	Vector2 aDis = a->position - a->last_pos;
 	Transform bTx = b->get_transform();
 	Vector2 bDis = b->position - b->last_pos;
 
 	if (a->solid && b->solid && hitboxes_overlap(
-		&a->animation->solidity.hitbox, aTx, aDis,
-		&b->animation->solidity.hitbox, bTx, bDis
+		a->animation->solidity.hitbox, aTx, aDis,
+		b->animation->solidity.hitbox, bTx, bDis
 	)) {
 		executor.defer([a, b]() {
 			move_to_contact_position(a, b);
@@ -340,8 +355,8 @@ static void detect_collisions(Entity* a, Entity* b, Executor& executor) {
 
 			if (fwd || bkwd) {
 				if (hitboxes_overlap(
-					&collA.hitbox, aTx, aDis,
-					&collB.hitbox, bTx, bDis
+					collA.hitbox, aTx, aDis,
+					collB.hitbox, bTx, bDis
 				)) {
 					// TODO: report events to interested parties
 					//if (ColliderGroup::acts_on(collA.type, collB.type)) {
@@ -350,6 +365,27 @@ static void detect_collisions(Entity* a, Entity* b, Executor& executor) {
 					//}
 				}
 			}
+		}
+	}
+}
+
+static void entity_level_collision(Entity* e, LevelInstance* level) {
+	if (!e->solid || e->animation->solidity.hitbox.type == Hitbox::NONE) return; // Ignore disabled/empty hitboxes
+
+	// Then check each tilemap for collision
+	for (const auto& tilemap : level->layers) {
+		if (tilemap.solid && entity_tilemap_collision(e, tilemap)) {
+			// TODO: depenetrate
+
+			// IDEA:
+			// depenetrate from nearest tiles to original position first
+			// ignore nonsolid tiles
+			// for full and partial tiles, treat them as aabb hitboxes and depenetrate normally
+			// for topleft=false sloped tiles check only foot position when depenetrating upward
+			//   (which should be moved to the animation and be auto-calculated)
+			// for topleft=true sloped tiles do the vertical reverse
+			// otherwise use a more generalized algorithm
+			break;
 		}
 	}
 }

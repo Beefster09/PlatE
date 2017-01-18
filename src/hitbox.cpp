@@ -25,6 +25,9 @@ Hitbox::Hitbox(const Hitbox& other) {
 	case COMPOSITE:
 		composite = other.composite;
 		return;
+	case NONE:
+	default:
+		return;
 	}
 }
 
@@ -46,6 +49,9 @@ Hitbox::Hitbox(Hitbox&& other) {
 		return;
 	case COMPOSITE:
 		composite = std::move(other.composite);
+		return;
+	case NONE:
+	default:
 		return;
 	}
 }
@@ -69,10 +75,13 @@ void Hitbox::operator = (const Hitbox& other) {
 	case COMPOSITE:
 		composite = other.composite;
 		return;
+	case NONE:
+	default:
+		return;
 	}
 }
 
-void Hitbox::operator == (Hitbox&& other) {
+void Hitbox::operator = (Hitbox&& other) {
 	type = other.type;
 	switch (type) {
 	case BOX:
@@ -90,6 +99,9 @@ void Hitbox::operator == (Hitbox&& other) {
 		return;
 	case COMPOSITE:
 		composite = std::move(other.composite);
+		return;
+	case NONE:
+	default:
 		return;
 	}
 }
@@ -232,41 +244,43 @@ static bool poly_line_test(Array<Point2> poly, Line line);
 static bool poly_circle_test(Array<Point2> poly, Circle radius);
 
 bool hitboxes_overlap(
-	const Hitbox* a, const Transform& aTx, Vector2 aDis, // aDis and bDis are the displacement since last frame
-	const Hitbox* b, const Transform& bTx, Vector2 bDis  // They are only needed for checking oneway collisions
+	const Hitbox& a, const Transform& aTx, Vector2 aDis, // aDis and bDis are the displacement since last frame
+	const Hitbox& b, const Transform& bTx, Vector2 bDis  // They are only needed for checking oneway collisions
 ) {
-	if (a->type == Hitbox::ONEWAY) {
-		if (b->type == Hitbox::ONEWAY) return false; // One-ways don't collide with each other
+	if (a.type == Hitbox::NONE || b.type == Hitbox::NONE) return false;
+
+	if (a.type == Hitbox::ONEWAY) {
+		if (b.type == Hitbox::ONEWAY) return false; // One-ways don't collide with each other
 		else return hitboxes_overlap(b, bTx, bDis, a, aTx, aDis); // And they can only be acted upon
 	}
 
-	if (a->type == Hitbox::COMPOSITE) {
+	if (a.type == Hitbox::COMPOSITE) {
 		// TODO: AABB check
-		for (const Hitbox& subHit : a->composite.hitboxes) {
-			if (hitboxes_overlap(&subHit, aTx, aDis, b, bTx, bDis)) return true;
+		for (const Hitbox& subHit : a.composite.hitboxes) {
+			if (hitboxes_overlap(subHit, aTx, aDis, b, bTx, bDis)) return true;
 		}
 		return false;
 	}
 
-	if (b->type == Hitbox::COMPOSITE) {
+	if (b.type == Hitbox::COMPOSITE) {
 		// TODO: AABB check
-		for (const Hitbox& subHit : b->composite.hitboxes) {
-			if (hitboxes_overlap(a, aTx, aDis, &subHit, bTx, bDis)) return true;
+		for (const Hitbox& subHit : b.composite.hitboxes) {
+			if (hitboxes_overlap(a, aTx, aDis, subHit, bTx, bDis)) return true;
 		}
 		return false;
 	}
 
-	if (a->type == Hitbox::BOX) {
-		if (b->type == Hitbox::BOX) {
+	if (a.type == Hitbox::BOX) {
+		if (b.type == Hitbox::BOX) {
 			if (aTx.is_rect_invariant() && bTx.is_rect_invariant()) {
-				return box_box_test(aTx * a->box, bTx * b->box);
+				return box_box_test(aTx * a.box, bTx * b.box);
 			}
 			else {
-				if (!box_box_test(aTx * a->box, bTx * b->box)) return false;
+				if (!box_box_test(aTx * a.box, bTx * b.box)) return false;
 
 				Vector2 polyA[4], polyB[4];
-				aabb_to_poly(a->box, polyA);
-				aabb_to_poly(b->box, polyB);
+				aabb_to_poly(a.box, polyA);
+				aabb_to_poly(b.box, polyB);
 				for (int i = 0; i < 4; ++i) {
 					polyA[i] = aTx * polyA[i];
 					polyB[i] = bTx * polyB[i];
@@ -274,46 +288,46 @@ bool hitboxes_overlap(
 				return poly_poly_test(Array<Point2>(polyA, 4), Array<Point2>(polyB, 4));
 			}
 		}
-		else if (b->type == Hitbox::CIRCLE) {
+		else if (b.type == Hitbox::CIRCLE) {
 			if (aTx.is_rect_invariant() && bTx.is_uniform_scale()) {
-				return box_circle_test(aTx * a->box, bTx * b->circle);
+				return box_circle_test(aTx * a.box, bTx * b.circle);
 			}
 			else {
 				// TODO approximate with polygons
 			}
 		}
-		else if (b->type == Hitbox::LINE || b->type == Hitbox::ONEWAY) {
+		else if (b.type == Hitbox::LINE || b.type == Hitbox::ONEWAY) {
 			// TODO
 		}
 	}
-	else if (a->type == Hitbox::CIRCLE) {
-		if (b->type == Hitbox::CIRCLE) {
+	else if (a.type == Hitbox::CIRCLE) {
+		if (b.type == Hitbox::CIRCLE) {
 			if (aTx.is_uniform_scale() && bTx.is_uniform_scale()) {
-				return circle_circle_test(aTx * a->circle, bTx * b->circle);
+				return circle_circle_test(aTx * a.circle, bTx * b.circle);
 			}
 			else {
 				// TODO approximate with polygons
 			}
 		}
-		else if (b->type == Hitbox::LINE || b->type == Hitbox::ONEWAY) {
+		else if (b.type == Hitbox::LINE || b.type == Hitbox::ONEWAY) {
 			if (aTx.is_uniform_scale()) {
-				circle_line_test(aTx * a->circle, bTx * b->line);
+				circle_line_test(aTx * a.circle, bTx * b.line);
 			}
 			else {
 				// TODO
 			}
 		}
-		else if (b->type == Hitbox::BOX) {
+		else if (b.type == Hitbox::BOX) {
 			return hitboxes_overlap(b, bTx, bDis, a, aTx, aDis);
 		}
 	}
-	else if (a->type == Hitbox::LINE) {
-		if (b->type == Hitbox::LINE) {
-			return line_line_test(aTx * a->line, bTx * b->line);
+	else if (a.type == Hitbox::LINE) {
+		if (b.type == Hitbox::LINE) {
+			return line_line_test(aTx * a.line, bTx * b.line);
 		}
-		else if (b->type == Hitbox::ONEWAY) {
-			Line lineA = aTx * a->line;
-			Line lineB = bTx * b->line;
+		else if (b.type == Hitbox::ONEWAY) {
+			Line lineA = aTx * a.line;
+			Line lineB = bTx * b.line;
 			if (!line_line_test(lineA, lineB)) return false;
 
 			// the lines intersect :O
@@ -333,7 +347,7 @@ bool hitboxes_overlap(
 		}
 		else return hitboxes_overlap(b, bTx, bDis, a, aTx, aDis);
 	}
-	else if (a->type == Hitbox::POLYGON) {
+	else if (a.type == Hitbox::POLYGON) {
 
 	}
 	//assert(false && "WARNING: Reached default case of hitboxes_overlap(...)\n");

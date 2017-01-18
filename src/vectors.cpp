@@ -1,6 +1,7 @@
 
 #include "vectors.h"
 #include "SDL_gpu.h"
+#include "util.h"
 #include <string>
 
 Vector2 Vector2::operator + (const Vector2 &that) const {
@@ -352,10 +353,14 @@ void RegisterVector2(asIScriptEngine* engine) {
 
 	// === Utility Functions ===
 
-	r = engine->RegisterGlobalFunction("Vector2 lerp (float, float, float)",
+	r = engine->RegisterGlobalFunction("float lerp (float, float, float)",
 		asFUNCTIONPR(lerp, (float, float, float), float), asCALL_CDECL); assert(r >= 0);
-	r = engine->RegisterGlobalFunction("Vector2 ease (float, float, float)",
+	r = engine->RegisterGlobalFunction("float ease (float, float, float)",
 		asFUNCTIONPR(ease, (float, float, float), float), asCALL_CDECL); assert(r >= 0);
+	r = engine->RegisterGlobalFunction("float clamp (float, float, float)",
+		asFUNCTION(clamp<float>), asCALL_CDECL); assert(r >= 0);
+	r = engine->RegisterGlobalFunction("int clamp (int, int, int)",
+		asFUNCTION(clamp<int>), asCALL_CDECL); assert(r >= 0);
 
 	// === Constants ===
 

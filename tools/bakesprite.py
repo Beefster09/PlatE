@@ -26,10 +26,9 @@ ClipRect = struct.Struct("<4I")
 # Frame Data
 #  index of the clip
 #  display offset
-#  foot offset
 #  number of additional offsets
 #  number of colliders
-Frame = struct.Struct("<I2f2fII")
+Frame = struct.Struct("<I2fII")
 Offset = struct.Struct("<2f")
 
 # Animation
@@ -109,8 +108,6 @@ def bake(infile, outfile):
                 frame["clip"],
                 frame["display"]["x"],
                 frame["display"]["y"],
-                frame["foot"]["x"],
-                frame["foot"]["y"],
                 len(frame["offsets"]),
                 len(frame["collision"])
             ))

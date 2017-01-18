@@ -4,6 +4,7 @@ Up next:
   [X] Bake JSON
   [X] Read in
   [X] Tilemap rendering
+  [ ] Solidity interaction
 [ ] Slope following
   [ ] Contact normal/tangent
   [ ] Falling off ledges/handing off to adjacent slopes
@@ -12,13 +13,18 @@ Up next:
   [ ] Detailed state
   [ ] Configuration
 [ ] Asset manager
-  [ ] Keep track of what is loaded and prevent double-loading
+  [X] Keep track of what is loaded and prevent double-loading
+[ ] Event dispatching
+[ ] Z-ordered deferred drawing
+[ ] GFX (particles)
+  [ ] SOA implementation for particle system (allowing SIMD)
 [ ] Relative paths for assets referencing other assets
 [ ] Game global config
 
 High-Level 1.0 Features
 [ ] Fast collision detection
   [X] Rectangle, Line, Circle Collision types
+    [ ] Fully implement all collision interactions
     [ ] Optimize
   [ ] Tunnelling prevention (ccd)
   [ ] Raycasting

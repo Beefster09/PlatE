@@ -35,3 +35,18 @@ __forceinline bool ballpark(const T value, const T park, const int factor = 1) {
 		return value >= ldexp(park, factor) && value <= ldexp(park, -factor);
 	}
 }
+
+inline char* copy(const char* str) {
+	char* ret = new char[strlen(str) + 1];
+	strcpy(ret, str);
+	return ret;
+}
+
+template <class T>
+inline T clamp(const T value, const T min, const T max) {
+	static_assert(std::is_arithmetic<T>::value, "clamp(value, min, max) requires numeric type");
+
+	if (value < min) return min;
+	if (value > max) return max;
+	return value;
+}
