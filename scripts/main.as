@@ -24,36 +24,39 @@ class Simple : EntityComponent {
         ent.acceleration = grav;
 
         if (cont !is null) {
-            cont.bind(ent);
+            cont.bind(this);
+
+            cont.Up.bind_on_press(ButtonEventCallback(pUp));
+            cont.Up.bind_on_release(ButtonEventCallback(rUp));
         }
     }
 
     void update(Entity@ ent, float delta_seconds) {
     }
 
-    void on_press_Up(Entity@ ent) {
+    void pUp() {
         println("+Up");
     }
 
-    void on_release_Up(Entity@ ent) {
+    void rUp() {
         println("-Up");
     }
 
-    void on_press_Down(Entity@ ent) {
+    void on_press_Down() {
         println("+Down");
     }
 
-    void on_release_Down(Entity@ ent) {
+    void on_release_Down() {
         println("-Down");
     }
+}
 
-    void on_press_OK(Entity@ ent) {
-        println("+OK");
-    }
+void plusOK() {
+    println("+OK");
+}
 
-    void on_release_OK(Entity@ ent) {
-        println("-OK");
-    }
+void minusOK() {
+    println("-OK");
 }
 
 void PrintErr(int code, const string &in desc) {
@@ -67,6 +70,11 @@ void init() {
 
     EntitySystem.spawn(Simple("data/test.sprite", Vector2(50, 400), Vector2(120, -350), Vector2(0, 500)), PrintErr);
     EntitySystem.spawn(Simple("data/test.sprite", Vector2(400, 300), Vector2(10, 0), Vector2(0, 0)), PrintErr);
+
+    TestController@ cont = get_TestController_instance(0);
+
+    cont.OK.bind_on_press(plusOK);
+    cont.OK.bind_on_release(minusOK);
 
     Engine.pause();
 }

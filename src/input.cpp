@@ -40,19 +40,16 @@ static ControllerInstance* instantiate_controller(const VirtualController* ctype
 	size_t n_buttons = ctype->button_names.size();
 	size_t memsize = sizeof(ControllerInstance) +
 		n_axes * sizeof(VirtualAxisState) +
-		n_buttons * (sizeof(VirtualButtonState) + sizeof(ButtonEventCallbacks));
+		n_buttons * (sizeof(VirtualButtonState));
 	void* memblock = operator new (memsize);
 
 	ControllerInstance* cont = (ControllerInstance*) memblock;
 	VirtualAxisState* axes = new(cont + 1) VirtualAxisState[n_axes](); // ends with () to ensure initializers are called (i.e. all fields are zero)
 	VirtualButtonState* buttons = new(axes + n_axes) VirtualButtonState[n_buttons]();
-	ButtonEventCallbacks* callbacks = new(buttons + n_buttons) ButtonEventCallbacks[n_buttons]();
 
 	new(&cont->axes) Array<VirtualAxisState>(axes, n_axes);
 	new(&cont->buttons) Array<VirtualButtonState>(buttons, n_buttons);
-	new(&cont->callbacks) Array<ButtonEventCallbacks>(callbacks, n_buttons);
 
-	cont->attachment = nullptr;
 	cont->type = ctype;
 
 	return cont;
@@ -137,110 +134,107 @@ void update_inputs(float dt) {
 			button.released = button.state && !rawstate;
 			button.state = rawstate;
 
-			asIScriptFunction* callback = nullptr;
 			if (button.pressed) {
-				callback = inst->callbacks[i].on_press;
+				button.on_press();
 			}
 			else if (button.released) {
-				callback = inst->callbacks[i].on_release;
-			}
-
-			if (callback != nullptr) {
-				asIScriptEngine* engine = callback->GetEngine();
-				asIScriptContext* ctx = engine->RequestContext();
-
-				ctx->Prepare(callback);
-
-				ctx->SetObject(inst->attachment->rootcomp);
-				ctx->SetArgObject(0, inst->attachment);
-
-				int r = ctx->Execute();
-				if (r == asEXECUTION_EXCEPTION) {
-					auto ex = GetExceptionDetails(ctx);
-					printf("%s\n", ex.c_str());
-				}
-
-				ctx->Unprepare();
-				engine->ReturnContext(ctx);
+				button.on_release();
 			}
 		}
 	}
 }
 
-void bind_controller_to_entity(ControllerInstance* cont, Entity* e) {
-	if (e->controller != nullptr) {
-		auto* c = e->controller;
-		e->controller = nullptr; // prevent circular reference
-		unbind_controller(c);
+void ButtonEventCallback::clear() {
+	if (func != nullptr) {
+		func->Release();
+		func = nullptr;
 	}
+	if (obj != nullptr) {
+		obj->Release();
+		obj = nullptr;
+	}
+}
 
-	// Release prior callback bindings
-	if (cont->attachment != nullptr) {
-		for (ButtonEventCallbacks& callbacks : cont->callbacks) {
-			if (callbacks.on_press != nullptr) {
-				callbacks.on_press->Release();
-			}
-			if (callbacks.on_release != nullptr) {
-				callbacks.on_release->Release();
-			}
+void ButtonEventCallback::set_delegate(asIScriptFunction* delegate) {
+	assert(delegate != nullptr);
+	if (func != nullptr) {
+		func->Release();
+	}
+	if (obj != nullptr) {
+		obj->Release();
+		obj = nullptr;
+	}
+	func = delegate;
+	func->AddRef();
+}
+
+void ButtonEventCallback::set_method(asIScriptObject* objref, asIScriptFunction* method) {
+	if (func != nullptr) {
+		func->Release();
+	}
+	if (obj != nullptr) {
+		obj->Release();
+	}
+	assert(objref != nullptr && method != nullptr);
+
+	func = method;
+	obj = objref;
+
+	func->AddRef();
+	obj->AddRef();
+}
+
+void ButtonEventCallback::operator() () {
+	if (func != nullptr) {
+		asIScriptEngine* engine = func->GetEngine();
+		asIScriptContext* ctx = engine->RequestContext();
+
+		ctx->Prepare(func);
+
+		if (obj != nullptr) {
+			ctx->SetObject(obj);
 		}
-	}
 
-	asITypeInfo* cls = e->rootclass;
+		int r = ctx->Execute();
+		if (r == asEXECUTION_EXCEPTION) { // todo: propagate
+			auto ex = GetExceptionDetails(ctx);
+			printf("%s\n", ex.c_str());
+		}
+
+		ctx->Unprepare();
+		engine->ReturnContext(ctx);
+	}
+}
+
+void bind_controller(ControllerInstance* cont, asIScriptObject* comp) {
+	asITypeInfo* cls = comp->GetObjectType();
 
 	char declbuf[256];
 	int n_buttons = cont->buttons.size();
 
 	// Automatically populate callback bindings based on methods of the class that cares
 	for (int i = 0; i < n_buttons; ++i) {
-		auto& cb = cont->callbacks[i];
 		auto& name = cont->type->button_names[i];
 
-		sprintf(declbuf, "void on_press_%s(Entity@)", name);
+		sprintf(declbuf, "void on_press_%s()", name);
 		asIScriptFunction* on_press = cls->GetMethodByDecl(declbuf);
 		if (on_press != nullptr) {
-			on_press->AddRef();
+			cont->buttons[i].on_press.set_method(comp, on_press);
 		}
-		cb.on_press = on_press;
 
-		sprintf(declbuf, "void on_release_%s(Entity@)", name);
+		sprintf(declbuf, "void on_release_%s()", name);
 		asIScriptFunction* on_release = cls->GetMethodByDecl(declbuf);
 		if (on_release != nullptr) {
-			on_release->AddRef();
+			cont->buttons[i].on_release.set_method(comp, on_release);
 		}
-		cb.on_release = on_release;
 	}
-
-	e->controller = cont;
-	cont->attachment = e;
 }
 
 void unbind_controller(ControllerInstance* cont) {
-	if (cont == nullptr) return;
-	if (cont->attachment == nullptr) return;
-
-	Entity* e = cont->attachment;
-	if (e->controller != nullptr) {
-		auto* c = e->controller;
-		e->controller = nullptr; // prevent circular reference
-		unbind_controller(c);
+	for (VirtualButtonState& button : cont->buttons) {
+		button.on_press.clear();
+		button.on_release.clear();
 	}
-
-	// Release prior callback bindings
-	if (cont->attachment != nullptr) {
-		for (ButtonEventCallbacks& callbacks : cont->callbacks) {
-			if (callbacks.on_press != nullptr) {
-				callbacks.on_press->Release();
-				callbacks.on_press = nullptr;
-			}
-			if (callbacks.on_release != nullptr) {
-				callbacks.on_release->Release();
-				callbacks.on_release = nullptr;
-			}
-		}
-	}
-
-	cont->attachment = nullptr;
 }
 
 bool bind_button(ControllerInstance* cont, int b_index, RealInput input, int slot) {
@@ -435,6 +429,14 @@ static bool get_button_value(RealInput& input) {
 	return false;
 }
 
+static void SetOnPressCallback(VirtualButtonState* button, asIScriptFunction* callback) {
+	button->on_press.set_delegate(callback);
+}
+
+static void SetOnReleaseCallback(VirtualButtonState* button, asIScriptFunction* callback) {
+	button->on_release.set_delegate(callback);
+}
+
 static asITypeInfo* strarray_type;
 
 void RegisterInputTypes(asIScriptEngine* engine) {
@@ -452,9 +454,16 @@ void RegisterInputTypes(asIScriptEngine* engine) {
 	r = engine->RegisterObjectProperty("InputButton", "const bool state", asOFFSET(VirtualButtonState, state)); assert(r >= 0);
 	r = engine->RegisterObjectProperty("InputButton", "const bool pressed", asOFFSET(VirtualButtonState, pressed)); assert(r >= 0);
 	r = engine->RegisterObjectProperty("InputButton", "const bool released", asOFFSET(VirtualButtonState, released)); assert(r >= 0);
+
+	r = engine->RegisterFuncdef("void ButtonEventCallback()"); assert(r >= 0);
+
+	r = engine->RegisterObjectMethod("InputButton", "void bind_on_press(ButtonEventCallback@)",
+		asFUNCTION(SetOnPressCallback), asCALL_CDECL_OBJFIRST); assert(r > 0);
+	r = engine->RegisterObjectMethod("InputButton", "void bind_on_release(ButtonEventCallback@)",
+		asFUNCTION(SetOnReleaseCallback), asCALL_CDECL_OBJFIRST); assert(r > 0);
 }
 
-// WARNING: Trainwreck in progress
+// WARNING: these are HIGHLY dependent on instantiating controllers properly
 static int GetButtonOffset(const VirtualController* type, int index) {
 	return sizeof(ControllerInstance) +
 		sizeof(VirtualAxisState) * type->axis_names.size() +
@@ -465,9 +474,9 @@ static int GetAxisOffset(const VirtualController* type, int index) {
 	return sizeof(ControllerInstance) +
 		sizeof(VirtualAxisState) * index;
 }
-// end Trainwreck
+// So never instantiate them by hand and do not make a constructor. Constructors don't allocate memory the way this expects.
 
-static class GetController {
+class GetController {
 	const VirtualController* const type;
 
 public:
@@ -568,8 +577,8 @@ static int RegisterControllerType(asIScriptEngine* engine, const VirtualControll
 		r = engine->RegisterObjectProperty(name, declbuf, GetButtonOffset(vcont, i)); check(r);
 	}
 
-	r = engine->RegisterObjectMethod(name, "void bind(Entity@)",
-		asFUNCTION(bind_controller_to_entity), asCALL_CDECL_OBJFIRST); check(r);
+	r = engine->RegisterObjectMethod(name, "void bind(EntityComponent@)",
+		asFUNCTION(bind_controller), asCALL_CDECL_OBJFIRST); check(r);
 	r = engine->RegisterObjectMethod(name, "void unbind()",
 		asFUNCTION(unbind_controller), asCALL_CDECL_OBJFIRST); check(r);
 
@@ -582,6 +591,7 @@ static int RegisterControllerType(asIScriptEngine* engine, const VirtualControll
 		asFUNCTION(GetAxisByIndex), asCALL_CDECL_OBJFIRST); check(r);
 	r = engine->RegisterObjectMethod(name, "InputAxis@ axis(const string &in)",
 		asFUNCTION(GetAxisByName), asCALL_CDECL_OBJFIRST); check(r);
+
 	r = engine->RegisterObjectMethod(name, "InputButton@ button(int)",
 		asFUNCTION(GetButtonByIndex), asCALL_CDECL_OBJFIRST); check(r);
 	r = engine->RegisterObjectMethod(name, "InputButton@ button(const string &in)",

@@ -76,9 +76,6 @@ struct Entity {
 	asITypeInfo* rootclass = nullptr;
 	asIScriptFunction* updatefunc = nullptr;
 
-// === Input Binding ===
-	ControllerInstance* controller = nullptr;
-
 // === Functionality ===
 	Entity(EntityId id, asIScriptObject* behavior);
 	~Entity();

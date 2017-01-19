@@ -76,6 +76,24 @@ struct RealInput {
 
 static_assert(sizeof(RealInput) == sizeof(uint64_t), "RealInput must evaluate to 64-bit size");
 
+class ButtonEventCallback {
+private:
+	asIScriptFunction* func;
+	asIScriptObject* obj;
+
+public:
+	inline ButtonEventCallback() { func = nullptr; obj = nullptr; }
+
+	void operator = (const ButtonEventCallback&) = delete;
+	void operator = (ButtonEventCallback&&) = delete;
+
+	void clear();
+	void set_delegate(asIScriptFunction* delegate);
+	void set_method(asIScriptObject* obj, asIScriptFunction* method);
+
+	void operator() ();
+};
+
 /// The script-readable axis data
 struct VirtualAxisState {
 	std::array<RealInput, 3> bindings_positive;
@@ -89,6 +107,9 @@ struct VirtualAxisState {
 struct VirtualButtonState {
 	std::array<RealInput, 3> bindings;
 
+	ButtonEventCallback on_press;
+	ButtonEventCallback on_release;
+
 	bool state;
 	bool pressed;
 	bool released;
@@ -100,26 +121,17 @@ struct VirtualController {
 	Array<const char*> button_names;
 };
 
-struct ButtonEventCallbacks {
-	asIScriptFunction* on_press;
-	asIScriptFunction* on_release;
-};
-
 /// An instance of a controller that holds the actual data that gets updated by the engine
 struct ControllerInstance {
 	const VirtualController* type;
 
 	Array<VirtualAxisState> axes;
 	Array<VirtualButtonState> buttons;
-
-// Entity-script binding
-	Entity* attachment;
-	Array<ButtonEventCallbacks> callbacks;
 };
 
 ControllerInstance* create_controller(const char* vcname, const char* instname);
 
-void bind_controller_to_entity(ControllerInstance* cont, Entity* e);
+void bind_controller(ControllerInstance* cont, asIScriptObject* comp);
 void unbind_controller(ControllerInstance* cont);
 
 /// Bind real inputs.
