@@ -15,9 +15,10 @@
                 [0, 0, 1, 1],
                 [4, 4, 0, 1]
             ],
-            "z_order": -1,
+            "z_order": -999,
             "offset": {"x": 50, "y": 30},
-            "solid": true
+            "solid": true,
+            "channel": "back_layer"
         }
 	],
 	"objects": [

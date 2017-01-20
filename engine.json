@@ -1,0 +1,35 @@
+{
+    "title": "PlatE Test Game",
+    "controller_types": [
+        {
+            "name": "Menu",
+            "axes": [],
+            "buttons": ["Up", "Down", "Left", "Right", "OK", "Cancel"]
+        },
+        {
+            "name": "Player",
+            "axes": ["x", "y"],
+            "buttons": ["Jump", "Attack"]
+        }
+    ],
+    "collision" : {
+        "types": [
+            {
+                "name": "Hurtbox",
+                "color": "#cda720"
+            },
+            {
+                "name": "Damage",
+                "color": "#ff0000",
+                "acts_on": ["Hurtbox"]
+            }
+        ],
+        "channels": [
+            "front_layer",
+            "back_layer",
+            "team1",
+            "team2"
+        ]
+    },
+    "asset_dir": "assets"
+}

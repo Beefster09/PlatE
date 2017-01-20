@@ -51,30 +51,35 @@ struct Hitbox {
 	void operator = (Hitbox&& other);
 };
 
-struct ColliderGroup {
+struct ColliderType {
 	const char* name;
 	int id;
 	SDL_Color color;
 
 private:
 	static Array2D<bool> table;
-	static Array<const ColliderGroup> types;
+	static Array<const ColliderType> types;
 
 public:
 	static void init (const char* config_file);
-	inline static bool acts_on(const ColliderGroup* a, const ColliderGroup* b) {
+	inline static bool acts_on(const ColliderType* a, const ColliderType* b) {
 		if (a == nullptr || b == nullptr) {
 			return false;
 		}
 		return table(a->id, b->id);
 	}
-	static const ColliderGroup* by_name (const char* name);
+	static const ColliderType* by_name (const char* name);
 
 private:
-	inline ColliderGroup(const char* name, int id, SDL_Color color) :
+	inline ColliderType(const char* name, int id, SDL_Color color) :
 		name(name), id(id), color(color) {}
 
 	inline ColliderGroup() {}
+};
+
+struct ColliderChannel {
+	const char* name;
+	uint8_t id;
 };
 
 struct Collider {
