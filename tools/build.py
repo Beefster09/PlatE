@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import bakesprite, bakelevel, baketileset, bakeengine
+import buildsprite, buildlevel, buildtileset, buildengine
 import re
 import traceback
 
@@ -44,27 +44,27 @@ def main(indir = "data", outdir = "assets", *args,
     do_backups = True, msglevel = MSG_NORMAL, force = False
 ):
     if msglevel >= MSG_VERYVERBOSE:
-        print ("Baking assets within", indir, "into", outdir, "...")
+        print ("Building assets within '{}/' into '{}/'".format(indir, outdir))
 
-    def bake_one(infn, outfn, t):
+    def build_one(infn, outfn, t):
         if force or needs_bake(infn, outfn):
             if do_backups:
                 mv(outfn, outfn + ".bk")
 
             try:
-                if t == "boot":
-                    bakeengine.bake(infn, outfn)
+                if t == "bootloader":
+                    buildengine.bake(infn, outfn)
                 elif t == 'sprite':
-                    bakesprite.bake(infn, outfn)
+                    buildsprite.bake(infn, outfn)
                 elif t == 'level':
-                    bakelevel.bake(infn, outfn)
+                    buildlevel.bake(infn, outfn)
                 elif t == 'tileset':
-                    baketileset.bake(infn, outfn)
+                    buildtileset.bake(infn, outfn)
                 else:
                     raise Exception("Unsupported bake type")
 
                 if msglevel >= MSG_VERBOSE:
-                    print ("Baked {}: {} --> {}".format(t, infn, outfn))
+                    print ("Built {}: {} --> {}".format(t, infn, outfn))
 
                 if do_backups:
                     rm(outfn + '.bk')
@@ -78,7 +78,7 @@ def main(indir = "data", outdir = "assets", *args,
 
             except Exception as e:
                 if msglevel >= MSG_ERRORS:
-                    print ("Baking failed on {}:".format(infn), str(e))
+                    print ("Build failed on {}:".format(infn), str(e))
                 if msglevel >= MSG_DEBUG:
                     traceback.print_exc()
                 if do_backups:
@@ -87,17 +87,17 @@ def main(indir = "data", outdir = "assets", *args,
 
         else:
             if msglevel >= MSG_VERBOSE:
-                print ("Nothing to bake for", infn)
+                print ("Nothing to build for", infn)
             return 0
-    # end bake_one
+    # end build_one
 
+    n_built = 0
     try:
-        bake_one("engine.json", "engine.boot", "boot")
+        n_built += build_one("engine.json", "engine.boot", "bootloader")
     except FileNotFoundError:
         if msglevel >= MSG_WARN:
             print ("WARNING: no engine.json in current directory")
 
-    n_baked = 0
     for root, dirs, files in os.walk(indir, followlinks=True):
         dirs[:] = [d for d in dirs if not d.startswith('.')]  # skip unix-style hidden folders
         for fn in files:
@@ -105,17 +105,17 @@ def main(indir = "data", outdir = "assets", *args,
             if match:
                 infn = os.path.join(root, fn)
                 outfn = os.path.join(root.replace(indir, outdir, 1), match.group('basename') + '.' + match.group('type'))
-                n_baked += bake_one(infn, outfn, match.group('type'))
+                n_built += build_one(infn, outfn, match.group('type'))
 
     if msglevel >= MSG_NORMAL:
-        if n_baked == 0:
+        if n_built == 0:
             print ("Nothing to do.")
         else:
-            print ("Successfully baked", n_baked, "assets.")
+            print ("Successfully built", n_built, "asset(s).")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Bake assets from JSON format to PlatE binary formats. This program will recursively search " +
+        description="Build assets from JSON format to PlatE binary formats. This program will recursively search " +
             "the source directory for assets that need to be baked and put them into corresponding paths in the " +
             "target directory. Only json assets that have changed will need to be rebaked."
     )
@@ -145,7 +145,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument("--force", '-f', action='store_true', default=False,
-        help="Forces rebake of all files"
+        help="Forces rebuild of all files"
     )
 
     args = parser.parse_args()
