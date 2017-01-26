@@ -11,6 +11,7 @@
 #include "storage.h"
 #include "transform.h"
 #include "SDL_gpu.h"
+#include <cstdio>
 
 namespace Errors {
 	const error_data
@@ -45,10 +46,7 @@ struct Hitbox {
 
 	Hitbox() {}
 	Hitbox(const Hitbox& other);
-	Hitbox(Hitbox&& other);
-
 	void operator = (const Hitbox& other);
-	void operator = (Hitbox&& other);
 };
 
 struct ColliderType {
@@ -61,35 +59,38 @@ private:
 	static Array<const ColliderType> types;
 
 public:
-	static void init (const char* config_file);
+	static Result<> init(FILE* stream);
 	inline static bool acts_on(const ColliderType* a, const ColliderType* b) {
-		if (a == nullptr || b == nullptr) {
-			return false;
-		}
-		return table(a->id, b->id);
+		if (a == nullptr || b == nullptr) return false;
+		else return table(a->id, b->id);
 	}
-	static const ColliderType* by_name (const char* name);
+	static const ColliderType* by_name(const char* name);
 
-private:
-	inline ColliderType(const char* name, int id, SDL_Color color) :
-		name(name), id(id), color(color) {}
-
-	inline ColliderGroup() {}
+//private:
+//	inline ColliderType(const char* name, int id, SDL_Color color) :
+//		name(name), id(id), color(color) {}
+//
+//	inline ColliderType() {}
 };
 
 struct ColliderChannel {
 	const char* name;
 	uint8_t id;
+
+private:
+	static Array<const ColliderChannel> channels;
+
+public:
+	static Result<> init(FILE* stream);
+	static const ColliderChannel* by_name(const char* name);
 };
 
 struct Collider {
 	/// type data that determines what things actually collide
-	const ColliderGroup* type;
+	const ColliderType* type;
 
 	/// The inherently meaningful data that the engine handles.
 	Hitbox hitbox;
-
-	// priority?
 };
 
 void render_hitbox(GPU_Target* context, const Transform& tx, const Hitbox& hitbox, const SDL_Color& color);

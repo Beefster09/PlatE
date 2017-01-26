@@ -2,6 +2,7 @@
 #include "input.h"
 #include "util.h"
 #include "cstrkey.h"
+#include "fileutil.h"
 #include <new>
 #include <vector>
 #include <algorithm>
@@ -85,8 +86,8 @@ VirtualController* create_controller_type(const char* name, Array<const char*> a
 	);
 
 	VirtualController* type = new VirtualController{
-		axis_names,
-		button_names
+		std::move(axis_names),
+		std::move(button_names)
 	};
 
 	if (iter == cont_types.end()) {
@@ -427,6 +428,30 @@ static bool get_button_value(RealInput& input) {
 	};
 
 	return false;
+}
+
+Result<> init_controller_types(FILE* stream) {
+	try {
+		int n_controllers = read<uint16_t>(stream);
+
+		for (int i = 0; i < n_controllers; ++i) {
+			const char* name = read_string(stream, read<uint16_t>(stream));
+			Array<const char*> axes(read<uint16_t>(stream));
+			for (auto& n : axes) {
+				n = read_string(stream, read<uint16_t>(stream));
+			}
+			Array<const char*> buttons(read<uint16_t>(stream));
+			for (auto& n : buttons) {
+				n = read_string(stream, read<uint16_t>(stream));
+			}
+			create_controller_type(name, axes, buttons);
+		}
+
+		return Result<>::success;
+	}
+	catch (Error& e) {
+		return e;
+	}
 }
 
 static void SetOnPressCallback(VirtualButtonState* button, asIScriptFunction* callback) {

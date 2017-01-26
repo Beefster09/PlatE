@@ -2,6 +2,7 @@
 #include "sprite.h"
 #include "hitbox.h"
 #include "transform.h"
+#include "fileutil.h"
 #include <SDL_gpu.h>
 #include <cstring>
 #include <cassert>
@@ -24,31 +25,6 @@ Hitbox::Hitbox(const Hitbox& other) {
 		return;
 	case COMPOSITE:
 		composite = other.composite;
-		return;
-	case NONE:
-	default:
-		return;
-	}
-}
-
-Hitbox::Hitbox(Hitbox&& other) {
-	type = other.type;
-	switch (type) {
-	case BOX:
-		box = std::move(other.box);
-		return;
-	case CIRCLE:
-		circle = std::move(other.circle);
-		return;
-	case LINE:
-	case ONEWAY:
-		line = std::move(other.line);
-		return;
-	case POLYGON:
-		polygon = std::move(other.polygon);
-		return;
-	case COMPOSITE:
-		composite = std::move(other.composite);
 		return;
 	case NONE:
 	default:
@@ -81,69 +57,84 @@ void Hitbox::operator = (const Hitbox& other) {
 	}
 }
 
-void Hitbox::operator = (Hitbox&& other) {
-	type = other.type;
-	switch (type) {
-	case BOX:
-		box = std::move(other.box);
-		return;
-	case CIRCLE:
-		circle = std::move(other.circle);
-		return;
-	case LINE:
-	case ONEWAY:
-		line = std::move(other.line);
-		return;
-	case POLYGON:
-		polygon = std::move(other.polygon);
-		return;
-	case COMPOSITE:
-		composite = std::move(other.composite);
-		return;
-	case NONE:
-	default:
-		return;
-	}
-}
+Array2D<bool> ColliderType::table = Array2D<bool>();
+Array<const ColliderType> ColliderType::types = Array<const ColliderType>();
 
-Array2D<bool> ColliderGroup::table = Array2D<bool>();
-Array<const ColliderGroup> ColliderGroup::types = Array<const ColliderGroup>();
-
-const ColliderGroup* ColliderGroup::by_name(const char* name) {
-	for (const ColliderGroup& cgroup : ColliderGroup::types) {
+const ColliderType* ColliderType::by_name(const char* name) {
+	for (const ColliderType& cgroup : ColliderType::types) {
 		if (strcmp(name, cgroup.name) == 0) return &cgroup;
 	}
 	printf("Warning: '%s' is not a valid ColliderGroup.\n", name);
 	return nullptr;
 }
 
-void ColliderGroup::init(const char* config_file) {
-	int n_cgroups = 5;
+constexpr std::initializer_list<ColliderType> INTRINSIC_COLLIDER_TYPES = {};
+constexpr int N_INTRINSIC_COLLIDER_TYPES = INTRINSIC_COLLIDER_TYPES.size();
 
-	// TODO: count user types
+Result<> ColliderType::init(FILE* bootloader) {
+	try {
+		int n_types = read<uint16_t>(bootloader) + N_INTRINSIC_COLLIDER_TYPES;
 
-	ColliderGroup* types = new ColliderGroup[n_cgroups];
+		ColliderType* types = new ColliderType[n_types];
+		ColliderType::table = Array2D<bool>(n_types, n_types);
+		table.clear();
 
-	// init intrinsics
-	types[0] = ColliderGroup("Entity",  0, { 127, 127, 127 });
-	types[1] = ColliderGroup("Level",   1, {  32, 192,   0 });
-	types[2] = ColliderGroup("Damage",  2, { 255,   0,   0 });
-	types[3] = ColliderGroup("Hurtbox", 3, { 255, 255,  64 });
-	types[4] = ColliderGroup("Block",   4, { 192,   0, 255 });
+		int i = 0;
 
-	// TODO: parse user types
+		// init intrinsics
+		for (const ColliderType& intrinsic : INTRINSIC_COLLIDER_TYPES) {
+			types[i] = intrinsic;
+			types[i].id = i;
+			++i;
+		}
 
-	ColliderGroup::types = Array<const ColliderGroup>(types, n_cgroups);
+		for (; i < n_types; ++i) {
+			types[i].name = read_string(bootloader, read<uint16_t>(bootloader));
+			types[i].id = i;
+			uint8_t
+				r = read<uint8_t>(bootloader),
+				g = read<uint8_t>(bootloader),
+				b = read<uint8_t>(bootloader);
+			types[i].color = { r, g, b, 255 };
 
-	table = Array2D<bool>(n_cgroups, n_cgroups);
-	table.clear();
+			int n_rel = read<uint16_t>(bootloader);
+			for (int rel = 0; rel < n_rel; ++rel) {
+				table.set(i, read<uint16_t>(bootloader));
+			}
+		}
 
-	table.set(0, 0); // Entity -> Entity
-	table.set(0, 1); // Entity -> Level
-	table.set(2, 3); // Damage -> Hurtbox
-	table.set(2, 4); // Damage -> Block
+		ColliderType::types = Array<const ColliderType>(types, n_types);
 
-	// TODO: parse user interactions
+		return Result<>::success;
+	}
+	catch (Error& e) {
+		return e;
+	}
+}
+
+Array<const ColliderChannel> ColliderChannel::channels;
+
+constexpr const char* INTRINSIC_COLLIDER_CHANNELS[] = {
+	"EntityDefault",
+	"TilemapDefault"
+};
+constexpr int N_INTRINSIC_COLLIDER_CHANNELS = sizeof(INTRINSIC_COLLIDER_CHANNELS) / sizeof(const char*);
+
+Result<> ColliderChannel::init(FILE* stream) {
+	try {
+		int n_chans = read<uint16_t>(stream);
+		ColliderChannel* chans = new ColliderChannel[n_chans];
+		for (int i = 0; i < n_chans; ++i) {
+			chans[i].name = read_string(stream, read<uint16_t>(stream));
+			chans[i].id = i;
+		}
+		channels = Array<const ColliderChannel>(chans, n_chans);
+
+		return Result<>::success;
+	}
+	catch (Error& e) {
+		return e;
+	}
 }
 
 void render_hitbox(GPU_Target* context, const Transform& tx, const Hitbox& hitbox, const SDL_Color& color) {

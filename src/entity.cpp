@@ -350,8 +350,8 @@ static void detect_collisions(Entity* a, Entity* b, Executor& executor) {
 	for (const Collider& collA : a->frame->colliders) {
 		for (const Collider& collB : b->frame->colliders) {
 
-			bool fwd = ColliderGroup::acts_on(collA.type, collB.type);
-			bool bkwd = ColliderGroup::acts_on(collB.type, collA.type);
+			bool fwd = ColliderType::acts_on(collA.type, collB.type);
+			bool bkwd = ColliderType::acts_on(collB.type, collA.type);
 
 			if (fwd || bkwd) {
 				if (hitboxes_overlap(
@@ -370,6 +370,7 @@ static void detect_collisions(Entity* a, Entity* b, Executor& executor) {
 }
 
 static void entity_level_collision(Entity* e, LevelInstance* level) {
+	if (level == nullptr || e == nullptr) return;
 	if (!e->solid || e->animation->solidity.hitbox.type == Hitbox::NONE) return; // Ignore disabled/empty hitboxes
 
 	// Then check each tilemap for collision

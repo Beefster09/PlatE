@@ -1,0 +1,12 @@
+You don't always want everything to collide with everything
+2 concepts on collision:
+    * Collision Types: Colliders have a type of their own that determines how events are reported. It also allows for different kinds of things (i.e. solidity/damage/hurtboxes) to respond to different sets of collision.
+        * Types have a concept of "acting on" one another. This only changes how overlaps are reported to callbacks.
+        * Solidity is the only built-in collider type- and is stored differently - by animation rather than by frame. Solidity is the only collision type that has blocking/depenetrating properties; all other types only generate overlap events. Solidity does not interact with any user-defined collider types.
+        * Types are constant and tied to their associated sprites
+    * Channels: Each entity, tilemap, etc... has a channel id and entities have a channel mask as well as a channel id. This determines which pairs of game objects are actually able to collide in the first place and allows for things such as team-specific collisions and layers.
+        * Entities will only collide with a tilemap or static object if the channel mask bit corresponding to that object's group id is set.
+        * Entities will collide with other entities if, for either one, the channel mask bit corresponding to the other entity's group id is set.
+        * Scripts are able to change the channel mask and id of entities.
+        * The engine bootloader is allowed to define presets and names of channels.
+        * Since the mask is, in fact, a bitmask, there is a limit of 64 channels, including built-ins.

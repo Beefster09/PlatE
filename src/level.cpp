@@ -11,9 +11,8 @@ __forceinline static Result<const Level*> read_level(FILE* stream, MemoryPool& p
 	uint32_t n_entities, uint32_t n_areas, uint32_t n_edge_triggers);
 
 Result<const Level*> load_level(const char* filename) {
-	auto& aman = AssetManager::get();
 	{
-		const Level* maybe = aman.retrieve<Level>(filename);
+		const Level* maybe = AssetManager::retrieve<Level>(filename);
 		if (maybe != nullptr) return maybe;
 	}
 
@@ -26,14 +25,8 @@ Result<const Level*> load_level(const char* filename) {
 
 	size_t filesize = size(file);
 
-	// Check the magic number
-	{
-		char headbytes[LEVEL_MAGIC_NUMBER_LENGTH + 1];
-		headbytes[LEVEL_MAGIC_NUMBER_LENGTH] = 0;
-		if (fread(headbytes, 1, LEVEL_MAGIC_NUMBER_LENGTH, stream) != LEVEL_MAGIC_NUMBER_LENGTH ||
-			strcmp(headbytes, LEVEL_MAGIC_NUMBER) != 0) {
-			return Errors::InvalidLevelHeader;
-		}
+	if (!check_header(stream, LEVEL_MAGIC_NUMBER)) {
+		return Errors::InvalidLevelHeader;
 	}
 
 	uint32_t namelen, n_tilemaps, n_objects, n_entities, n_areas, n_edge_triggers,
@@ -86,7 +79,7 @@ Result<const Level*> load_level(const char* filename) {
 	fclose(stream);
 
 	if (result) {
-		aman.store(filename, result.value);
+		AssetManager::store(filename, result.value);
 	}
 	else {
 		// Clean up from the error
@@ -126,7 +119,7 @@ __forceinline static Result<const Level*> read_level(FILE* stream, MemoryPool& p
 				tmap.tileset = tileset;
 			}
 			else {
-				ERR_RELEASE("Unable to load referenced tileset (%s).\n", tileset.err.description);
+				ERR_RELEASE("Unable to load referenced tileset (%s).\n", std::to_string(tileset.err).c_str());
 				return tileset.err;
 			}
 
@@ -156,7 +149,7 @@ __forceinline static Result<const Level*> read_level(FILE* stream, MemoryPool& p
 				obj.sprite = sprite;
 			}
 			else {
-				ERR_RELEASE("Unable to load referenced sprite (%s).\n", sprite.err.description);
+				ERR_RELEASE("Unable to load referenced sprite (%s).\n", std::to_string(sprite.err).c_str());
 				return sprite.err;
 			}
 		}

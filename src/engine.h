@@ -20,58 +20,24 @@ namespace Errors {
 constexpr float default_fps_min = 20;
 constexpr float default_fps_max = 120;
 
-namespace PlatE {
+namespace  Engine {
+	void init();
+	void update(int delta_time);
+	void render(GPU_Target* context);
+	void event(const SDL_Event& event);
 
-	class Engine {
-	private:
-		EntitySystem* entity_system = nullptr;
+	Result<asIScriptModule*> load_script(const char* filename);
+	Result<asDWORD> run_script_function_byname(const char* modname, const char* funcname);
 
-		LevelInstance* active_level = nullptr;
-		// Level* peripheral_level; // used for splicing levels together
-		// Viewport* camera;
+	float get_time();
+	void pause();
+	void resume();
 
-		asIScriptEngine* script_engine = nullptr;
+	void set_fps_range(float low, float high);
 
-		asIScriptFunction* scriptfunc_init = nullptr;
-		asIScriptFunction* scriptfunc_update = nullptr;
+	int get_delay(int ticks_passed);
 
-		bool paused = false; // MAYBE: some sort of enum so that GUI stuff works when paused
-		uint32_t init_time = 0;
+	bool travel(const std::string& levelname);
 
-		float min_timestep, max_timestep;
-		float tick_remainder = 0.f;
-
-		Engine();
-
-		static Engine singleton;
-	public:
-		Engine(const Engine& other) = delete;
-		Engine(Engine&& other) = delete;
-		Engine& operator = (Engine& other) = delete;
-
-		__forceinline static Engine& get() { return singleton; }
-
-		void init();
-		void update(int delta_time);
-		void render(GPU_Target* context);
-		void event(const SDL_Event& event);
-
-		Result<asIScriptModule*> load_script(const char* filename);
-		Result<asDWORD> run_script_function_byname(const char* modname, const char* funcname);
-
-		float get_time();
-		inline void pause() { paused = true; }
-		inline void resume() { paused = false; }
-
-		void set_fps_range(float low, float high);
-
-		int get_delay(int ticks_passed);
-
-		bool travel(const std::string& levelname);
-
-	private:
-		void load_main_script();
-	};
-
-	void exit();
+	void load_main_script();
 }

@@ -41,13 +41,13 @@ def rm(f):
         return False
 
 def main(indir = "data", outdir = "assets", *args,
-    do_backups = True, msglevel = MSG_NORMAL
+    do_backups = True, msglevel = MSG_NORMAL, force = False
 ):
     if msglevel >= MSG_VERYVERBOSE:
         print ("Baking assets within", indir, "into", outdir, "...")
 
     def bake_one(infn, outfn, t):
-        if needs_bake(infn, outfn):
+        if force or needs_bake(infn, outfn):
             if do_backups:
                 mv(outfn, outfn + ".bk")
 
@@ -144,6 +144,10 @@ if __name__ == "__main__":
         help="Maximum verbosity for the tool developer."
     )
 
+    parser.add_argument("--force", '-f', action='store_true', default=False,
+        help="Forces rebake of all files"
+    )
+
     args = parser.parse_args()
 
-    main(args.source, args.target, do_backups = args.backups, msglevel = args.verbose - args.quiet)
+    main(args.source, args.target, do_backups=args.backups, msglevel = args.verbose - args.quiet, force=args.force)

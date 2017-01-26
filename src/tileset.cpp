@@ -12,9 +12,8 @@ __forceinline static Result<Tileset*> read_tileset(FILE* stream, MemoryPool& poo
 	uint32_t namelen, uint32_t texnamelen, uint32_t n_tiles);
 
 Result<const Tileset*> load_tileset(const char* filename) {
-	auto& aman = AssetManager::get();
 	{
-		const Tileset* maybe = aman.retrieve<Tileset>(filename);
+		const Tileset* maybe = AssetManager::retrieve<Tileset>(filename);
 		if (maybe != nullptr) return maybe;
 	}
 
@@ -26,13 +25,8 @@ Result<const Tileset*> load_tileset(const char* filename) {
 	FILE* stream = file;
 
 	// Check the magic number
-	{
-		char headbytes[TILESET_MAGIC_NUMBER_LENGTH + 1];
-		headbytes[TILESET_MAGIC_NUMBER_LENGTH] = 0;
-		if (fread(headbytes, 1, TILESET_MAGIC_NUMBER_LENGTH, stream) != TILESET_MAGIC_NUMBER_LENGTH ||
-			strcmp(headbytes, TILESET_MAGIC_NUMBER) != 0) {
-			return Errors::InvalidTilesetHeader;
-		}
+	if (!check_header(stream, TILESET_MAGIC_NUMBER)) {
+		return Errors::InvalidTilesetHeader;
 	}
 
 	// Read the header to determine how much we need to allocate in the memory pool
@@ -83,7 +77,7 @@ Result<const Tileset*> load_tileset(const char* filename) {
 		tileset->tile_width = tile_w;
 		tileset->tile_height = tile_h;
 
-		aman.store(filename, tileset);
+		AssetManager::store(filename, tileset);
 
 		return tileset;
 	}

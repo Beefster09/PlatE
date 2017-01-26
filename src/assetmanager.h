@@ -1,38 +1,52 @@
 #pragma once
 
-#include "fileutil.h"
-#include <unordered_map>
+#include <vector>
 #include <string>
 #include <typeinfo>
 #include <typeindex>
-#include "cstrkey.h"
+#include "result.h"
 
+namespace Errors {
+	const error_data
+		BadPath = { 101, "Invalid path" };
+}
 
-struct AssetEntry {
-	const void* asset;
-	std::type_index type;
-	uint32_t flags;
+/// Allows for relative asset referencing in a cross-platform way
+/// Will deal with forward/backward-ness of slashes appropriately
+class DirContext {
+private:
+	std::string dir;
+public:
+	DirContext() {}
+	//DirContext(const std::string& absolute);
+	//DirContext(const char* absolute);
+	DirContext(const DirContext&) = default;
+	DirContext(DirContext&&) = default;
+
+	/// Appends directories from a path
+	/// Each directory will be pushed individually, the basename will be ignored
+	/// If the path begins with a single slash, the path is assumed to be absolute from the asset root
+	/// Any attempts to reach above the asset root will result in an error
+	/// On Windows, attempts to access drives by letter will result in an error
+	Result<DirContext> operator +(const char* path);
+		
+	/// Resolves an engine-absolute path relative to the current context
+	Result<std::string> resolve(const char* path); // needs to return a std::string to avoid dangling pointer
 };
 
-class AssetManager {
-private:
-	std::unordered_map<cstr_key, AssetEntry> assets;
-
-	AssetManager() : assets(1024) {}
+namespace AssetManager {
+	struct AssetEntry {
+		const void* asset;
+		std::type_index type;
+		uint32_t flags;
+	};
 
 	void store_raw(const char* filename, const void* asset, const std::type_index& type);
-	const AssetEntry* retrieve_raw(const char* filename) const;
+	const AssetEntry* retrieve_raw(const char* filename);
 
-	static AssetManager singleton;
-public:
-	AssetManager(const AssetManager& other) = delete;
-	AssetManager(AssetManager&& rvalue) = delete;
+	void set_root_dir(const char* dir);
 
-	~AssetManager();
-
-	inline static AssetManager& get() { return singleton; }
-
-	// Garbage collect assets
+	// Asset Garbage Collection (slow- should probably only be allowed to be triggered on loading screens)
 	void gc();
 
 	template <class T>
@@ -41,7 +55,7 @@ public:
 	}
 
 	template <class T>
-	const T* retrieve(const char* filename) const {
+	const T* retrieve(const char* filename) {
 		const AssetEntry* asset = retrieve_raw(filename);
 		if (asset == nullptr) return nullptr; // missing
 		if (asset->type == typeid(T)) {

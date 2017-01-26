@@ -53,7 +53,10 @@ struct Result {
 	}
 
 	inline operator bool() const { return isSuccess; }
-	inline operator T() const {
+
+	// Implicit extraction (disabled if T == bool)
+	template <typename Q = T>
+	inline operator typename std::enable_if<!std::is_same<Q, bool>::value, T>::type() const {
 		assert(isSuccess && "implicit Result value extraction failed");
 		return value;
 	}

@@ -12,9 +12,8 @@ __forceinline static Result<const Sprite*> read_sprite(FILE* stream, MemoryPool&
 	uint32_t namelen, uint32_t texnamelen, uint32_t n_clips, uint32_t n_frames, uint32_t n_animations);
 
 Result<const Sprite*> load_sprite(const char* filename) {
-	auto& aman = AssetManager::get();
 	{
-		const Sprite* maybe = aman.retrieve<Sprite>(filename);
+		const Sprite* maybe = AssetManager::retrieve<Sprite>(filename);
 		if (maybe != nullptr) return maybe;
 	}
 
@@ -26,13 +25,8 @@ Result<const Sprite*> load_sprite(const char* filename) {
 	FILE* stream = file;
 
 	// Check the magic number
-	{
-		char headbytes[SPRITE_MAGIC_NUMBER_LENGTH + 1];
-		headbytes[SPRITE_MAGIC_NUMBER_LENGTH] = 0;
-		if (fread(headbytes, 1, SPRITE_MAGIC_NUMBER_LENGTH, stream) != SPRITE_MAGIC_NUMBER_LENGTH ||
-			strcmp(headbytes, SPRITE_MAGIC_NUMBER) != 0) {
-			return Errors::InvalidSpriteHeader;
-		}
+	if (!check_header(stream, SPRITE_MAGIC_NUMBER)) {
+		return Errors::InvalidSpriteHeader;
 	}
 
 	// Read the header to determine how much we need to allocate in the memory pool
@@ -81,7 +75,7 @@ Result<const Sprite*> load_sprite(const char* filename) {
 	fclose(stream);
 
 	if (result) {
-		aman.store(filename, result.value);
+		AssetManager::store(filename, result.value);
 	}
 	else {
 		// Clean up from the error

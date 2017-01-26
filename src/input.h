@@ -146,6 +146,8 @@ ControllerInstance* get_controller_by_name(const char* name);
 
 std::vector<ControllerInstance*> get_controllers_by_typename(const char* name);
 
+Result<> init_controller_types(FILE* stream);
+
 void RegisterInputTypes(asIScriptEngine* engine);
 int RegisterControllerTypes(asIScriptEngine* engine);
 

@@ -16,71 +16,164 @@ namespace Errors {
 		BucketIllegalRemove = { 41, "Attempt to remove element from bucket that cannot be removed" };
 }
 
-// A runtime-fixed-sized array that knows how big it is. :O
-// Why these aren't C++ standard baffles me
-template <class Data>
+template <typename T>
+struct unconst {
+	typedef T type;
+};
+
+template <typename T>
+struct unconst<const T> {
+	typedef T type;
+};
+
+// A runtime-fixed-sized array that knows how big it is.
+// Essentially a smarter version of a raw pointer.
+template <class T>
 class Array {
-	Data* items;
+	T* items;
 	size_t n_items;
 
 public:
-	Array() : n_items(0), items(nullptr) {}
-	Array(Data* data, size_t size) : n_items(size), items(data) {}
-	Array(size_t size) : n_items(size), items((Data*) operator new(size * sizeof(Data))) {}
-	Array(const Array& arr) = default;
-	Array(Array&& arr) = default;
-	Array& operator = (const Array& arr) = default;
-	Array& operator = (Array&& arr) = default;
+	inline Array() : n_items(0), items(nullptr) {}
+	inline Array(T* data, size_t size) : n_items(size), items(data) {}
+	inline Array(size_t size) : n_items(size), items(new T[size]) {}
 
-	Array(std::initializer_list<Data> ilist) {
+	Array copy() { // Copies should be explicit.
+		unconst<T>::type* buf = new T[n_items];
+		if (std::is_trivially_copyable<T>::value) {
+			memcpy((void*)buf, (const void*) items, n_items * sizeof(T));
+		}
+		else {
+			for (int i = 0; i < n_items; ++i) {
+				new((void*) &buf[i]) T(items[i]);
+			}
+		}
+		return Array(buf, n_items);
+	}
+
+	__forceinline Array(const Array& arr) :
+		items(arr.items),
+		n_items(arr.n_items) {}
+
+	// Convenience constructor
+	Array(std::initializer_list<T> ilist) {
 		n_items = ilist.size();
-		items = new Data[n_items];
+		items = new T[n_items];
 		int i = 0;
 		for (const auto& val : ilist) {
 			items[i++] = val;
 		}
 	}
 
-	/// Be VERY cautious when using this function as it could cause memory to be invalidated somewhere else.
-	/// Only use this if you know you are the sole user/owner of an array.
-	void resize(size_t new_size) {
-		Data* new_items = new Data[new_size];
-		memcpy(new_items, items, n_items * sizeof(Data));
-		delete[] items;
-		items = new_items;
-		n_items = new_size;
+	void operator = (const Array& arr) {
+		items = arr.items;
+		n_items = arr.n_items;
 	}
 
 	// avoid magical memory management
-	__forceinline void free() const {
+	__forceinline void free() {
 		delete[] items;
 		items = nullptr;
 	}
 
-	__forceinline operator const Data* () const { return items; }
+	// implicit Array<T> -> Array<const T> conversion
+	__forceinline operator Array<const T>() {
+		return Array<const T>(items, n_items);
+	}
 
-	__forceinline const Data& operator [] (unsigned int index) const {
+	__forceinline operator const T* () const { return items; }
+
+	__forceinline const T& operator [] (unsigned int index) const {
 		assert(index < n_items && "Array bounds check failed");
 		return items[index];
 	}
-	__forceinline const Data* begin() const { return items; }
-	__forceinline const Data* end() const { return items + n_items; }
+	__forceinline const T* begin() const { return items; }
+	__forceinline const T* end() const { return items + n_items; }
 
-	__forceinline const Data* data() const { return items; }
+	__forceinline const T* data() const { return items; }
 
-	__forceinline operator Data* () { return items; }
+	__forceinline operator T* () { return items; }
 
-	__forceinline Data& operator [] (unsigned int index) {
+	__forceinline T& operator [] (unsigned int index) {
 		assert(index < n_items && "Array bounds check failed");
 		return items[index];
 	}
-	__forceinline Data* begin() { return items; }
-	__forceinline Data* end() { return items + n_items; }
+	__forceinline T* begin() { return items; }
+	__forceinline T* end() { return items + n_items; }
 
 	__forceinline size_t size() const { return n_items; }
 
-	__forceinline Data* data() { return items; }
+	__forceinline T* data() { return items; }
+
 };
+
+// Possible alternative implementation
+//// Trivially copyable/movable/assignable array of variable length
+//template <class T>
+//class ArrayPtr {
+//private:
+//	struct __arr__ {
+//		size_t len;
+//		T first;
+//	} *data;
+//
+//	inline ArrayPtr(__arr__* ptr) { data = ptr; }
+//public:
+//	inline ArrayPtr() : data(nullptr) {}
+//	inline ArrayPtr(size_t len) {
+//		data = operator new(sizeof(size_t) + len * sizeof(T));
+//		data->len = len;
+//	}
+//
+//	ArrayPtr copy() {
+//		ArrayPtr arrcpy(data->len);
+//		if (std::is_trivially_copyable<T>::value) {
+//			memcpy(&arrcpy.data->first, &data->first, data->len);
+//		}
+//		else {
+//			for (T* iptr = begin(), iend = end(); iptr < iend; ++iptr) {
+//				new(iptr) T(&iptr);
+//			}
+//		}
+//	}
+//
+//	inline void free() {
+//		if (data == nullptr) return;
+//		operator delete(data);
+//		data = nullptr;
+//	}
+//
+//	// conversion from ArrayPtr<T> -> ArrayPtr<const T>
+//	inline operator ArrayPtr<const T> () {
+//		return ArrayPtr<const T>(reinterpret_cast<ArrayPtr<const T>::__arr__*>(data));
+//	}
+//
+//	inline T& operator [] (size_t index) {
+//		assert(index >= 0 && index < data->len);
+//		return (&data->first)[index];
+//	}
+//
+//	inline const T& operator [] (size_t index) const {
+//		assert(index >= 0 && index < data->len);
+//		return (&data->first)[index];
+//	}
+//
+//	inline operator T* () {
+//		return &data->first;
+//	}
+//
+//	inline size_t size() const {
+//		return data->len;
+//	}
+//
+//	inline T* begin() { return &data->first; }
+//	inline T* end() { return (&data->first)[data->len]; }
+//
+//	inline const T* begin() const { return &data->first; }
+//	inline const T* end() const { return (&data->first)[data->len]; }
+//
+//	inline T* c_ptr() { return &data->first; }
+//};
 
 template <>
 class Array<bool> {
@@ -97,18 +190,8 @@ public:
 		n_bits = size;
 		bytes = new uint8_t[(size + 7) / 8];
 	}
-	Array(Array& arr) = default;
-	Array& operator = (Array& arr) = default;
-
-	/// Be VERY cautious when using this function as it could cause memory to be invalidated somewhere else.
-	/// Only use this if you know you are the sole user/owner of an array.
-	void resize(size_t new_size) {
-		uint8_t* new_bytes = new uint8_t[(new_size + 7) / 8];
-		memcpy(new_bytes, bytes, (n_bits + 7) / 8);
-		delete[] bytes;
-		bytes = new_bytes;
-		n_bits = new_size;
-	}
+	//Array(Array& arr) = default;
+	//Array& operator = (Array& arr) = default;
 
 	void free() {
 		delete[] bytes;
@@ -148,30 +231,28 @@ public:
 	__forceinline size_t size() const { return n_bits; }
 };
 
-#define BUCKET_DEFAULT_CAPACITY 256
-
-template <typename Data, bool autoexpand = false>
+template <typename T, bool autoexpand = false>
 class DenseBucket {
-	static_assert(std::is_trivially_copyable<Data>::value, "Data is not trivially copyable");
-	static_assert(std::is_move_assignable<Data>::value, "Data is not move assignable");
+	static_assert(std::is_trivially_copyable<T>::value, "T is not trivially copyable");
+	static_assert(std::is_move_assignable<T>::value, "T is not move assignable");
 private:
 	size_t capacity_;
 	size_t n_items;
-	Data* items;
+	T* items;
 
 public:
 	__forceinline DenseBucket() {}
 	DenseBucket(size_t capacity_) {
 		this->capacity_ = capacity_;
 		n_items = 0;
-		items = new Data[capacity_];
+		items = new T[capacity_];
 	}
 
 	__forceinline void free() {
 		delete[] items;
 	}
 
-	Data* add(Data& data) {
+	T* add(T& data) {
 		if (n_items >= capacity_) {
 			if (autoexpand) {
 				reserve(capacity_ << 1);
@@ -181,7 +262,7 @@ public:
 			}
 		}
 		items[n_items] = data;
-		Data* result = items + n_items;
+		T* result = items + n_items;
 		++n_items;
 		return result;
 	}
@@ -190,36 +271,36 @@ public:
 		if (index < 0 || index >= n_items) {
 			return false;
 		}
-		if (!std::is_pod<Data>::value) {
-			items[index].Data::~Data();
+		if (!std::is_pod<T>::value) {
+			items[index].T::~T();
 		}
 		items[index] = items[--n_items];
 		return true;
 	}
 
 	void reserve(size_t new_capacity) {
-		Data* new_items = new Data[new_capacity];
-		memcpy(new_items, items, n_items * sizeof(Data));
+		T* new_items = new T[new_capacity];
+		memcpy(new_items, items, n_items * sizeof(T));
 		delete[] items;
 		items = new_items;
 	}
 
-	__forceinline Data* begin() { return items; }
-	__forceinline Data* end() { return items + n_items; }
+	__forceinline T* begin() { return items; }
+	__forceinline T* end() { return items + n_items; }
 
 	__forceinline size_t size() const { return n_items; }
 	__forceinline size_t capacity() const { return capacity_; }
 
-	Data& operator [] (size_t index) { return items[index]; }
+	T& operator [] (size_t index) { return items[index]; }
 };
 
-template <class Data>
+template <class T>
 class SparseBucket {
 private:
 	size_t capacity_;
 	size_t n_items;
 	Array<bool> occupation;
-	Data* items;
+	T* items;
 	size_t next_index;
 
 public:
@@ -229,9 +310,9 @@ public:
 		n_items = 0;
 		// minimize allocations
 		int occ_mask_len = (capacity + 7) / 8;
-		void* pool = operator new(capacity * sizeof(Data) + occ_mask_len);
-		items = (Data*) pool;
-		occupation = Array<bool>((uint8_t*) pool + capacity * sizeof(Data), capacity);
+		void* pool = operator new(capacity * sizeof(T) + occ_mask_len);
+		items = (T*) pool;
+		occupation = Array<bool>((uint8_t*) pool + capacity * sizeof(T), capacity);
 		occupation.clear();
 
 		next_index = 0;
@@ -250,7 +331,7 @@ public:
 	}
 
 	/// reserve a spot but don't set the data
-	Result<Data*> add() {
+	Result<T*> add() {
 		if (n_items >= capacity_) {
 			return Errors::BucketFull;
 		}
@@ -258,7 +339,7 @@ public:
 		// Set the bit in the occupy mask
 		occupation.set(next_index);
 
-		Data* result = items + next_index;
+		T* result = items + next_index;
 
 		++n_items;
 		if (n_items >= capacity_) return result;
@@ -271,7 +352,7 @@ public:
 		return result;
 	}
 
-	Result<Data*> add(const Data& data) {
+	Result<T*> add(const T& data) {
 		if (n_items >= capacity_) {
 			return Errors::BucketFull;
 		}
@@ -280,7 +361,7 @@ public:
 		// Set the bit in the occupy mask
 		occupation.set(next_index);
 
-		Data* result = items + next_index;
+		T* result = items + next_index;
 
 		++n_items;
 		if (n_items >= capacity_) return result;
@@ -310,14 +391,14 @@ public:
 		return nullptr;
 	}
 
-	Result<> remove(Data* ptr) {
-		int offset = static_cast<int>(ptr - items) / sizeof(Data);
+	Result<> remove(T* ptr) {
+		int offset = static_cast<int>(ptr - items) / sizeof(T);
 		if (offset < 0 || offset >= n_items || !occupation[offset]) {
 			return Errors::BucketIllegalRemove;
 		}
 		// Unset the bit :O
 		occupation.unset(offset);
-		items[offset].~Data();
+		items[offset].~T();
 
 		// Avoid searching next time if this bucket was *just* full.
 		if (n_items >= capacity_) {
@@ -347,8 +428,8 @@ public:
 		bool operator == (iterator& it) const { return index == it.index && b == it.b; }
 		__forceinline bool operator != (iterator& it) const { return !(*this == it); }
 
-		__forceinline const Data& operator * () const { return b->items[index]; }
-		__forceinline Data& operator * () { return b->items[index]; }
+		__forceinline const T& operator * () const { return b->items[index]; }
+		__forceinline T& operator * () { return b->items[index]; }
 
 		iterator& operator ++ () {
 			do {
@@ -365,21 +446,21 @@ public:
 	__forceinline size_t size() const { return n_items; }
 	__forceinline size_t capacity() const { return capacity_; }
 
-	inline bool contains_ptr(Data* ptr) const {
+	inline bool contains_ptr(T* ptr) const {
 		return ptr >= items && ptr < items + n_items;
 	}
 };
 
-template <class Data>
+template <class T>
 class Array2D {
-	Data* items;
+	T* items;
 	size_t w, h;
 
 public:
 	__forceinline Array2D() {}
-	Array2D(Data* data, size_t width, size_t height) : w(width), h(height), items(data) {}
+	Array2D(T* data, size_t width, size_t height) : w(width), h(height), items(data) {}
 	Array2D(size_t width, size_t height) : w(width), h(height),
-		items(new Data[width * height];) {}
+		items(new T[width * height];) {}
 
 	// avoid magical memory management
 	__forceinline void free() {
@@ -387,32 +468,32 @@ public:
 		items = nullptr; w = 0; h = 0;
 	}
 
-	__forceinline operator const Data* () const { return items; }
+	__forceinline operator const T* () const { return items; }
 
-	__forceinline const Data& operator () (size_t x, size_t y) const {
+	__forceinline const T& operator () (size_t x, size_t y) const {
 		assert(x >= 0 && x < w && y >= 0 && y < h && "Array bounds check failed");
 		return items[y * w + x];
 	}
-	__forceinline const Data* begin() const { return items; }
-	__forceinline const Data* end() const { return items + w * h; }
+	__forceinline const T* begin() const { return items; }
+	__forceinline const T* end() const { return items + w * h; }
 
-	__forceinline const Data* data() const { return items; }
+	__forceinline const T* data() const { return items; }
 
-	__forceinline operator Data* () { return items; }
+	__forceinline operator T* () { return items; }
 
-	__forceinline Data& operator () (size_t x, size_t y) {
+	__forceinline T& operator () (size_t x, size_t y) {
 		assert(x >= 0 && x < w && y >= 0 && y < h && "Array bounds check failed");
 		return items[y * w + x];
 	}
-	__forceinline Data* begin() { return items; }
-	__forceinline Data* end() { return items + w * h; }
+	__forceinline T* begin() { return items; }
+	__forceinline T* end() { return items + w * h; }
 
 	__forceinline size_t size() const { return w * h; }
 
 	__forceinline size_t width() const { return w; }
 	__forceinline size_t height() const { return h; }
 
-	__forceinline Data* data() { return items; }
+	__forceinline T* data() { return items; }
 };
 
 template <>

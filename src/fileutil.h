@@ -42,5 +42,15 @@ Hitbox read_hitbox(FILE* stream, MemoryPool& pool);
 Array<const Collider> read_colliders(FILE* stream, uint32_t n_colliders, MemoryPool& pool);
 GPU_Image* read_referenced_texture(FILE* stream, uint32_t filenamelen);
 const char* read_string(FILE* stream, unsigned int len, MemoryPool& pool);
+const char* read_string(FILE* stream, unsigned int len);
+
+#define check_header(stream, expected) __check_header__(stream, expected, sizeof(expected) - 1)
+inline bool __check_header__(FILE* stream, const char* expected, size_t len) {
+	assert(len > 0 && len < 32);
+	char headbytes[32];
+	if (fread(headbytes, 1, len, stream) != len) return false;
+	headbytes[len] = 0;
+	return strcmp(headbytes, expected) == 0;
+}
 
 GPU_Image* load_texture(const char* texname);

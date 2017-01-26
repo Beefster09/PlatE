@@ -28,7 +28,7 @@ Hitbox read_hitbox(FILE* stream, MemoryPool& pool) {
 		for (int i = 0; i < n_vertices; ++i) {
 			vertices[i] = read<Vector2>(stream);
 		}
-		result.polygon.vertices = Array<const Vector2>(vertices, n_vertices);
+		new(&result.polygon.vertices) Array<const Vector2>(vertices, n_vertices);
 		//result.polygon.aabb = get_aabb(result.polygon.vertices);
 		break;
 	}
@@ -39,7 +39,7 @@ Hitbox read_hitbox(FILE* stream, MemoryPool& pool) {
 		for (int i = 0; i < n_subs; ++i) {
 			subs[i] = read_hitbox(stream, pool);
 		}
-		result.composite.hitboxes = Array<const Hitbox>(subs, n_subs);
+		new(&result.composite.hitboxes) Array<const Hitbox>(subs, n_subs);
 		break;
 	}
 	case Hitbox::NONE:
@@ -62,7 +62,7 @@ Array<const Collider> read_colliders(FILE* stream, uint32_t n_colliders, MemoryP
 		char namebuffer[51];
 		fread(namebuffer, 1, typestrlen, stream);
 		namebuffer[typestrlen] = 0;
-		cur_coll.type = ColliderGroup::by_name(namebuffer);
+		cur_coll.type = ColliderType::by_name(namebuffer);
 
 		cur_coll.hitbox = read_hitbox(stream, pool);
 	}
@@ -73,8 +73,11 @@ Result<FILE*> open(const char* filename, const char* mode) {
 	FILE* file = fopen(filename, mode);
 
 	if (file == nullptr) {
-		// TODO: more descriptive errors...
-		return Errors::CannotOpenFile;
+		std::string detail(strerror(errno));
+		detail += '(';
+		detail += filename;
+		detail += ')';
+		return Error(Errors::CannotOpenFile, detail);
 	}
 
 	return file;
@@ -101,7 +104,16 @@ char* read_all(FILE* f) {
 const char* read_string(FILE* stream, unsigned int len, MemoryPool& pool) {
 	char* str = pool.alloc<char>(len + 1);
 
-	if (str == nullptr) return nullptr; // Memory Pool is full
+	if (str == nullptr) return nullptr; // MemoryPool is full
+
+	if (fread(str, 1, len, stream) != len) return nullptr;
+
+	str[len] = 0;
+	return str;
+}
+
+const char* read_string(FILE* stream, unsigned int len) {
+	char* str = new char[len + 1];
 
 	if (fread(str, 1, len, stream) != len) return nullptr;
 
@@ -110,8 +122,7 @@ const char* read_string(FILE* stream, unsigned int len, MemoryPool& pool) {
 }
 
 GPU_Image* load_texture(const char* texname) {
-	auto& am = AssetManager::get();
-	GPU_Image* maybe = const_cast<GPU_Image*>(am.retrieve<GPU_Image>(texname));
+	GPU_Image* maybe = const_cast<GPU_Image*>(AssetManager::retrieve<GPU_Image>(texname));
 	if (maybe != nullptr) {
 		return maybe;
 	}
@@ -121,7 +132,7 @@ GPU_Image* load_texture(const char* texname) {
 		LOG_RELEASE("Unable to load texture from file %s (%s)\n", texname, GPU_PopErrorCode().details);
 		return nullptr;
 	}
-	am.store(texname, real);
+	AssetManager::store(texname, real);
 
 	return real;
 }

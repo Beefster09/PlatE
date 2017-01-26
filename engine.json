@@ -1,5 +1,9 @@
 {
     "title": "PlatE Test Game",
+    "screen": {
+        "width": 800,
+        "height": 480
+    },
     "controller_types": [
         {
             "name": "Menu",

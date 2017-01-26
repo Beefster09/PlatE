@@ -17,32 +17,32 @@
 #define LOG_VERBOSE(fmt, ...) printf(fmt, __VA_ARGS__)
 #define ERR_VERBOSE(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
 #else
-#define LOG_VERBOSE(fmt, ...)
-#define ERR_VERBOSE(fmt, ...)
+#define LOG_VERBOSE(fmt, ...) do {} while(false)
+#define ERR_VERBOSE(fmt, ...) do {} while(false)
 #endif
 
 #if LOG_VERBOSITY >= LOGLEVEL_DEBUG
 #define LOG_DEBUG(fmt, ...) printf(fmt, __VA_ARGS__)
 #define ERR_DEBUG(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
 #else
-#define LOG_DEBUG(fmt, ...)
-#define ERR_DEBUG(fmt, ...)
+#define LOG_DEBUG(fmt, ...) do {} while(false)
+#define ERR_DEBUG(fmt, ...) do {} while(false)
 #endif
 
 #if LOG_VERBOSITY >= LOGLEVEL_NORMAL
 #define LOG(fmt, ...) printf(fmt, __VA_ARGS__)
 #define ERR(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
 #else
-#define LOG(fmt, ...)
-#define ERR(fmt, ...)
+#define LOG(fmt, ...) do {} while(false)
+#define ERR(fmt, ...) do {} while(false)
 #endif
 
 #if LOG_VERBOSITY >= LOGLEVEL_RELEASE
 #define LOG_RELEASE(fmt, ...) printf(fmt, __VA_ARGS__)
 #define ERR_RELEASE(fmt, ...) fprintf(stderr, fmt, __VA_ARGS__)
 #else
-#define LOG_RELEASE(fmt, ...)
-#define LOG_RELEASE(fmt, ...)
+#define LOG_RELEASE(fmt, ...) do {} while(false)
+#define LOG_RELEASE(fmt, ...) do {} while(false)
 #endif
 
 namespace Errors {

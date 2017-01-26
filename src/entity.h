@@ -39,7 +39,7 @@ struct Entity {
 	const EntityId id;
 	EntitySystem* system;
 
-// === Physics Data ===
+// === Physics T ===
 	Point2 position       = { 0.f,0.f };
 
 	Vector2 velocity      = { 0.f,0.f };
@@ -51,11 +51,11 @@ struct Entity {
 	// Other movement stuffs
 	AABB vel_range = { -INFINITY, INFINITY, -INFINITY, INFINITY }; // Velocity range
 
-// === Transform Data ===
+// === Transform T ===
 	float rotation = 0.f;
 	Vector2 scale = { 1.f, 1.f };
 
-// === Render Data ===
+// === Render T ===
 	const Sprite* sprite = nullptr;
 	const Animation* animation = nullptr;
 	const Frame* frame = nullptr;

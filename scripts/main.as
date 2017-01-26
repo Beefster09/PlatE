@@ -64,23 +64,21 @@ void PrintErr(int code, const string &in desc) {
 }
 
 void init() {
-	println("Hello from init() script");
+    Engine::travel("assets/test.level");
 
-    Engine.travel("data/test.level");
-
-    EntitySystem.spawn(Simple("data/test.sprite", Vector2(50, 400), Vector2(120, -350), Vector2(0, 500)), PrintErr);
-    EntitySystem.spawn(Simple("data/test.sprite", Vector2(400, 300), Vector2(10, 0), Vector2(0, 0)), PrintErr);
+    EntitySystem.spawn(Simple("assets/test.sprite", Vector2(50, 400), Vector2(120, -350), Vector2(0, 500)), PrintErr);
+    EntitySystem.spawn(Simple("assets/test.sprite", Vector2(400, 300), Vector2(10, 0), Vector2(0, 0)), PrintErr);
 
     TestController@ cont = get_TestController_instance(0);
 
     cont.OK.bind_on_press(plusOK);
     cont.OK.bind_on_release(minusOK);
 
-    Engine.pause();
+    Engine::pause();
 }
 
 void update(float delta_seconds) {
-    if (Engine.time > 1.5f) {
-        Engine.resume();
+    if (Engine::time > 1.5f) {
+        Engine::resume();
     }
 }

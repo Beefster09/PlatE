@@ -8,6 +8,7 @@
 #include "level.h"
 #include "assetmanager.h"
 #include "input.h"
+#include "fileutil.h"
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
@@ -15,19 +16,72 @@
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_timer.h>
 
-using namespace PlatE;
-
 #define SDL_INIT_CUSTOM (SDL_INIT_EVERYTHING & ~SDL_INIT_VIDEO | SDL_INIT_EVENTS)
 
+#define BOOTLOADER_MAGIC_NUMBER "PlatEboot"
+#define BOOTLOADER_MAGIC_NUMBER_LENGTH (sizeof(BOOTLOADER_MAGIC_NUMBER) - 1)
+
+#define EXIT_SUCCESS 0
+
+#define EXIT_BOOTLOADER_MISSING 1
+#define EXIT_BOOTLOADER_BAD_HEADER 2
+#define EXIT_BOOTLOADER_ERROR 3
+
+#define EXIT_SDL_INIT_FAIL -1
+#define EXIT_SDL_EVENT_FAIL -2
+#define EXIT_SDL_GPU_FAIL -10
+
+#define check(expr, failcode) {auto res = expr; if (!res) return failcode;}
+
 int main(int argc, char* argv[]) {
+	const char* title;
+	const char* asset_dir;
+	try {
+		auto bootloader = open("engine.boot", "rb");
+
+		if (!bootloader) {
+			perror("Unable to open engine.boot: ");
+			perror(std::to_string(bootloader.err).c_str());
+			return EXIT_BOOTLOADER_MISSING;
+		}
+		FILE* stream = bootloader;
+
+		if (!check_header(stream, "PlatEboot")) {
+			perror("Bootloader did not start with \"PlatEboot\"");
+			return EXIT_BOOTLOADER_BAD_HEADER;
+		}
+
+		title = read_string(stream, read<uint16_t>(stream));
+
+		asset_dir = read_string(stream, read<uint16_t>(stream));
+		AssetManager::set_root_dir(asset_dir);
+		delete[] asset_dir;
+
+		check(init_controller_types(stream), EXIT_BOOTLOADER_ERROR);
+
+		check(ColliderType::init(stream), EXIT_BOOTLOADER_ERROR);
+		check(ColliderChannel::init(stream), EXIT_BOOTLOADER_ERROR);
+
+		fclose(stream);
+	}
+	catch (Error& e) {
+		perror(std::to_string(e).c_str());
+		return EXIT_BOOTLOADER_ERROR;
+	}
+
 	if (SDL_Init(SDL_INIT_CUSTOM) >= 0) {
 		atexit(SDL_Quit);
+
+		GPU_SetDebugLevel(GPU_DEBUG_LEVEL_MAX);
 
 		GPU_Target* screen = GPU_Init(800, 480, 0);
 		if (screen == nullptr) {
 			return EXIT_SDL_GPU_FAIL;
 		}
 		atexit(GPU_Quit);
+		// SDL_gpu apparently expects you to know its data structures instead of giving a proper function interface
+		SDL_Window* window = SDL_GetWindowFromID(screen->context->windowID);
+		SDL_SetWindowTitle(window, title);
 
 		{
 			VirtualController* cont_type = create_controller_type(
@@ -66,11 +120,7 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
-		ColliderGroup::init("");
-
-		Engine& engine = Engine::get();
-
-		engine.init();
+		Engine::init();
 
 		uint32_t lastTime = SDL_GetTicks();
 		while (true) {
@@ -79,20 +129,20 @@ int main(int argc, char* argv[]) {
 				if (curEvent.type == SDL_QUIT) {
 					return EXIT_SUCCESS;
 				}
-				engine.event(curEvent);
+				Engine::event(curEvent);
 			}
 
 			uint32_t updateTime = SDL_GetTicks();
-			engine.update(updateTime - lastTime);
+			Engine::update(updateTime - lastTime);
 
 			// render
 			GPU_Clear(screen);
 
-			engine.render(screen);
+			Engine::render(screen);
 
 			GPU_Flip(screen);
 
-			int delay = engine.get_delay(SDL_GetTicks() - lastTime);
+			int delay = Engine::get_delay(SDL_GetTicks() - lastTime);
 			lastTime = updateTime;
 			SDL_Delay(delay);
 		}
