@@ -162,7 +162,7 @@ struct LevelInstance {
 
 // static to .cpp: RTree* build_spacial_index(Level*);
 
-Result<const Level*> load_level(const char* filename);
+Result<const Level*> load_level(const char* filename, const DirContext& context = DirContext());
 
 Result<> unload_level(const Level*);
 

@@ -19,7 +19,6 @@
 #define SDL_INIT_CUSTOM (SDL_INIT_EVERYTHING & ~SDL_INIT_VIDEO | SDL_INIT_EVENTS)
 
 #define BOOTLOADER_MAGIC_NUMBER "PlatEboot"
-#define BOOTLOADER_MAGIC_NUMBER_LENGTH (sizeof(BOOTLOADER_MAGIC_NUMBER) - 1)
 
 #define EXIT_SUCCESS 0
 
@@ -40,21 +39,22 @@ int main(int argc, char* argv[]) {
 		auto bootloader = open("engine.boot", "rb");
 
 		if (!bootloader) {
-			perror("Unable to open engine.boot: ");
-			perror(std::to_string(bootloader.err).c_str());
+			ERR("Unable to open engine.boot: %s", std::to_string(bootloader.err).c_str());
 			return EXIT_BOOTLOADER_MISSING;
 		}
 		FILE* stream = bootloader;
 
 		if (!check_header(stream, "PlatEboot")) {
-			perror("Bootloader did not start with \"PlatEboot\"");
+			ERR("Bootloader did not start with \"" BOOTLOADER_MAGIC_NUMBER "\"");
 			return EXIT_BOOTLOADER_BAD_HEADER;
 		}
 
 		title = read_string(stream, read<uint16_t>(stream));
 
 		asset_dir = read_string(stream, read<uint16_t>(stream));
-		AssetManager::set_root_dir(asset_dir);
+		if (!AssetManager::set_root_dir(asset_dir)) {
+			return EXIT_BOOTLOADER_BAD_HEADER;
+		}
 		delete[] asset_dir;
 
 		check(init_controller_types(stream), EXIT_BOOTLOADER_ERROR);
@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
 		fclose(stream);
 	}
 	catch (Error& e) {
-		perror(std::to_string(e).c_str());
+		ERR("%s\n", std::to_string(e).c_str());
 		return EXIT_BOOTLOADER_ERROR;
 	}
 

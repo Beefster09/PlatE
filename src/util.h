@@ -6,6 +6,31 @@
 
 #define BIT(n) (1 << (n))
 
+// macros for (eventually) removing all exceptions
+
+#define check_void(EXPR) {\
+	auto& res = (EXPR);\
+	if (!res) {return res.err;}\
+} do {} while(false)
+
+// Not hygenic; leaks TEMPID
+#define check_assign_ref(REF, EXPR, TEMPID) \
+	auto& TEMPID = (EXPR);\
+	if (!TEMPID) {return TEMPID.err;}\
+REF = TEMPID.value; do {} while(false)
+
+#define check_assign(VAR, EXPR) {\
+	auto& maybe = (EXPR);\
+	if (maybe) {VAR = std::move(maybe.value);}\
+	else {return maybe.err;}\
+} do {} while(false)
+
+#define check_assign_nomove(VAR, EXPR) {\
+	auto& maybe = (EXPR);\
+	if (maybe) {VAR = maybe.value;}\
+	else {return maybe.err;}\
+} do {} while(false)
+
 constexpr float FLOAT_EPSILON = 0.001f;
 
 // Utility functions to be inlined - typically quick calculations that could also be done as macros, but this way is safer

@@ -2,6 +2,7 @@
 
 #include "storage.h"
 #include "hitbox.h"
+#include "assetmanager.h"
 #include "SDL2\SDL_render.h"
 
 #define TILESET_MAGIC_NUMBER "PlatEtileset"
@@ -74,8 +75,8 @@ struct TileAnimationState {
 	uint16_t anim_frame;
 };
 
-Result<const Tileset*> load_tileset(const char* filename);
+Result<const Tileset*> load_tileset(const char* filename, const DirContext& context = DirContext());
 
 Result<> unload_tileset(const Tileset*);
 
-Result<const Tileset*> read_referenced_tileset(FILE* stream, uint32_t len);
+Result<const Tileset*> read_referenced_tileset(FILE* stream, uint32_t len, const DirContext& context);

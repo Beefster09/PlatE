@@ -8,15 +8,19 @@
 
 __forceinline static Result<const Level*> read_level(FILE* stream, MemoryPool& pool,
 	uint32_t namelen, AABB boundary, uint32_t n_tilemaps, uint32_t n_objects,
-	uint32_t n_entities, uint32_t n_areas, uint32_t n_edge_triggers);
+	uint32_t n_entities, uint32_t n_areas, uint32_t n_edge_triggers,
+	const DirContext& context);
 
-Result<const Level*> load_level(const char* filename) {
+Result<const Level*> load_level(const char* filename, const DirContext& context) {
+	std::string realfile;
+	check_assign(realfile, context.resolve(filename));
+
 	{
-		const Level* maybe = AssetManager::retrieve<Level>(filename);
+		const Level* maybe = AssetManager::retrieve<Level>(realfile.c_str());
 		if (maybe != nullptr) return maybe;
 	}
 
-	auto file = open(filename, "rb");
+	auto file = open(realfile.c_str(), "rb");
 
 	if (!file) {
 		return file.err;
@@ -71,8 +75,10 @@ Result<const Level*> load_level(const char* filename) {
 	LOG_VERBOSE("Number of bytes needed for level data: %zd\n", poolsize);
 	MemoryPool pool(poolsize);
 
+	check_assign_ref(const DirContext& subcontext, context + filename, sctx);
 	auto result = read_level(stream, pool,
-		namelen, boundary, n_tilemaps, n_objects, n_entities, n_areas, n_edge_triggers);
+		namelen, boundary, n_tilemaps, n_objects, n_entities, n_areas, n_edge_triggers,
+		subcontext);
 
 	LOG_VERBOSE("Read level data with %zd/%zd bytes of slack in memory pool\n", pool.get_slack(), pool.get_size());
 
@@ -91,7 +97,8 @@ Result<const Level*> load_level(const char* filename) {
 
 __forceinline static Result<const Level*> read_level(FILE* stream, MemoryPool& pool,
 	uint32_t namelen, AABB boundary, uint32_t n_tilemaps, uint32_t n_objects,
-	uint32_t n_entities, uint32_t n_areas, uint32_t n_edge_triggers) {
+	uint32_t n_entities, uint32_t n_areas, uint32_t n_edge_triggers,
+	const DirContext& context) {
 
 	try {
 		Level* level = pool.alloc<Level>();
@@ -114,7 +121,7 @@ __forceinline static Result<const Level*> read_level(FILE* stream, MemoryPool& p
 			tmap.parallax = read<Vector2>(stream);
 			tmap.solid = read<bool>(stream);
 
-			auto tileset = read_referenced_tileset(stream, tilesetnamelen);
+			auto tileset = read_referenced_tileset(stream, tilesetnamelen, context);
 			if (tileset) {
 				tmap.tileset = tileset;
 			}
@@ -144,7 +151,7 @@ __forceinline static Result<const Level*> read_level(FILE* stream, MemoryPool& p
 			obj.scale = read<Vector2>(stream);
 			uint32_t n_colliders = read<uint32_t>(stream);
 
-			auto sprite = read_referenced_sprite(stream, texnamelen);
+			auto sprite = read_referenced_sprite(stream, texnamelen, context);
 			if (sprite) {
 				obj.sprite = sprite;
 			}

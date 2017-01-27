@@ -137,10 +137,15 @@ GPU_Image* load_texture(const char* texname) {
 	return real;
 }
 
-GPU_Image* read_referenced_texture(FILE* stream, uint32_t filenamelen) {
+GPU_Image* read_referenced_texture(FILE* stream, uint32_t filenamelen, const DirContext& context) {
 	char texname[1024];
 	fread(texname, 1, filenamelen, stream);
 	texname[filenamelen] = 0;
 
-	return load_texture(texname);
+	auto maybe = context.resolve(texname);
+	if (maybe) return load_texture(maybe.value.c_str());
+	else {
+		ERR("Unable to load referenced texture: %s", std::to_string(maybe.err).c_str());
+		return nullptr;
+	}
 }

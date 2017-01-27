@@ -8,7 +8,7 @@
 	},
 	"tilemaps": [
         {
-            "tileset": "assets/test.tileset",
+            "tileset": "/tilesets/test.tileset",
             "tiles": [
                 [1, 1, 3, 4],
                 [0, 2, 2, 2],

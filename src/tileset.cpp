@@ -9,15 +9,19 @@
 #include <cstring>
 
 __forceinline static Result<Tileset*> read_tileset(FILE* stream, MemoryPool& pool,
-	uint32_t namelen, uint32_t texnamelen, uint32_t n_tiles);
+	uint32_t namelen, uint32_t texnamelen, uint32_t n_tiles,
+	const DirContext& context);
 
-Result<const Tileset*> load_tileset(const char* filename) {
+Result<const Tileset*> load_tileset(const char* filename, const DirContext& context) {
+	std::string realfile;
+	check_assign(realfile, context.resolve(filename));
+
 	{
-		const Tileset* maybe = AssetManager::retrieve<Tileset>(filename);
+		const Tileset* maybe = AssetManager::retrieve<Tileset>(realfile.c_str());
 		if (maybe != nullptr) return maybe;
 	}
 
-	auto file = open(filename, "rb");
+	auto file = open(realfile.c_str(), "rb");
 
 	if (!file) {
 		return file.err;
@@ -60,7 +64,8 @@ Result<const Tileset*> load_tileset(const char* filename) {
 	LOG_VERBOSE("Number of bytes needed for tileset data: %zd\n", poolsize);
 	MemoryPool pool(poolsize);
 
-	auto result = read_tileset(stream, pool, namelen, texnamelen, n_tiles);
+	check_assign_ref(const DirContext& subcontext, context + filename, sctx);
+	auto result = read_tileset(stream, pool, namelen, texnamelen, n_tiles, subcontext);
 
 	LOG_VERBOSE("Read tileset data with %zd/%zd bytes of slack in memory pool\n", pool.get_slack(), pool.get_size());
 
@@ -84,12 +89,13 @@ Result<const Tileset*> load_tileset(const char* filename) {
 }
 
 __forceinline static Result<Tileset*> read_tileset(FILE* stream, MemoryPool& pool,
-	uint32_t namelen, uint32_t texnamelen, uint32_t n_tiles) {
+	uint32_t namelen, uint32_t texnamelen, uint32_t n_tiles,
+	const DirContext& context) {
 	try {
 		Tileset* tileset = pool.alloc<Tileset>();
 
 		tileset->name = read_string(stream, namelen, pool);
-		tileset->tilesheet = read_referenced_texture(stream, texnamelen);
+		tileset->tilesheet = read_referenced_texture(stream, texnamelen, context);
 
 		Tile* tiles = pool.alloc<Tile>(n_tiles);
 		for (int i = 0; i < n_tiles; ++i) {
@@ -143,10 +149,10 @@ __forceinline static Result<Tileset*> read_tileset(FILE* stream, MemoryPool& poo
 	}
 }
 
-Result<const Tileset*> read_referenced_tileset(FILE* stream, uint32_t len) {
+Result<const Tileset*> read_referenced_tileset(FILE* stream, uint32_t len, const DirContext& context) {
 	char fn[1024];
 	fread(fn, 1, len, stream);
 	fn[len] = 0;
 
-	return load_tileset(fn);
+	return load_tileset(fn, context);
 }

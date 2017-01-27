@@ -28,10 +28,10 @@ public:
 	/// If the path begins with a single slash, the path is assumed to be absolute from the asset root
 	/// Any attempts to reach above the asset root will result in an error
 	/// On Windows, attempts to access drives by letter will result in an error
-	Result<DirContext> operator +(const char* path);
+	Result<DirContext> operator +(const char* path) const;
 		
 	/// Resolves an engine-absolute path relative to the current context
-	Result<std::string> resolve(const char* path); // needs to return a std::string to avoid dangling pointer
+	Result<std::string> resolve(const char* path) const; // needs to return a std::string to avoid dangling pointer
 };
 
 namespace AssetManager {
@@ -44,7 +44,7 @@ namespace AssetManager {
 	void store_raw(const char* filename, const void* asset, const std::type_index& type);
 	const AssetEntry* retrieve_raw(const char* filename);
 
-	void set_root_dir(const char* dir);
+	bool set_root_dir(const char* dir);
 
 	// Asset Garbage Collection (slow- should probably only be allowed to be triggered on loading screens)
 	void gc();

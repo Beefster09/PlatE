@@ -10,9 +10,9 @@
 #include "result.h"
 #include "error.h"
 #include "SDL_gpu.h"
+#include "assetmanager.h"
 
 #define SPRITE_MAGIC_NUMBER "PlatEsprite"
-#define SPRITE_MAGIC_NUMBER_LENGTH (sizeof(SPRITE_MAGIC_NUMBER) - 1)
 
 namespace Errors {
 	const error_data
@@ -54,9 +54,9 @@ struct Sprite {
 	Array<const Animation> animations;
 };
 
-Result<const Sprite*> load_sprite(const char* filename); // load from "compiled" format
+Result<const Sprite*> load_sprite(const char* filename, const DirContext& context = DirContext()); // load from "compiled" format
 Result<void> unload_sprite(Sprite* sprite); // deallocates all associated resources
 
-Result<const Sprite*> read_referenced_sprite(FILE* stream, uint32_t len);
+Result<const Sprite*> read_referenced_sprite(FILE* stream, uint32_t len, const DirContext& context);
 
 #endif

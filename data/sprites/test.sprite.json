@@ -1,6 +1,6 @@
 {
 	"name": "Test Json Sprite",
-	"spritesheet": "assets/TestSprite.png",
+	"spritesheet": "/textures/TestSprite.png",
 	"clips": [
 		{"x": 0,   "y": 0,   "w": 128, "h": 128},
 		{"x": 128, "y": 0,   "w": 128, "h": 128},

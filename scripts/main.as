@@ -64,10 +64,10 @@ void PrintErr(int code, const string &in desc) {
 }
 
 void init() {
-    Engine::travel("assets/test.level");
+    Engine::travel("levels/test.level");
 
-    EntitySystem.spawn(Simple("assets/test.sprite", Vector2(50, 400), Vector2(120, -350), Vector2(0, 500)), PrintErr);
-    EntitySystem.spawn(Simple("assets/test.sprite", Vector2(400, 300), Vector2(10, 0), Vector2(0, 0)), PrintErr);
+    EntitySystem.spawn(Simple("sprites/test.sprite", Vector2(50, 400), Vector2(120, -350), Vector2(0, 500)), PrintErr);
+    EntitySystem.spawn(Simple("sprites/test.sprite", Vector2(400, 300), Vector2(10, 0), Vector2(0, 0)), PrintErr);
 
     TestController@ cont = get_TestController_instance(0);
 

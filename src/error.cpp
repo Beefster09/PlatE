@@ -2,13 +2,13 @@
 #include "error.h"
 
 std::string std::to_string(const Error& err) {
-	std::string str = "Error #";
+	std::string str("Error #");
 	str += std::to_string(err.code);
 	str += ": ";
 	str += err.description;
 	str += " (";
 	str += err.details;
-	str += ")";
+	str += ')';
 	return str;
 }
 
@@ -37,6 +37,6 @@ std::string GetExceptionDetails(asIScriptContext* ctx) {
 	details += ctx->GetExceptionFunction()->GetName();
 	details += ", line #";
 	details += std::to_string(ctx->GetExceptionLineNumber());
-	details += ")";
+	details += ')';
 	return details;
 }

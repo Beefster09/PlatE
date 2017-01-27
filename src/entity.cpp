@@ -457,7 +457,7 @@ static void SetEntitySpriteCompound(Entity* entity, const std::string& filename,
 	}
 	else {
 		asIScriptContext* ctx = asGetActiveContext();
-		ctx->SetException(maybesprite.err.description);
+		ctx->SetException(std::to_string(maybesprite.err).c_str());
 	}
 }
 
@@ -469,7 +469,7 @@ static void SetEntitySpriteCompound(Entity* entity, const std::string& filename,
 	}
 	else {
 		asIScriptContext* ctx = asGetActiveContext();
-		ctx->SetException(maybesprite.err.description);
+		ctx->SetException(std::to_string(maybesprite.err).c_str());
 	}
 }
 

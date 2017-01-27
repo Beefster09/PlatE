@@ -105,6 +105,7 @@ def main(indir = "data", outdir = "assets", *args,
             if match:
                 infn = os.path.join(root, fn)
                 outfn = os.path.join(root.replace(indir, outdir, 1), match.group('basename') + '.' + match.group('type'))
+                os.makedirs(os.path.dirname(outfn), exist_ok=True)
                 n_built += build_one(infn, outfn, match.group('type'))
 
     if msglevel >= MSG_NORMAL:

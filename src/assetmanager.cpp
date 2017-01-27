@@ -38,10 +38,10 @@ namespace AssetManager {
 		entry.asset = nullptr;
 	}
 
-	void set_root_dir(const char* dir) {
+	bool set_root_dir(const char* dir) {
 		if (dir == nullptr || strlen(dir) == 0) {
 			root_dir = "";
-			return;
+			return false;
 		}
 		// remove leading slashes
 		while (*dir == '/') ++dir;
@@ -50,6 +50,8 @@ namespace AssetManager {
 
 		// remove trailing slashes
 		while (root_dir.size() > 0 && root_dir[root_dir.size() - 1] == '/') root_dir.erase(root_dir.size() - 1);
+
+		return true;
 	}
 
 }
@@ -68,9 +70,62 @@ namespace AssetManager {
 //	dir.append(absolute, last_slash);
 //}
 
-Result<DirContext> DirContext::operator +(const char* path) {
-	int len = strlen(path);
-	if (len == 0) return *this;
+// resolves ./ and ../ from a path
+static inline Result<> resolve_relative(std::string& path) {
+	size_t match;
+
+	// remove runs of multiple slashes
+	match = 0;
+	while ((match = path.find('/', match)) != std::string::npos) {
+		size_t notslash = path.find_first_not_of('/', ++match);
+		if (notslash == std::string::npos) {
+			path.erase(match);
+			break;
+		}
+		if (notslash != match) {
+			path.erase(match, notslash - match);
+		}
+	}
+
+	// ../ resolution
+	match = 0;
+	while ((match = path.find("../", match)) != std::string::npos) {
+		if (match == 0) {
+			return Error(Errors::BadPath, "Attempt to escape sandboxed directory with ../");
+		}
+		if (path[match - 1] != '/') {
+			// False alarm- it was a regular directory that just happened to end with two dots
+			match += 3;
+			continue;
+		}
+		size_t end = match + 3;
+		size_t start = path.rfind('/', match - 2);
+		if (start == std::string::npos) {
+			start = 0;
+		}
+		path.erase(start, end - start);
+		match = start;
+	}
+
+	match = 0;
+	while ((match = path.find("./", match)) != std::string::npos) {
+		// Make sure it's not just a directory name that just happened to end with a dot
+		if (match == 0 || path[match - 1] == '/') {
+			path.erase(match, 2);
+		}
+		else {
+			match += 2;
+		}
+	}
+
+	return Result<>::success;
+}
+
+Result<DirContext> DirContext::operator +(const char* path) const {
+	if (*path == 0) return *this;
+
+	// No directories in path
+	if (strchr(path, '/') == nullptr) return *this;
 
 #if __WIN32__
 	{
@@ -86,7 +141,6 @@ Result<DirContext> DirContext::operator +(const char* path) {
 	}
 #endif
 
-	int s = 0, e = 0;
 	if (path[0] == '/') {
 		if (strstr(path, "/../") != nullptr) {
 			return Error(Errors::BadPath, "../ in absolute path");
@@ -118,31 +172,16 @@ Result<DirContext> DirContext::operator +(const char* path) {
 			}
 		}
 
+		result.dir += '/';
 		result.dir.append(path, last_slash);
 
-		const char* match;
-		while ((match = strstr(result.dir.c_str(), "/./")) != nullptr) {
-			result.dir.erase(match - result.dir.c_str(), 2);
-		}
-		while ((match = strstr(result.dir.c_str(), "/../")) != nullptr) {
-			int eraselen = 4;
-			int i;
-			for (i = match - result.dir.c_str() - 1; i >= 0; --i, ++eraselen) {
-				if (result.dir[i] == '/') {
-					break;
-				}
-			}
-			if (i < 0) {
-				return Error(Errors::BadPath, "Attempt to escape sandboxed directory with ../");
-			}
-			result.dir.erase(i, eraselen);
-		}
+		check_void(resolve_relative(result.dir));
 
 		return result;
 	}
 }
 
-Result<std::string> DirContext::resolve(const char* path) {
+Result<std::string> DirContext::resolve(const char* path) const {
 	if (strlen(path) == 0) return Error(Errors::BadPath, "No file given");
 
 #if __WIN32__
@@ -168,31 +207,31 @@ Result<std::string> DirContext::resolve(const char* path) {
 
 		result += path;
 
+		// Technically, Windows won't complain about /, but just to be safe...
+#if 0 && __WIN32__
+		for (char& chr : result) {
+			if (chr == '/') chr = '\\';
+		}
+#endif
+
 		return result;
 	}
 	else {
-		std::string result(AssetManager::root_dir);
-
-		result += '/';
+		std::string result(dir);
+		if(result.size() > 0) result += '/';
 		result += path;
 
-		const char* match;
-		while ((match = strstr(result.c_str(), "/./")) != nullptr) {
-			result.erase(match - result.c_str(), 2);
+		check_void(resolve_relative(result));
+
+		result.insert(0, "/");
+		result.insert(0, AssetManager::root_dir);
+
+		// Technically, Windows won't complain about /, but just to be safe...
+#if 0 && __WIN32__
+		for (char& chr : result) {
+			if (chr == '/') chr = '\\';
 		}
-		while ((match = strstr(result.c_str(), "/../")) != nullptr) {
-			int eraselen = 4;
-			int i;
-			for (i = match - result.c_str() - 1; i >= 0; --i, ++eraselen) {
-				if (result[i] == '/') {
-					break;
-				}
-			}
-			if (i < 0) {
-				return Error(Errors::BadPath, "Attempt to escape sandboxed directory with ../");
-			}
-			result.erase(i, eraselen);
-		}
+#endif
 
 		return result;
 	}
