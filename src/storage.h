@@ -200,10 +200,10 @@ public:
 
 	__forceinline bool operator [] (unsigned int index) const {
 		assert(index < n_bits && "Array bounds check failure");
-		return bytes[index / 8] & BIT(index % 8);
+		return bytes[index / 8] & BIT8(index % 8);
 	}
-	__forceinline void set(size_t index) { bytes[index / 8] |= BIT(index % 8); }
-	__forceinline void unset(size_t index) { bytes[index / 8] &= ~BIT(index % 8); }
+	__forceinline void set(size_t index) { bytes[index / 8] |= BIT8(index % 8); }
+	__forceinline void unset(size_t index) { bytes[index / 8] &= ~BIT8(index % 8); }
 
 	__forceinline void clear() { for (int i = 0; i * 8 < n_bits; ++i) bytes[i] = 0; }
 
@@ -516,10 +516,10 @@ public:
 	__forceinline bool operator () (size_t x, size_t y) const {
 		assert(x >= 0 && x < w && y >= 0 && y < h && "Array bounds check failed");
 		int index = y * h + x;
-		return bytes[index / 8] & BIT(index % 8);
+		return bytes[index / 8] & BIT8(index % 8);
 	}
-	__forceinline void set(size_t x, size_t y) { int index = y * h + x; bytes[index / 8] |= BIT(index % 8); }
-	__forceinline void unset(size_t x, size_t y) { int index = y * h + x; bytes[index / 8] &= ~BIT(index % 8); }
+	__forceinline void set(size_t x, size_t y) { int index = y * h + x; bytes[index / 8] |= BIT8(index % 8); }
+	__forceinline void unset(size_t x, size_t y) { int index = y * h + x; bytes[index / 8] &= ~BIT8(index % 8); }
 
 	__forceinline void clear() { for (int i = 0; i * 8 < w * h; ++i) bytes[i] = 0; }
 

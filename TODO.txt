@@ -1,14 +1,15 @@
 === Up next ===
-    [ ] Engine config/bootloader (Binary format: defines controller types, collider types, defaults, etc...)
-        [ ] JSON-baking of config
-        [ ] Reading the bootloader
-    [ ] Virtual controller configuration
+    [X] Engine config/bootloader (Binary format: defines controller types, collider types, defaults, etc...)
+        [X] JSON-baking of config
+        [X] Reading the bootloader
+        [X] Initializing script variables created by the boot process
+        [ ] Name controller instances?
+    [ ] Virtual controller configuration (human-readable text format)
     [ ] Tilemap-Entity depenetration
     [ ] Event dispatching (e.g. collisions)
     [ ] Z-ordered deferred drawing
     [ ] GFX (particles)
         [ ] SOA implementation for particle system (allowing SIMD)
-    [ ] Relative paths for assets referencing other assets
 
 === High-Level 1.0 Features ===
     [ ] Fast collision detection
@@ -19,6 +20,7 @@
         [ ] Raycasting
         [ ] Spacial indexing for level collision data
         [ ] Entity offscreen culling
+        [ ] X-sorted pruning
         [X] Gravity
         [ ] Slopes
         [ ] Moving Platforms, conveyor belts?
@@ -32,10 +34,12 @@
         [ ] Collision? (maybe environment only)
     [ ] Event system
     [ ] JSON and binary assets
-        [ ] Baking JSON assets into binary assets (external tool)
+        [X] Building JSON assets into binary assets (external tool)
     [ ] Resolution independence
+    [ ] Looping music
+    [ ] Sound effects
     [ ] GUI engine
-        [ ] Tilable/stretchable frames
+        [ ] Tileable/stretchable frames
         [ ] Text boxes with options for letter-by-letter, word-by-word, etc...
         [ ] Edge/component - relative positioning (right, left, top, bottom, center, etc...)
     [ ] Automatic asset management (quasi-GC on Sprites, EntityClasses, etc...)
@@ -46,7 +50,7 @@
         [ ] Seeds may optionally be saved in game saves. (maybe)
     [ ] Scripting via AngelScript
         [ ] Thread-safe
-            [ ] Per-frame entities updates limit scope to ONLY the currently processed entity
+            [X] Per-frame entities updates limit scope to ONLY the currently processed entity
             [ ] Event updates allow access to all entities involved
     [ ] Saving system that is easy to use and interface with
         [ ] Persistent data stores at both global scope and map scope.
@@ -59,7 +63,7 @@
         [ ] Trigger polling and events (requires per-button config on controller types)
         [X] State/Velocity polling on axes
         [X] Press/Release events
-        [X] Binding conflict resolution (auto-unbinding)
-        [ ] Input history with pattern matching? (fightstick type stuff)
+        [X] Binding conflict resolution (via silent auto-unbinding)
+        [ ] Input history with sequence matching? (fightstick type stuff)
         [ ] Configuration
     [ ] Basic editor (probably in a different programming language)

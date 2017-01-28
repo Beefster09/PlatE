@@ -68,12 +68,12 @@ const ColliderType* ColliderType::by_name(const char* name) {
 	return nullptr;
 }
 
-constexpr std::initializer_list<ColliderType> INTRINSIC_COLLIDER_TYPES = {};
-constexpr int N_INTRINSIC_COLLIDER_TYPES = INTRINSIC_COLLIDER_TYPES.size();
+constexpr std::initializer_list<ColliderType> BUILTIN_COLLIDER_TYPES = {};
+constexpr int N_BUILTIN_COLLIDER_TYPES = BUILTIN_COLLIDER_TYPES.size();
 
 Result<> ColliderType::init(FILE* bootloader) {
 	try {
-		int n_types = read<uint16_t>(bootloader) + N_INTRINSIC_COLLIDER_TYPES;
+		int n_types = read<uint16_t>(bootloader) + N_BUILTIN_COLLIDER_TYPES;
 
 		ColliderType* types = new ColliderType[n_types];
 		ColliderType::table = Array2D<bool>(n_types, n_types);
@@ -82,7 +82,7 @@ Result<> ColliderType::init(FILE* bootloader) {
 		int i = 0;
 
 		// init intrinsics
-		for (const ColliderType& intrinsic : INTRINSIC_COLLIDER_TYPES) {
+		for (const ColliderType& intrinsic : BUILTIN_COLLIDER_TYPES) {
 			types[i] = intrinsic;
 			types[i].id = i;
 			++i;
@@ -114,21 +114,31 @@ Result<> ColliderType::init(FILE* bootloader) {
 
 Array<const ColliderChannel> ColliderChannel::channels;
 
-constexpr const char* INTRINSIC_COLLIDER_CHANNELS[] = {
+constexpr const char* BUILTIN_COLLIDER_CHANNELS[] = {
 	"EntityDefault",
 	"TilemapDefault"
 };
-constexpr int N_INTRINSIC_COLLIDER_CHANNELS = sizeof(INTRINSIC_COLLIDER_CHANNELS) / sizeof(const char*);
+constexpr int N_BUILTIN_COLLIDER_CHANNELS = sizeof(BUILTIN_COLLIDER_CHANNELS) / sizeof(const char*);
 
 Result<> ColliderChannel::init(FILE* stream) {
 	try {
-		int n_chans = read<uint16_t>(stream);
+		int n_chans = read<uint16_t>(stream) + N_BUILTIN_COLLIDER_CHANNELS;
+
+		if (n_chans > 64) return Errors::TooManyColliderChannels;
+
 		ColliderChannel* chans = new ColliderChannel[n_chans];
-		for (int i = 0; i < n_chans; ++i) {
+
+		int i = 0;
+		for (; i < N_BUILTIN_COLLIDER_CHANNELS; ++i) {
+			chans[i].name = BUILTIN_COLLIDER_CHANNELS[i];
+			chans[i].id = i;
+		}
+
+		for (; i < n_chans; ++i) {
 			chans[i].name = read_string(stream, read<uint16_t>(stream));
 			chans[i].id = i;
 		}
-		channels = Array<const ColliderChannel>(chans, n_chans);
+		new(&channels) Array<const ColliderChannel>(chans, n_chans);
 
 		return Result<>::success;
 	}
@@ -136,6 +146,167 @@ Result<> ColliderChannel::init(FILE* stream) {
 		return e;
 	}
 }
+
+#pragma region ScriptChannelMaskOps
+// Scripting interface to collider things
+static void AssignChannelID(uint64_t* chan, uint8_t id) {
+	*chan = BIT64(id);
+}
+
+static void AddChannelID(uint64_t* chan, uint8_t id) {
+	*chan |= BIT64(id);
+}
+
+static void RemoveChannelID(uint64_t* chan, uint8_t id) {
+	*chan &= ~BIT64(id);
+}
+
+static uint64_t WithChannelID(const uint64_t* chan, uint8_t id) {
+	return *chan | BIT64(id);
+}
+
+static uint64_t WithoutChannelID(const uint64_t* chan, uint8_t id) {
+	return *chan & ~BIT64(id);
+}
+
+static bool MatchChannelID(const uint64_t* chan, uint8_t id) {
+	return *chan & BIT64(id);
+}
+
+static uint64_t CombineChannelID(const uint8_t* a, uint8_t b) {
+	return BIT64(*a) | BIT64(b);
+}
+
+static uint64_t UnionChannelMask(const uint64_t* chan, uint64_t other) {
+	return *chan | other;
+}
+
+static uint64_t IntersectChannelMask(const uint64_t* chan, uint64_t other) {
+	return *chan & other;
+}
+
+static uint64_t SymDiffChannelMask(const uint64_t* chan, uint64_t other) {
+	return *chan & other;
+}
+
+static uint64_t DiffChannelMask(const uint64_t* chan, uint64_t other) {
+	return *chan & ~other;
+}
+
+static void UnionChannelMaskAssign(uint64_t* chan, uint64_t other) {
+	*chan |= other;
+}
+
+static void IntersectChannelMaskAssign(uint64_t* chan, uint64_t other) {
+	*chan &= other;
+}
+
+static void SymDiffChannelMaskAssign(uint64_t* chan, uint64_t other) {
+	*chan &= other;
+}
+
+static void DiffChannelMaskAssign(uint64_t* chan, uint64_t other) {
+	*chan &= ~other;
+}
+
+static void PrintChannelMask(uint64_t chan) {
+	char buf[65];
+	for (int i = 0; i < ColliderChannel::channels.size(); ++i) {
+		buf[i] = (chan & BIT64(i)) ? '1' : '0';
+	}
+	buf[ColliderChannel::channels.size()] = 0;
+	printf("%s\n", buf);
+}
+
+static void PrintChannelID(uint8_t id) {
+	printf("%s\n", ColliderChannel::channels[id].name);
+}
+#pragma endregion
+
+static uint64_t AllChannels = 0xFFFFffffFFFFffff;
+static uint64_t NoChannels = 0xFFFFffffFFFFffff;
+
+#define check(EXPR) {int r = (EXPR); if (r < 0) return r;} do {} while(0)
+int RegisterColliderTypes(asIScriptEngine* engine) {
+	check(engine->RegisterObjectType("ChannelMask", sizeof(uint64_t),
+		asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<uint64_t>()));
+
+	// I would do an enum, but I need a specific size.
+	// The bonus is that it gives me very tight control over operators
+	check(engine->RegisterObjectType("ChannelID", sizeof(uint8_t),
+		asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<uint8_t>()));
+
+	check(engine->SetDefaultNamespace("ChannelID"));
+	for (const ColliderChannel& chan : ColliderChannel::channels) {
+		char declbuf[256];
+		sprintf(declbuf, "const ChannelID %s", chan.name);
+		check(engine->RegisterGlobalProperty(declbuf, (void*) &chan.id));
+	}
+
+	check(engine->SetDefaultNamespace("ChannelMask"));
+	check(engine->RegisterGlobalProperty("const ChannelMask ALL", (void*)&AllChannels));
+	check(engine->RegisterGlobalProperty("const ChannelMask NONE", (void*)&NoChannels));
+
+	check(engine->SetDefaultNamespace(""));
+
+	// TODO: adding/removing ids to/from the mask, combining masks
+	check(engine->RegisterObjectMethod("ChannelMask", "void opAssign(ChannelID)",
+		asFUNCTION(AssignChannelID), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("ChannelMask", "void opAddAssign(ChannelID)",
+		asFUNCTION(AddChannelID), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("ChannelMask", "void opOrAssign(ChannelID)",
+		asFUNCTION(AddChannelID), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("ChannelMask", "void opSubAssign(ChannelID)",
+		asFUNCTION(RemoveChannelID), asCALL_CDECL_OBJFIRST));
+
+	check(engine->RegisterObjectMethod("ChannelMask", "void opOrAssign(ChannelMask)",
+		asFUNCTION(UnionChannelMaskAssign), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("ChannelMask", "void opAddAssign(ChannelMask)",
+		asFUNCTION(UnionChannelMaskAssign), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("ChannelMask", "void opAndAssign(ChannelMask)",
+		asFUNCTION(IntersectChannelMaskAssign), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("ChannelMask", "void opXorAssign(ChannelMask)",
+		asFUNCTION(SymDiffChannelMaskAssign), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("ChannelMask", "void opSubAssign(ChannelMask)",
+		asFUNCTION(DiffChannelMaskAssign), asCALL_CDECL_OBJFIRST));
+
+	check(engine->RegisterObjectMethod("ChannelMask", "ChannelMask opAdd(ChannelID) const",
+		asFUNCTION(WithChannelID), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("ChannelMask", "ChannelMask opOr(ChannelID) const",
+		asFUNCTION(WithChannelID), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("ChannelMask", "ChannelMask opSub(ChannelID) const",
+		asFUNCTION(WithoutChannelID), asCALL_CDECL_OBJFIRST));
+
+	check(engine->RegisterObjectMethod("ChannelID", "ChannelMask opAdd(ChannelID) const",
+		asFUNCTION(CombineChannelID), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("ChannelID", "ChannelMask opOr(ChannelID) const",
+		asFUNCTION(CombineChannelID), asCALL_CDECL_OBJFIRST));
+
+	check(engine->RegisterObjectMethod("ChannelMask", "bool contains(ChannelID) const",
+		asFUNCTION(MatchChannelID), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("ChannelMask", "bool opAnd(ChannelID) const",
+		asFUNCTION(MatchChannelID), asCALL_CDECL_OBJFIRST));
+
+	check(engine->RegisterObjectMethod("ChannelMask", "ChannelMask opOr(ChannelMask) const",
+		asFUNCTION(UnionChannelMask), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("ChannelMask", "ChannelMask opAdd(ChannelMask) const",
+		asFUNCTION(UnionChannelMask), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("ChannelMask", "ChannelMask opAnd(ChannelMask) const",
+		asFUNCTION(IntersectChannelMask), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("ChannelMask", "ChannelMask opXor(ChannelMask) const",
+		asFUNCTION(SymDiffChannelMask), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("ChannelMask", "ChannelMask opSub(ChannelMask) const",
+		asFUNCTION(DiffChannelMask), asCALL_CDECL_OBJFIRST));
+
+	check(engine->RegisterGlobalFunction("void println(const ChannelMask)",
+		asFUNCTION(PrintChannelMask), asCALL_CDECL));
+	check(engine->RegisterGlobalFunction("void println(const ChannelID)",
+		asFUNCTION(PrintChannelID), asCALL_CDECL));
+
+	return 0;
+}
+
+// Core logic
 
 void render_hitbox(GPU_Target* context, const Transform& tx, const Hitbox& hitbox, const SDL_Color& color) {
 	SDL_Color stroke, fill;

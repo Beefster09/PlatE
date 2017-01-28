@@ -30,8 +30,7 @@
 #define EXIT_SDL_EVENT_FAIL -2
 #define EXIT_SDL_GPU_FAIL -10
 
-#define check(expr, failcode) {auto res = expr; if (!res) return failcode;}
-
+#define check(EXPR, CODE) {auto res = (EXPR); if (!res) return CODE;}
 int main(int argc, char* argv[]) {
 	const char* title;
 	const char* asset_dir;
@@ -84,13 +83,7 @@ int main(int argc, char* argv[]) {
 		SDL_SetWindowTitle(window, title);
 
 		{
-			VirtualController* cont_type = create_controller_type(
-				"TestController",
-				{},
-				{ "Up", "Down", "Left", "Right", "OK", "Cancel" }
-			);
-
-			ControllerInstance* inst = create_controller("TestController", "test_controller");
+			ControllerInstance* inst = create_controller("Menu", "test_controller");
 			RealInput input;
 
 			input.set_key(SDL_SCANCODE_UP);

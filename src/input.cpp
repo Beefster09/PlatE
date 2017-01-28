@@ -581,61 +581,63 @@ VirtualButtonState* GetButtonByIndex(ControllerInstance* inst, int index) {
 	}
 }
 
-#define check(r) assert(r >= 0); do {if(r < 0) {return r;}} while(false)
+#define check(EXPR) {int r = (EXPR); if (r < 0) return r;} do {} while(0)
 static int RegisterControllerType(asIScriptEngine* engine, const VirtualController* vcont,
 		const char* const name, void* const place) {
-	int r;
-
 	char declbuf[256];
 
-	r = engine->RegisterObjectType(name, 0, asOBJ_REF | asOBJ_NOCOUNT); check(r);
+	check(engine->RegisterObjectType(name, 0, asOBJ_REF | asOBJ_NOCOUNT));
 
 	int n_axes = vcont->axis_names.size();
 	for (int i = 0; i < n_axes; ++i) {
 		sprintf(declbuf, "InputAxis %s", vcont->axis_names[i]);
-		r = engine->RegisterObjectProperty(name, declbuf, GetAxisOffset(vcont, i)); check(r);
+		check(engine->RegisterObjectProperty(name, declbuf, GetAxisOffset(vcont, i)));
 	}
 
 	int n_buttons = vcont->button_names.size();
 	for (int i = 0; i < n_buttons; ++i) {
 		sprintf(declbuf, "InputButton %s", vcont->button_names[i]);
-		r = engine->RegisterObjectProperty(name, declbuf, GetButtonOffset(vcont, i)); check(r);
+		check(engine->RegisterObjectProperty(name, declbuf, GetButtonOffset(vcont, i)));
 	}
 
-	r = engine->RegisterObjectMethod(name, "void bind(EntityComponent@)",
-		asFUNCTION(bind_controller), asCALL_CDECL_OBJFIRST); check(r);
-	r = engine->RegisterObjectMethod(name, "void unbind()",
-		asFUNCTION(unbind_controller), asCALL_CDECL_OBJFIRST); check(r);
+	check(engine->RegisterObjectMethod(name, "void bind(EntityComponent@)",
+		asFUNCTION(bind_controller), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod(name, "void unbind()",
+		asFUNCTION(unbind_controller), asCALL_CDECL_OBJFIRST));
 
-	r = engine->RegisterObjectMethod(name, "array<string>@ get_axis_names()",
-		asFUNCTION(GetAxisNames), asCALL_CDECL_OBJFIRST); check(r);
-	r = engine->RegisterObjectMethod(name, "array<string>@ get_button_names()",
-		asFUNCTION(GetButtonNames), asCALL_CDECL_OBJFIRST); check(r);
+	check(engine->RegisterObjectMethod(name, "array<string>@ get_axis_names()",
+		asFUNCTION(GetAxisNames), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod(name, "array<string>@ get_button_names()",
+		asFUNCTION(GetButtonNames), asCALL_CDECL_OBJFIRST));
 
-	r = engine->RegisterObjectMethod(name, "InputAxis@ axis(int)",
-		asFUNCTION(GetAxisByIndex), asCALL_CDECL_OBJFIRST); check(r);
-	r = engine->RegisterObjectMethod(name, "InputAxis@ axis(const string &in)",
-		asFUNCTION(GetAxisByName), asCALL_CDECL_OBJFIRST); check(r);
+	check(engine->RegisterObjectMethod(name, "InputAxis@ axis(int)",
+		asFUNCTION(GetAxisByIndex), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod(name, "InputAxis@ axis(const string &in)",
+		asFUNCTION(GetAxisByName), asCALL_CDECL_OBJFIRST));
 
-	r = engine->RegisterObjectMethod(name, "InputButton@ button(int)",
-		asFUNCTION(GetButtonByIndex), asCALL_CDECL_OBJFIRST); check(r);
-	r = engine->RegisterObjectMethod(name, "InputButton@ button(const string &in)",
-		asFUNCTION(GetButtonByName), asCALL_CDECL_OBJFIRST); check(r);
+	check(engine->RegisterObjectMethod(name, "InputButton@ button(int)",
+		asFUNCTION(GetButtonByIndex), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod(name, "InputButton@ button(const string &in)",
+		asFUNCTION(GetButtonByName), asCALL_CDECL_OBJFIRST));
 
 	GetController* getter = new(place) GetController(vcont);
 
 	sprintf(declbuf, "%s@ get_%s_instance(int)", name, name);
-	r = engine->RegisterGlobalFunction(declbuf, asMETHOD(GetController, operator ()), asCALL_THISCALL_ASGLOBAL, (void*) getter); check(r);
+	check(engine->RegisterGlobalFunction(declbuf, asMETHOD(GetController, operator ()),
+		asCALL_THISCALL_ASGLOBAL, (void*) getter));
 
 	return 0;
 }
 
 int RegisterControllerTypes(asIScriptEngine* engine) {
-	GetController** getters = new GetController*[cont_types.size()]; // this will never be freed
+	GetController** getters = new GetController*[cont_types.size()]; // this will never be freed, but that's okay
 
+	check(engine->SetDefaultNamespace("Input"));
 	for (TypeEntry& entry : cont_types) {
-		int r = RegisterControllerType(engine, entry.type, entry.name, (void*) getters); check(r);
+		check(RegisterControllerType(engine, entry.type, entry.name, (void*) getters));
 		++getters;
 	}
+	check(engine->SetDefaultNamespace(""));
+
 	return 0;
 }

@@ -39,7 +39,7 @@ struct Entity {
 	const EntityId id;
 	EntitySystem* system;
 
-// === Physics T ===
+// === Physics Data ===
 	Point2 position       = { 0.f,0.f };
 
 	Vector2 velocity      = { 0.f,0.f };
@@ -51,11 +51,11 @@ struct Entity {
 	// Other movement stuffs
 	AABB vel_range = { -INFINITY, INFINITY, -INFINITY, INFINITY }; // Velocity range
 
-// === Transform T ===
+// === Transform Data ===
 	float rotation = 0.f;
 	Vector2 scale = { 1.f, 1.f };
 
-// === Render T ===
+// === Render Data ===
 	const Sprite* sprite = nullptr;
 	const Animation* animation = nullptr;
 	const Frame* frame = nullptr;
@@ -63,6 +63,10 @@ struct Entity {
 	float frame_time = 0.f;
 
 	int z_order = 0;
+
+// === ColliderChannel flags ===
+	uint64_t channel_mask = 0xFFFFffffFFFFffff;
+	uint8_t channel_id;
 
 // === Enable/Disable flags ===
 	bool physics_enabled = true;

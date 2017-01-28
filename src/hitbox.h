@@ -12,10 +12,12 @@
 #include "transform.h"
 #include "SDL_gpu.h"
 #include <cstdio>
+#include "angelscript.h"
 
 namespace Errors {
 	const error_data
-		InvalidHitboxType = { 190, "Hitbox type is invalid." };
+		InvalidHitboxType = { 180, "Hitbox type is invalid." },
+		TooManyColliderChannels = { 190, "More than 64 total collider channels (counting builtins)" };
 }
 
 struct Hitbox {
@@ -77,13 +79,13 @@ struct ColliderChannel {
 	const char* name;
 	uint8_t id;
 
-private:
 	static Array<const ColliderChannel> channels;
 
-public:
 	static Result<> init(FILE* stream);
 	static const ColliderChannel* by_name(const char* name);
 };
+
+int RegisterColliderTypes(asIScriptEngine* engine);
 
 struct Collider {
 	/// type data that determines what things actually collide

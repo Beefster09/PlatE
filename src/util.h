@@ -4,7 +4,12 @@
 
 // Constants and macros
 
-#define BIT(n) (1 << (n))
+#define BIT32(n)   (((uint32_t) 1) << (n))
+#define BIT64(n) (((uint64_t) 1) << (n))
+#define BIT16(n) (((uint16_t) 1) << (n))
+#define BIT8(n)  (((uint8_t) 1) << (n))
+
+#define BIT BIT64
 
 // macros for (eventually) removing all exceptions
 

@@ -104,7 +104,10 @@ namespace Engine {
 		// Game types
 		RegisterVector2(script_engine);
 		RegisterRandomTypes(script_engine);
+
+		r = RegisterColliderTypes(script_engine); assert(r >= 0);
 		RegisterEntityTypes(script_engine);
+
 		RegisterInputTypes(script_engine);
 		r = RegisterControllerTypes(script_engine); assert(r >= 0);
 

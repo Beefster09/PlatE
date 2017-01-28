@@ -208,7 +208,7 @@ Result<std::string> DirContext::resolve(const char* path) const {
 		result += path;
 
 		// Technically, Windows won't complain about /, but just to be safe...
-#if 0 && __WIN32__
+#if __WIN32__
 		for (char& chr : result) {
 			if (chr == '/') chr = '\\';
 		}
@@ -227,7 +227,7 @@ Result<std::string> DirContext::resolve(const char* path) const {
 		result.insert(0, AssetManager::root_dir);
 
 		// Technically, Windows won't complain about /, but just to be safe...
-#if 0 && __WIN32__
+#if __WIN32__
 		for (char& chr : result) {
 			if (chr == '/') chr = '\\';
 		}

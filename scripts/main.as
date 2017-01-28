@@ -3,7 +3,7 @@ bool first = true;
 class Simple : EntityComponent {
     string sprite;
     Vector2 pos, vel, grav;
-    TestController@ cont;
+    Input::Menu@ cont;
 
     Simple(string sprite, Vector2 pos, Vector2 vel, Vector2 grav) {
         this.sprite = sprite;
@@ -12,7 +12,7 @@ class Simple : EntityComponent {
         this.grav = grav;
 
         if (first) {
-            @cont = get_TestController_instance(0);
+            @cont = Input::get_Menu_instance(0);
             first = false;
         }
     }
@@ -69,10 +69,14 @@ void init() {
     EntitySystem.spawn(Simple("sprites/test.sprite", Vector2(50, 400), Vector2(120, -350), Vector2(0, 500)), PrintErr);
     EntitySystem.spawn(Simple("sprites/test.sprite", Vector2(400, 300), Vector2(10, 0), Vector2(0, 0)), PrintErr);
 
-    TestController@ cont = get_TestController_instance(0);
+    Input::Menu@ cont = Input::get_Menu_instance(0);
 
     cont.OK.bind_on_press(plusOK);
     cont.OK.bind_on_release(minusOK);
+
+    ChannelMask mtest = ChannelID::EntityDefault + ChannelID::team2 + ChannelID::TilemapDefault;
+    println(mtest);
+    println(ChannelID::EntityDefault);
 
     Engine::pause();
 }

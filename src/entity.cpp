@@ -539,6 +539,10 @@ void RegisterEntityTypes(asIScriptEngine* engine) {
 	r = engine->RegisterObjectMethod("Entity", "void set_z_order(int)",
 		asFUNCTION(SetSpriteZOrder), asCALL_CDECL_OBJFIRST); assert(r >= 0);
 
+	// collider channel stuff
+	r = engine->RegisterObjectProperty("Entity", "ChannelMask chanel_mask", asOFFSET(Entity, channel_mask)); assert(r >= 0);
+	r = engine->RegisterObjectProperty("Entity", "ChannelID channel_id", asOFFSET(Entity, channel_id)); assert(r >= 0);
+
 	// sprite
 	r = engine->RegisterObjectMethod("Entity", "void set_sprite(const string &in)",
 		asFUNCTION(SetEntitySprite), asCALL_CDECL_OBJFIRST); assert(r >= 0);
