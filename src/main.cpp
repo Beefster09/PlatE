@@ -9,6 +9,7 @@
 #include "assetmanager.h"
 #include "input.h"
 #include "fileutil.h"
+#include "config.h"
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>

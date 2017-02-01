@@ -16,11 +16,14 @@
     <Filter Include="Tools">
       <UniqueIdentifier>{59484227-dd98-4c42-b563-04fbbcb9ea51}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\angelscript-src">
-      <UniqueIdentifier>{6d472301-610d-4ef5-a6d7-881ba04086a9}</UniqueIdentifier>
+    <Filter Include="Source Files\libs">
+      <UniqueIdentifier>{1988c76a-4562-4ca9-a4c9-dac2ab6a6549}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\angelscript-addons">
+    <Filter Include="Source Files\libs\angelscript-addons">
       <UniqueIdentifier>{ecc57aa9-bd70-413c-8e44-3f74ba2ec503}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\libs\angelscript-src">
+      <UniqueIdentifier>{6d472301-610d-4ef5-a6d7-881ba04086a9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -58,130 +61,130 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_atomic.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_builder.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_bytecode.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_callfunc.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_callfunc_arm.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_callfunc_mips.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_callfunc_ppc.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_callfunc_ppc_64.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_callfunc_sh4.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_callfunc_x64_msvc.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_callfunc_x86.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_compiler.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_configgroup.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_context.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_datatype.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_gc.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_generic.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_globalproperty.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_memory.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_module.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_objecttype.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_outputbuffer.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_parser.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_restore.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_scriptcode.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_scriptengine.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_scriptfunction.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_scriptnode.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_scriptobject.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_string.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_string_util.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_thread.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_tokenizer.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_typeinfo.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\source\as_variablescope.cpp">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\addon\scriptany\scriptany.cpp">
-      <Filter>Source Files\angelscript-addons</Filter>
+      <Filter>Source Files\libs\angelscript-addons</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\addon\scriptarray\scriptarray.cpp">
-      <Filter>Source Files\angelscript-addons</Filter>
+      <Filter>Source Files\libs\angelscript-addons</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\addon\scriptdictionary\scriptdictionary.cpp">
-      <Filter>Source Files\angelscript-addons</Filter>
+      <Filter>Source Files\libs\angelscript-addons</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\addon\scriptmath\scriptmath.cpp">
-      <Filter>Source Files\angelscript-addons</Filter>
+      <Filter>Source Files\libs\angelscript-addons</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\addon\scriptmath\scriptmathcomplex.cpp">
-      <Filter>Source Files\angelscript-addons</Filter>
+      <Filter>Source Files\libs\angelscript-addons</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\addon\scriptstdstring\scriptstdstring.cpp">
-      <Filter>Source Files\angelscript-addons</Filter>
+      <Filter>Source Files\libs\angelscript-addons</Filter>
     </ClCompile>
     <ClCompile Include="lib\angelscript-sdk\addon\scriptstdstring\scriptstdstring_utils.cpp">
-      <Filter>Source Files\angelscript-addons</Filter>
+      <Filter>Source Files\libs\angelscript-addons</Filter>
     </ClCompile>
     <ClCompile Include="src\tileset.cpp">
       <Filter>Source Files</Filter>
@@ -206,6 +209,9 @@
     </ClCompile>
     <ClCompile Include="src\cstrkey.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\inih\ini.c">
+      <Filter>Source Files\libs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -246,115 +252,115 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_array.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_atomic.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_builder.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_bytecode.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_callfunc.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_compiler.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_config.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_configgroup.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_context.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_criticalsection.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_datatype.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_debug.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_gc.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_generic.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_map.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_memory.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_module.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_namespace.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_objecttype.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_outputbuffer.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_parser.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_property.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_restore.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_scriptcode.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_scriptengine.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_scriptfunction.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_scriptnode.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_scriptobject.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_string.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_string_util.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_symboltable.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_texts.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_thread.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_tokendef.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_tokenizer.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_typeinfo.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="lib\angelscript-sdk\source\as_variablescope.h">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </ClInclude>
     <ClInclude Include="src\input.h">
       <Filter>Header Files</Filter>
@@ -377,6 +383,9 @@
     <ClInclude Include="src\cstrkey.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="tools\bakelevel.py">
@@ -397,7 +406,7 @@
   </ItemGroup>
   <ItemGroup>
     <Object Include="build\as_callfunc_x64_msvc_asm.obj">
-      <Filter>Source Files\angelscript-src</Filter>
+      <Filter>Source Files\libs\angelscript-src</Filter>
     </Object>
   </ItemGroup>
 </Project>

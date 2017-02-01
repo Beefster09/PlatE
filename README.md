@@ -16,7 +16,7 @@ Note that I'm still nailing down what I want out of this engine, so everything h
   + Focus on sprite and tilemap based graphics.
     * Tilemaps will be able to be changed programmatically. This will include the ability to replace entire sections all at once from predefined (in the asset, that is) submaps.
     * Non-tile level objects will still be around and will be necessary and/or more convenient for some things, though hopefully they won't be needed much outside interactive level elements when dynamic tiles are not enough.
-  + There will (eventually) be support for false color-map + line map + normal map shaded/paletted sprites and tiles similar to the tech used in Skullgirls and Indivisible. Palettes are a big deal for sprites and tiles since you can't just change out the textures (since they _are_ textures) like you can with meshes.
+    * There will (eventually) be support for false color-map + line map + normal map shaded/paletted sprites and tiles similar to the tech used in Skullgirls and Indivisible. Palettes are a big deal for sprites and tiles since you can't just change out the textures (since they _are_ textures) like you can with meshes.
   + No plans to support netplay. This is a big-idea feature that comes with a lot of complexity that takes away from the goals of this engine. Multiplayer is still possible, but only locally. If you need netplay, use another engine.
   + No plans for 2.5D support. Use another engine for that.
 

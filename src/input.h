@@ -117,6 +117,7 @@ struct VirtualButtonState {
 
 /// Controller class / metadata that defines what inputs are available and their names
 struct VirtualController {
+	const char* name;
 	Array<const char*> axis_names;
 	Array<const char*> button_names;
 };
@@ -151,5 +152,7 @@ Result<> init_controller_types(FILE* stream);
 void RegisterInputTypes(asIScriptEngine* engine);
 int RegisterControllerTypes(asIScriptEngine* engine);
 
-// TEMP
 VirtualController* create_controller_type(const char* name, Array<const char*> axis_names, Array<const char*> button_names);
+
+void bind_from_ini(const char* controller, const char* input, const char* spec);
+void dump_controller_config(FILE* stream);

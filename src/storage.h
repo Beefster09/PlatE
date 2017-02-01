@@ -35,8 +35,16 @@ class Array {
 
 public:
 	inline Array() : n_items(0), items(nullptr) {}
-	inline Array(T* data, size_t size) : n_items(size), items(data) {}
-	inline Array(size_t size) : n_items(size), items(new T[size]) {}
+
+	inline Array(T* data, size_t size) {
+		n_items = size;
+		items = data;
+	}
+
+	inline Array(size_t size) {
+		n_items = size;
+		items = new T[size]();
+	}
 
 	Array copy() { // Copies should be explicit.
 		unconst<T>::type* buf = new T[n_items];

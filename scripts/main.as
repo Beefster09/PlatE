@@ -12,7 +12,7 @@ class Simple : EntityComponent {
         this.grav = grav;
 
         if (first) {
-            @cont = Input::get_Menu_instance(0);
+            @cont = Controllers::test_controller;
             first = false;
         }
     }
@@ -26,8 +26,8 @@ class Simple : EntityComponent {
         if (cont !is null) {
             cont.bind(this);
 
-            cont.Up.bind_on_press(ButtonEventCallback(pUp));
-            cont.Up.bind_on_release(ButtonEventCallback(rUp));
+            cont.Up.bind_on_press(Input::ButtonEventCallback(pUp));
+            cont.Up.bind_on_release(Input::ButtonEventCallback(rUp));
         }
     }
 
@@ -69,7 +69,7 @@ void init() {
     EntitySystem.spawn(Simple("sprites/test.sprite", Vector2(50, 400), Vector2(120, -350), Vector2(0, 500)), PrintErr);
     EntitySystem.spawn(Simple("sprites/test.sprite", Vector2(400, 300), Vector2(10, 0), Vector2(0, 0)), PrintErr);
 
-    Input::Menu@ cont = Input::get_Menu_instance(0);
+    Input::Menu@ cont = Controllers::test_controller;
 
     cont.OK.bind_on_press(plusOK);
     cont.OK.bind_on_release(minusOK);

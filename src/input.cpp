@@ -32,6 +32,8 @@ const RealInput RealInput::Empty = RealInput();
 static float get_axis_value(RealInput& input);
 static bool get_button_value(RealInput& input);
 
+#pragma region Bookkeeping
+
 // Think of ControllerInstances as variable-size structs. They should never be constructed manually.
 static ControllerInstance* instantiate_controller(const VirtualController* ctype) {
 	if (ctype == nullptr) return nullptr;
@@ -39,17 +41,30 @@ static ControllerInstance* instantiate_controller(const VirtualController* ctype
 	// allocate one contiguous block of memory that is the exact size we need in total
 	size_t n_axes = ctype->axis_names.size();
 	size_t n_buttons = ctype->button_names.size();
-	size_t memsize = sizeof(ControllerInstance) +
-		n_axes * sizeof(VirtualAxisState) +
-		n_buttons * (sizeof(VirtualButtonState));
+	size_t memsize = sizeof(ControllerInstance)
+		           + sizeof(VirtualAxisState)   * n_axes
+		           + sizeof(VirtualButtonState) * n_buttons;
 	void* memblock = operator new (memsize);
+	// need to zero memory for axes and buttons since we won't immediately set everything yet.
+	memset(memblock, 0, memsize);
 
 	ControllerInstance* cont = (ControllerInstance*) memblock;
-	VirtualAxisState* axes = new(cont + 1) VirtualAxisState[n_axes](); // ends with () to ensure initializers are called (i.e. all fields are zero)
-	VirtualButtonState* buttons = new(axes + n_axes) VirtualButtonState[n_buttons]();
+	VirtualAxisState* axes = reinterpret_cast<VirtualAxisState*>(cont + 1);
+	VirtualButtonState* buttons = reinterpret_cast<VirtualButtonState*>(axes + n_axes);
 
-	new(&cont->axes) Array<VirtualAxisState>(axes, n_axes);
-	new(&cont->buttons) Array<VirtualButtonState>(buttons, n_buttons);
+	if (n_axes > 0) {
+		new(&cont->axes) Array<VirtualAxisState>(axes, n_axes);
+	}
+	else {
+		new(&cont->axes) Array<VirtualAxisState>();
+	}
+
+	if (n_buttons > 0) {
+		new(&cont->buttons) Array<VirtualButtonState>(buttons, n_buttons);
+	}
+	else {
+		new(&cont->buttons) Array<VirtualButtonState>();
+	}
 
 	cont->type = ctype;
 
@@ -85,21 +100,90 @@ VirtualController* create_controller_type(const char* name, Array<const char*> a
 		[name](const TypeEntry& entry) -> bool { return strcmp(entry.name, name) == 0; }
 	);
 
+	name = copy(name);
 	VirtualController* type = new VirtualController{
+		name,
 		std::move(axis_names),
 		std::move(button_names)
 	};
 
 	if (iter == cont_types.end()) {
-		cont_types.push_back({ copy(name), type });
+		cont_types.push_back({ name, type });
 	}
 	else {
+		ERR("WARNING: controller '%s' redefined", name);
 		TypeEntry& entry = *iter;
+		for (const char* name : entry.type->axis_names) delete[] name;
+		for (const char* name : entry.type->button_names) delete[] name;
+		const_cast<Array<const char*>&>(entry.type->axis_names).free();
+		const_cast<Array<const char*>&>(entry.type->button_names).free();
+		delete entry.name;
 		delete entry.type;
 		entry.type = type;
 	}
 	return type;
 }
+
+ControllerInstance* get_controller_by_name(const char* name) {
+	auto cont_iter = std::find_if(controllers.begin(), controllers.end(),
+		[name](const InstEntry& entry) -> bool { return strcmp(entry.name, name) == 0; }
+	);
+
+	if (cont_iter == controllers.end()) {
+		return nullptr;
+	}
+	else {
+		return cont_iter->inst;
+	}
+}
+
+std::vector<ControllerInstance*> get_controllers_by_typename(const char* name) {
+	std::vector<ControllerInstance*> result;
+
+	auto type_iter = std::find_if(cont_types.begin(), cont_types.end(),
+		[name](const TypeEntry& entry) -> bool { return strcmp(entry.name, name) == 0; }
+	);
+
+	if (type_iter == cont_types.end()) return result;
+
+	const VirtualController* type = type_iter->type;
+
+	for (auto& entry : controllers) {
+		if (entry.inst->type == type) {
+			result.push_back(entry.inst);
+		}
+	}
+
+	return result;
+}
+
+Result<> init_controller_types(FILE* stream) {
+	try {
+		int n_controllers = read<uint16_t>(stream);
+
+		for (int i = 0; i < n_controllers; ++i) {
+			const char* name = read_string(stream, read<uint16_t>(stream));
+			Array<const char*> axes(read<uint16_t>(stream));
+			for (auto& n : axes) {
+				n = read_string(stream, read<uint16_t>(stream));
+			}
+			Array<const char*> buttons(read<uint16_t>(stream));
+			for (auto& n : buttons) {
+				n = read_string(stream, read<uint16_t>(stream));
+			}
+			create_controller_type(name, axes, buttons);
+		}
+
+		return Result<>::success;
+	}
+	catch (Error& e) {
+		return e;
+	}
+}
+
+#pragma endregion
+
+#pragma region InputUpdates
 
 void update_inputs(float dt) {
 	for (const InstEntry& entry : controllers) {
@@ -144,6 +228,60 @@ void update_inputs(float dt) {
 		}
 	}
 }
+
+static float get_axis_value(RealInput& input) {
+	switch (input.type) {
+	case RealInput::NONE:
+		return 0.f;
+	case RealInput::KEYBOARD:
+		return SDL_GetKeyboardState(nullptr)[input.key] ? 1.f : 0.f;
+	case RealInput::GAMEPAD_AXIS:
+	{
+
+	}
+	break;
+	case RealInput::GAMEPAD_BUTTON:
+	{
+
+	}
+	break;
+	case RealInput::MOUSE:
+		return SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(input.mbutton) ? 1.f : 0.f;
+	default:
+		break;
+	};
+
+	return 0.f;
+}
+
+static bool get_button_value(RealInput& input) {
+	switch (input.type) {
+	case RealInput::NONE:
+		return 0.f;
+	case RealInput::KEYBOARD:
+		return SDL_GetKeyboardState(nullptr)[input.key];
+	case RealInput::GAMEPAD_AXIS:
+	{
+
+	}
+	break;
+	case RealInput::GAMEPAD_BUTTON:
+	{
+
+	}
+	break;
+	case RealInput::MOUSE:
+		return SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(input.mbutton);
+	default:
+		break;
+	};
+
+	return false;
+}
+
+#pragma endregion
+
+#pragma region Callbacks
 
 void ButtonEventCallback::clear() {
 	if (func != nullptr) {
@@ -237,6 +375,10 @@ void unbind_controller(ControllerInstance* cont) {
 		button.on_release.clear();
 	}
 }
+
+#pragma endregion
+
+#pragma region Config
 
 bool bind_button(ControllerInstance* cont, int b_index, RealInput input, int slot) {
 	// clear matching bindings on controllers of the same type
@@ -347,112 +489,10 @@ bool bind_axis(ControllerInstance* cont, int a_index, int sign, RealInput input,
 	}
 }
 
-ControllerInstance* get_controller_by_name(const char* name) {
-	auto cont_iter = std::find_if(controllers.begin(), controllers.end(),
-		[name](const InstEntry& entry) -> bool { return strcmp(entry.name, name) == 0; }
-	);
+#pragma endregion
 
-	if (cont_iter == controllers.end()) {
-		return nullptr;
-	}
-	else {
-		return cont_iter->inst;
-	}
-}
-
-std::vector<ControllerInstance*> get_controllers_by_typename(const char* name) {
-	std::vector<ControllerInstance*> result;
-
-	auto type_iter = std::find_if(cont_types.begin(), cont_types.end(),
-		[name](const TypeEntry& entry) -> bool { return strcmp(entry.name, name) == 0; }
-	);
-
-	if (type_iter == cont_types.end()) return result;
-
-	const VirtualController* type = type_iter->type;
-
-	for (auto& entry : controllers) {
-		if (entry.inst->type == type) {
-			result.push_back(entry.inst);
-		}
-	}
-
-	return result;
-}
-
-static float get_axis_value(RealInput& input) {
-	switch (input.type) {
-	case RealInput::NONE:
-		return 0.f;
-	case RealInput::KEYBOARD:
-		return SDL_GetKeyboardState(nullptr)[input.key] ? 1.f : 0.f;
-	case RealInput::GAMEPAD_AXIS:
-	{
-
-	}
-	break;
-	case RealInput::GAMEPAD_BUTTON:
-	{
-
-	}
-	break;
-	case RealInput::MOUSE:
-		return SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(input.mbutton) ? 1.f : 0.f;
-	default:
-	break;
-	};
-
-	return 0.f;
-}
-
-static bool get_button_value(RealInput& input) {
-	switch (input.type) {
-	case RealInput::NONE:
-		return 0.f;
-	case RealInput::KEYBOARD:
-		return SDL_GetKeyboardState(nullptr)[input.key];
-	case RealInput::GAMEPAD_AXIS:
-	{
-
-	}
-	break;
-	case RealInput::GAMEPAD_BUTTON:
-	{
-
-	}
-	break;
-	case RealInput::MOUSE:
-		return SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON(input.mbutton);
-	default:
-		break;
-	};
-
-	return false;
-}
-
-Result<> init_controller_types(FILE* stream) {
-	try {
-		int n_controllers = read<uint16_t>(stream);
-
-		for (int i = 0; i < n_controllers; ++i) {
-			const char* name = read_string(stream, read<uint16_t>(stream));
-			Array<const char*> axes(read<uint16_t>(stream));
-			for (auto& n : axes) {
-				n = read_string(stream, read<uint16_t>(stream));
-			}
-			Array<const char*> buttons(read<uint16_t>(stream));
-			for (auto& n : buttons) {
-				n = read_string(stream, read<uint16_t>(stream));
-			}
-			create_controller_type(name, axes, buttons);
-		}
-
-		return Result<>::success;
-	}
-	catch (Error& e) {
-		return e;
-	}
-}
+// === Script Interface ===
+#pragma region ScriptAPI
 
 static void SetOnPressCallback(VirtualButtonState* button, asIScriptFunction* callback) {
 	button->on_press.set_delegate(callback);
@@ -465,27 +505,31 @@ static void SetOnReleaseCallback(VirtualButtonState* button, asIScriptFunction* 
 static asITypeInfo* strarray_type;
 
 void RegisterInputTypes(asIScriptEngine* engine) {
+#define check(EXPR) do {int r = (EXPR); assert(r >= 0);} while(0)
 	strarray_type = engine->GetTypeInfoByDecl("array<string>");
 
-	int r;
+	check(engine->SetDefaultNamespace("Input"));
 
-	r = engine->RegisterObjectType("InputAxis", 0, asOBJ_REF | asOBJ_NOCOUNT); assert(r >= 0);
+	check(engine->RegisterObjectType("Axis", 0, asOBJ_REF | asOBJ_NOCOUNT));
 
-	r = engine->RegisterObjectProperty("InputAxis", "const float position", asOFFSET(VirtualAxisState, position)); assert(r >= 0);
-	r = engine->RegisterObjectProperty("InputAxis", "const float velocity", asOFFSET(VirtualAxisState, velocity)); assert(r >= 0);
+	check(engine->RegisterObjectProperty("Axis", "const float position", asOFFSET(VirtualAxisState, position)));
+	check(engine->RegisterObjectProperty("Axis", "const float velocity", asOFFSET(VirtualAxisState, velocity)));
 
-	r = engine->RegisterObjectType("InputButton", 0, asOBJ_REF | asOBJ_NOCOUNT); assert(r >= 0);
+	check(engine->RegisterObjectType("Button", 0, asOBJ_REF | asOBJ_NOCOUNT));
 
-	r = engine->RegisterObjectProperty("InputButton", "const bool state", asOFFSET(VirtualButtonState, state)); assert(r >= 0);
-	r = engine->RegisterObjectProperty("InputButton", "const bool pressed", asOFFSET(VirtualButtonState, pressed)); assert(r >= 0);
-	r = engine->RegisterObjectProperty("InputButton", "const bool released", asOFFSET(VirtualButtonState, released)); assert(r >= 0);
+	check(engine->RegisterObjectProperty("Button", "const bool state", asOFFSET(VirtualButtonState, state)));
+	check(engine->RegisterObjectProperty("Button", "const bool pressed", asOFFSET(VirtualButtonState, pressed)));
+	check(engine->RegisterObjectProperty("Button", "const bool released", asOFFSET(VirtualButtonState, released)));
 
-	r = engine->RegisterFuncdef("void ButtonEventCallback()"); assert(r >= 0);
+	check(engine->RegisterFuncdef("void ButtonEventCallback()"));
 
-	r = engine->RegisterObjectMethod("InputButton", "void bind_on_press(ButtonEventCallback@)",
-		asFUNCTION(SetOnPressCallback), asCALL_CDECL_OBJFIRST); assert(r > 0);
-	r = engine->RegisterObjectMethod("InputButton", "void bind_on_release(ButtonEventCallback@)",
-		asFUNCTION(SetOnReleaseCallback), asCALL_CDECL_OBJFIRST); assert(r > 0);
+	check(engine->RegisterObjectMethod("Button", "void bind_on_press(ButtonEventCallback@)",
+		asFUNCTION(SetOnPressCallback), asCALL_CDECL_OBJFIRST));
+	check(engine->RegisterObjectMethod("Button", "void bind_on_release(ButtonEventCallback@)",
+		asFUNCTION(SetOnReleaseCallback), asCALL_CDECL_OBJFIRST));
+
+	check(engine->SetDefaultNamespace(""));
+#undef check
 }
 
 // WARNING: these are HIGHLY dependent on instantiating controllers properly
@@ -500,24 +544,6 @@ static int GetAxisOffset(const VirtualController* type, int index) {
 		sizeof(VirtualAxisState) * index;
 }
 // So never instantiate them by hand and do not make a constructor. Constructors don't allocate memory the way this expects.
-
-class GetController {
-	const VirtualController* const type;
-
-public:
-	GetController(const VirtualController* type) : type(type) {}
-
-	ControllerInstance* operator () (int index) {
-		for (auto& cont : controllers) {
-			if (cont.inst->type != type) continue;
-
-			if (index-- <= 0) {
-				return cont.inst;
-			}
-		}
-		return nullptr;
-	}
-};
 
 CScriptArray* GetAxisNames(ControllerInstance* inst) {
 	int n_axes = inst->type->axis_names.size();
@@ -581,22 +607,21 @@ VirtualButtonState* GetButtonByIndex(ControllerInstance* inst, int index) {
 	}
 }
 
-#define check(EXPR) {int r = (EXPR); if (r < 0) return r;} do {} while(0)
-static int RegisterControllerType(asIScriptEngine* engine, const VirtualController* vcont,
-		const char* const name, void* const place) {
+#define check(EXPR) do {int r = (EXPR); if (r < 0) return r;} while(0)
+static int RegisterControllerType(asIScriptEngine* engine, const VirtualController* vcont, const char* const name) {
 	char declbuf[256];
 
 	check(engine->RegisterObjectType(name, 0, asOBJ_REF | asOBJ_NOCOUNT));
 
 	int n_axes = vcont->axis_names.size();
 	for (int i = 0; i < n_axes; ++i) {
-		sprintf(declbuf, "InputAxis %s", vcont->axis_names[i]);
+		sprintf(declbuf, "Axis %s", vcont->axis_names[i]);
 		check(engine->RegisterObjectProperty(name, declbuf, GetAxisOffset(vcont, i)));
 	}
 
 	int n_buttons = vcont->button_names.size();
 	for (int i = 0; i < n_buttons; ++i) {
-		sprintf(declbuf, "InputButton %s", vcont->button_names[i]);
+		sprintf(declbuf, "Button %s", vcont->button_names[i]);
 		check(engine->RegisterObjectProperty(name, declbuf, GetButtonOffset(vcont, i)));
 	}
 
@@ -610,34 +635,36 @@ static int RegisterControllerType(asIScriptEngine* engine, const VirtualControll
 	check(engine->RegisterObjectMethod(name, "array<string>@ get_button_names()",
 		asFUNCTION(GetButtonNames), asCALL_CDECL_OBJFIRST));
 
-	check(engine->RegisterObjectMethod(name, "InputAxis@ axis(int)",
+	check(engine->RegisterObjectMethod(name, "Axis@ axis(int)",
 		asFUNCTION(GetAxisByIndex), asCALL_CDECL_OBJFIRST));
-	check(engine->RegisterObjectMethod(name, "InputAxis@ axis(const string &in)",
+	check(engine->RegisterObjectMethod(name, "Axis@ axis(const string &in)",
 		asFUNCTION(GetAxisByName), asCALL_CDECL_OBJFIRST));
 
-	check(engine->RegisterObjectMethod(name, "InputButton@ button(int)",
+	check(engine->RegisterObjectMethod(name, "Button@ button(int)",
 		asFUNCTION(GetButtonByIndex), asCALL_CDECL_OBJFIRST));
-	check(engine->RegisterObjectMethod(name, "InputButton@ button(const string &in)",
+	check(engine->RegisterObjectMethod(name, "Button@ button(const string &in)",
 		asFUNCTION(GetButtonByName), asCALL_CDECL_OBJFIRST));
-
-	GetController* getter = new(place) GetController(vcont);
-
-	sprintf(declbuf, "%s@ get_%s_instance(int)", name, name);
-	check(engine->RegisterGlobalFunction(declbuf, asMETHOD(GetController, operator ()),
-		asCALL_THISCALL_ASGLOBAL, (void*) getter));
 
 	return 0;
 }
 
 int RegisterControllerTypes(asIScriptEngine* engine) {
-	GetController** getters = new GetController*[cont_types.size()]; // this will never be freed, but that's okay
-
 	check(engine->SetDefaultNamespace("Input"));
 	for (TypeEntry& entry : cont_types) {
-		check(RegisterControllerType(engine, entry.type, entry.name, (void*) getters));
-		++getters;
+		check(RegisterControllerType(engine, entry.type, entry.name));
+	}
+
+	char declbuf[256];
+
+	check(engine->SetDefaultNamespace("Controllers"));
+	for (auto& entry : controllers) {
+		sprintf(declbuf, "Input::%s %s", entry.inst->type->name, entry.name);
+		check(engine->RegisterGlobalProperty(declbuf, entry.inst));
 	}
 	check(engine->SetDefaultNamespace(""));
 
 	return 0;
 }
+#undef check
+
+#pragma endregion

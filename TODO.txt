@@ -10,6 +10,7 @@
     [ ] Z-ordered deferred drawing
     [ ] GFX (particles)
         [ ] SOA implementation for particle system (allowing SIMD)
+        [ ] GPU particles?
 
 === High-Level 1.0 Features ===
     [ ] Fast collision detection
@@ -37,7 +38,7 @@
         [X] Building JSON assets into binary assets (external tool)
     [ ] Resolution independence
     [ ] Looping music
-    [ ] Sound effects
+    [ ] Positional sound effects
     [ ] GUI engine
         [ ] Tileable/stretchable frames
         [ ] Text boxes with options for letter-by-letter, word-by-word, etc...
