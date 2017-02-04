@@ -78,7 +78,7 @@ def write_solidity(f, solidity):
     else:
         raise Exception("Invalid tile solidity type: " + type)
 
-def bake(infile, outfile):
+def build(infile, outfile):
     level = None
     with open(infile, 'r') as f:
         try:

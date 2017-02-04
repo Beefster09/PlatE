@@ -12,7 +12,7 @@ class Simple : EntityComponent {
         this.grav = grav;
 
         if (first) {
-            @cont = Controllers::test_controller;
+            @cont = Controllers::Menu1;
             first = false;
         }
     }
@@ -69,10 +69,11 @@ void init() {
     EntitySystem.spawn(Simple("sprites/test.sprite", Vector2(50, 400), Vector2(120, -350), Vector2(0, 500)), PrintErr);
     EntitySystem.spawn(Simple("sprites/test.sprite", Vector2(400, 300), Vector2(10, 0), Vector2(0, 0)), PrintErr);
 
-    Input::Menu@ cont = Controllers::test_controller;
+    Input::Menu@ cont = Controllers::Menu1;
 
     cont.OK.bind_on_press(plusOK);
     cont.OK.bind_on_release(minusOK);
+    Controllers::Player1.Attack.bind_on_press(plusOK);
 
     ChannelMask mtest = ChannelID::EntityDefault + ChannelID::team2 + ChannelID::TilemapDefault;
     println(mtest);

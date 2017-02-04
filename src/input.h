@@ -2,6 +2,8 @@
 
 #include "storage.h"
 #include "entity.h"
+#include "error.h"
+#include "result.h"
 
 #include "angelscript.h"
 
@@ -9,6 +11,11 @@
 #include <SDL2/SDL_keycode.h>
 
 #include <array>
+
+namespace Errors {
+	const error_data
+		NoSuchControllerType = {744, "No such controller type with name"};
+}
 
 /// Describes how to get physical input via SDL
 struct RealInput {
@@ -148,6 +155,7 @@ ControllerInstance* get_controller_by_name(const char* name);
 std::vector<ControllerInstance*> get_controllers_by_typename(const char* name);
 
 Result<> init_controller_types(FILE* stream);
+Result<> init_controllers(FILE* stream);
 
 void RegisterInputTypes(asIScriptEngine* engine);
 int RegisterControllerTypes(asIScriptEngine* engine);

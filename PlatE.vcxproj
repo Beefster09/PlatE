@@ -80,7 +80,7 @@
     <OutDir>bin\</OutDir>
     <SourcePath>$(VC_SourcePath);src/</SourcePath>
     <IntDir>build/</IntDir>
-    <LibraryPath>C:\Users\Justin\Data\General Files\Projects\PlatE\lib\sdl-gpu\include;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Users\ifoun\Documents\Development\libs\SDL2-2.0.4\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -93,7 +93,7 @@
     <OutDir>bin\</OutDir>
     <SourcePath>$(VC_SourcePath);src/</SourcePath>
     <IntDir>build/</IntDir>
-    <LibraryPath>C:\Users\Justin\Data\General Files\Projects\PlatE\lib\sdl-gpu\include;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Users\ifoun\Documents\Development\libs\SDL2-2.0.4\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -102,7 +102,7 @@
       <WarningLevel>Level2</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>lib\inih;lib\concurrentqueue;lib\sdl-gpu\include;lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>lib\inih;lib\concurrentqueue;lib\sdl-gpu\include;lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\ifoun\Documents\Development\libs\SDL2-2.0.4\include\SDL2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
     </ClCompile>
@@ -131,7 +131,7 @@
       <WarningLevel>Level2</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>lib\inih;lib\concurrentqueue;lib\sdl-gpu\include;lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>lib\inih;lib\concurrentqueue;lib\sdl-gpu\include;lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\ifoun\Documents\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
     </ClCompile>
@@ -162,7 +162,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>lib\inih;lib\concurrentqueue;lib\sdl-gpu\include;lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>lib\inih;lib\concurrentqueue;lib\sdl-gpu\include;lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\ifoun\Documents\Development\libs\SDL2-2.0.4\include\SDL2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
     </ClCompile>
@@ -195,7 +195,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>lib\inih;lib\concurrentqueue;lib\sdl-gpu\include;lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\Justin\Data\General Files\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>lib\inih;lib\concurrentqueue;lib\sdl-gpu\include;lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\ifoun\Documents\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
     </ClCompile>

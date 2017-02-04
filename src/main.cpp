@@ -31,50 +31,63 @@
 #define EXIT_SDL_EVENT_FAIL -2
 #define EXIT_SDL_GPU_FAIL -10
 
-#define check(EXPR, CODE) {auto res = (EXPR); if (!res) return CODE;}
 int main(int argc, char* argv[]) {
-	const char* title;
-	const char* asset_dir;
-	try {
-		auto bootloader = open("engine.boot", "rb");
-
-		if (!bootloader) {
-			ERR("Unable to open engine.boot: %s", std::to_string(bootloader.err).c_str());
-			return EXIT_BOOTLOADER_MISSING;
-		}
-		FILE* stream = bootloader;
-
-		if (!check_header(stream, "PlatEboot")) {
-			ERR("Bootloader did not start with \"" BOOTLOADER_MAGIC_NUMBER "\"");
-			return EXIT_BOOTLOADER_BAD_HEADER;
-		}
-
-		title = read_string(stream, read<uint16_t>(stream));
-
-		asset_dir = read_string(stream, read<uint16_t>(stream));
-		if (!AssetManager::set_root_dir(asset_dir)) {
-			return EXIT_BOOTLOADER_BAD_HEADER;
-		}
-		delete[] asset_dir;
-
-		check(init_controller_types(stream), EXIT_BOOTLOADER_ERROR);
-
-		check(ColliderType::init(stream), EXIT_BOOTLOADER_ERROR);
-		check(ColliderChannel::init(stream), EXIT_BOOTLOADER_ERROR);
-
-		fclose(stream);
-	}
-	catch (Error& e) {
-		ERR("%s\n", std::to_string(e).c_str());
-		return EXIT_BOOTLOADER_ERROR;
-	}
-
 	if (SDL_Init(SDL_INIT_CUSTOM) >= 0) {
+		const char* title;
+		uint16_t scr_width, scr_height;
+		try {
+#define check(EXPR, CODE) do {auto res = (EXPR); if (!res) return CODE;} while(0)
+			auto bootloader = open("engine.boot", "rb");
+
+			if (!bootloader) {
+				ERR("Unable to open engine.boot: %s", std::to_string(bootloader.err).c_str());
+				return EXIT_BOOTLOADER_MISSING;
+			}
+			FILE* stream = bootloader;
+
+			if (!check_header(stream, "PlatEboot")) {
+				ERR("Bootloader did not start with \"" BOOTLOADER_MAGIC_NUMBER "\"");
+				return EXIT_BOOTLOADER_BAD_HEADER;
+			}
+
+			title = read_string(stream, read<uint16_t>(stream));
+			scr_width = read<uint16_t>(stream);
+			scr_height = read<uint16_t>(stream);
+
+			{
+				const char* asset_dir = read_string(stream, read<uint16_t>(stream));
+				if (!AssetManager::set_root_dir(asset_dir)) {
+					return EXIT_BOOTLOADER_ERROR;
+				}
+				delete[] asset_dir;
+			}
+
+			{
+				const char* script_dir = read_string(stream, read<uint16_t>(stream));
+				// TODO: do something with it!
+				delete[] script_dir;
+			}
+
+			check(init_controller_types(stream), EXIT_BOOTLOADER_ERROR);
+			check(init_controllers(stream), EXIT_BOOTLOADER_ERROR);
+			// TODO: init controller instances and their binding defaults
+
+			check(ColliderType::init(stream), EXIT_BOOTLOADER_ERROR);
+			check(ColliderChannel::init(stream), EXIT_BOOTLOADER_ERROR);
+
+			fclose(stream);
+#undef check
+		}
+		catch (Error& e) {
+			ERR("%s\n", std::to_string(e).c_str());
+			return EXIT_BOOTLOADER_ERROR;
+		}
+
 		atexit(SDL_Quit);
 
 		GPU_SetDebugLevel(GPU_DEBUG_LEVEL_MAX);
 
-		GPU_Target* screen = GPU_Init(800, 480, 0);
+		GPU_Target* screen = GPU_Init(scr_width, scr_height, 0);
 		if (screen == nullptr) {
 			return EXIT_SDL_GPU_FAIL;
 		}
@@ -83,28 +96,28 @@ int main(int argc, char* argv[]) {
 		SDL_Window* window = SDL_GetWindowFromID(screen->context->windowID);
 		SDL_SetWindowTitle(window, title);
 
-		{
-			ControllerInstance* inst = create_controller("Menu", "test_controller");
-			RealInput input;
+		//{
+		//	ControllerInstance* inst = create_controller("Menu", "test_controller");
+		//	RealInput input;
 
-			input.set_key(SDL_SCANCODE_UP);
-			bind_button(inst, 0, input);
+		//	input.set_key(SDL_SCANCODE_UP);
+		//	bind_button(inst, 0, input);
 
-			input.set_key(SDL_SCANCODE_W);
-			bind_button(inst, 0, input);
+		//	input.set_key(SDL_SCANCODE_W);
+		//	bind_button(inst, 0, input);
 
-			input.set_key(SDL_SCANCODE_DOWN);
-			bind_button(inst, 1, input);
+		//	input.set_key(SDL_SCANCODE_DOWN);
+		//	bind_button(inst, 1, input);
 
-			input.set_key(SDL_SCANCODE_S);
-			bind_button(inst, 1, input);
+		//	input.set_key(SDL_SCANCODE_S);
+		//	bind_button(inst, 1, input);
 
-			input.set_key(SDL_SCANCODE_RETURN);
-			bind_button(inst, 4, input);
+		//	input.set_key(SDL_SCANCODE_RETURN);
+		//	bind_button(inst, 4, input);
 
-			input.set_key(SDL_SCANCODE_SPACE);
-			bind_button(inst, 4, input);
-		}
+		//	input.set_key(SDL_SCANCODE_SPACE);
+		//	bind_button(inst, 4, input);
+		//}
 
 		// Flush the events so the window will show
 		SDL_Event curEvent;

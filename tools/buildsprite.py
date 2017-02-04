@@ -43,7 +43,7 @@ AnimationNoHitbox = struct.Struct("<II?")
 AnimFrame = struct.Struct("<fI")
 
 
-def bake(infile, outfile):
+def build(infile, outfile):
     sprite = None
     with open(infile, 'r') as f:
         try:

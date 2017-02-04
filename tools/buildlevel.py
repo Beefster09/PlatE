@@ -79,7 +79,7 @@ def regular(l2d):
 
     return True
 
-def bake(infile, outfile):
+def build(infile, outfile):
     level = None
     with open(infile, 'r') as f:
         try:

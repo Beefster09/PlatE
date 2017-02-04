@@ -26,7 +26,7 @@ namespace Engine {
 	static asIScriptFunction* scriptfunc_init = nullptr;
 	static asIScriptFunction* scriptfunc_update = nullptr;
 
-	static bool paused = false; // MAYBE: some sort of enum so that GUI stuff works when paused
+	static bool paused = false; // MAYBE: some sort of enum so that GUI stuff (optionally) works when paused
 	static uint32_t init_time = 0;
 
 	static float min_timestep, max_timestep;
@@ -67,18 +67,17 @@ namespace Engine {
 	// === Core functionality ===
 
 	void init() {
+#define check(EXPR) do {int r = (EXPR); assert(r >= 0);} while (0)
 		set_fps_range(default_fps_min, default_fps_max);
 		// init Scripting API
 		script_engine = asCreateScriptEngine();
 
 		script_engine->SetMessageCallback(asFUNCTION(MessageCallback), 0, asCALL_CDECL);
 
-		int r;
-
 		RegisterScriptMath(script_engine);
 
-		r = script_engine->RegisterGlobalProperty("const float PI", const_cast<float*>(&pi)); assert(r >= 0);
-		r = script_engine->RegisterGlobalProperty("const float TAU", const_cast<float*>(&tau)); assert(r >= 0);
+		check(script_engine->RegisterGlobalProperty("const float PI", const_cast<float*>(&pi)));
+		check(script_engine->RegisterGlobalProperty("const float TAU", const_cast<float*>(&tau)));
 
 		RegisterScriptArray(script_engine, true);
 		RegisterStdString(script_engine);
@@ -89,49 +88,49 @@ namespace Engine {
 		RegisterScriptAny(script_engine);
 
 		// Util
-		r = script_engine->RegisterGlobalFunction("void println(string& in)",
-			asFUNCTIONPR(PrintLn, (const std::string&), void), asCALL_CDECL); assert(r >= 0);
-		r = script_engine->RegisterGlobalFunction("void println(int64)",
-			asFUNCTIONPR(PrintLn, (int64_t), void), asCALL_CDECL); assert(r >= 0);
-		r = script_engine->RegisterGlobalFunction("void println(float)",
-			asFUNCTIONPR(PrintLn, (float), void), asCALL_CDECL); assert(r >= 0);
-		r = script_engine->RegisterGlobalFunction("void println(bool)",
-			asFUNCTIONPR(PrintLn, (bool), void), asCALL_CDECL); assert(r >= 0);
+		check(script_engine->RegisterGlobalFunction("void println(string& in)",
+			asFUNCTIONPR(PrintLn, (const std::string&), void), asCALL_CDECL));
+		check(script_engine->RegisterGlobalFunction("void println(int64)",
+			asFUNCTIONPR(PrintLn, (int64_t), void), asCALL_CDECL));
+		check(script_engine->RegisterGlobalFunction("void println(float)",
+			asFUNCTIONPR(PrintLn, (float), void), asCALL_CDECL));
+		check(script_engine->RegisterGlobalFunction("void println(bool)",
+			asFUNCTIONPR(PrintLn, (bool), void), asCALL_CDECL));
 
 		// Error handling (async callbacks)
-		r = script_engine->RegisterFuncdef("void ErrorCallback(int, const string &in)"); assert(r >= 0);
+		check(script_engine->RegisterFuncdef("void ErrorCallback(int, const string &in)"));
 
 		// Game types
 		RegisterVector2(script_engine);
 		RegisterRandomTypes(script_engine);
 
-		r = RegisterColliderTypes(script_engine); assert(r >= 0);
+		check(RegisterColliderTypes(script_engine));
 		RegisterEntityTypes(script_engine);
 
 		RegisterInputTypes(script_engine);
-		r = RegisterControllerTypes(script_engine); assert(r >= 0);
+		check(RegisterControllerTypes(script_engine));
 
 		// Global engine stuff
-		const char* ns = script_engine->GetDefaultNamespace();
-		r = script_engine->SetDefaultNamespace("Engine"); assert(r >= 0);
+		check(script_engine->SetDefaultNamespace("Engine"));
 
-		r = script_engine->RegisterGlobalFunction("float get_time()",
-			asFUNCTION(get_time), asCALL_CDECL); assert(r >= 0);
+		check(script_engine->RegisterGlobalFunction("float get_time()",
+			asFUNCTION(get_time), asCALL_CDECL));
 
-		r = script_engine->RegisterGlobalFunction("void pause()",
-			asFUNCTION(pause), asCALL_CDECL); assert(r >= 0);
-		r = script_engine->RegisterGlobalFunction("void resume()",
-			asFUNCTION(resume), asCALL_CDECL); assert(r >= 0);
+		check(script_engine->RegisterGlobalFunction("void pause()",
+			asFUNCTION(pause), asCALL_CDECL));
+		check(script_engine->RegisterGlobalFunction("void resume()",
+			asFUNCTION(resume), asCALL_CDECL));
 
-		r = script_engine->RegisterGlobalFunction("bool travel(const string &in)",
-			asFUNCTION(travel), asCALL_CDECL); assert(r >= 0);
+		check(script_engine->RegisterGlobalFunction("bool travel(const string &in)",
+			asFUNCTION(travel), asCALL_CDECL));
 
-		r = script_engine->SetDefaultNamespace(ns); assert(r >= 0);
+		check(script_engine->SetDefaultNamespace(""));
 
 		// ==================================================================
 		// Now that the script engine is ready, we can initialize the entity system
 		entity_system = new EntitySystem();
-		r = script_engine->RegisterGlobalProperty("__EntitySystem__ EntitySystem", entity_system); assert(r >= 0);
+		check(script_engine->RegisterGlobalProperty("__EntitySystem__ EntitySystem", entity_system));
+#undef check
 
 		// Now onto customizable initialization
 		load_main_script();
@@ -140,13 +139,13 @@ namespace Engine {
 
 		ctx->Prepare(scriptfunc_init);
 
-		r = ctx->Execute();
+		int r = ctx->Execute();
 		if (r == asEXECUTION_FINISHED) {
 			ctx->Unprepare();
 			script_engine->ReturnContext(ctx);
 		}
 		else {
-			perror("Fatal error: global init script did not return.");
+			ERR_RELEASE("Fatal error: global init script did not return.");
 			abort();
 		}
 
@@ -176,7 +175,7 @@ namespace Engine {
 			script_engine->ReturnContext(ctx);
 		}
 		else {
-			perror("Fatal error: global tick script did not return.");
+			ERR_RELEASE("Fatal error: global tick script did not return.");
 			abort();
 		}
 	}

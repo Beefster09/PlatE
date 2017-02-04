@@ -27,7 +27,6 @@ namespace  Engine {
 	void event(const SDL_Event& event);
 
 	Result<asIScriptModule*> load_script(const char* filename);
-	Result<asDWORD> run_script_function_byname(const char* modname, const char* funcname);
 
 	float get_time();
 	void pause();

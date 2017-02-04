@@ -3,11 +3,19 @@
         [X] JSON-baking of config
         [X] Reading the bootloader
         [X] Initializing script variables created by the boot process
-        [ ] Name controller instances?
-    [ ] Virtual controller configuration (human-readable text format)
+        [ ] Enumerate controller instances
+        [ ] Defaults
+    [ ] Player-facing configuration (.ini files)
+        [ ] Controller config
+        [ ] Script exposure
     [ ] Tilemap-Entity depenetration
     [ ] Event dispatching (e.g. collisions)
     [ ] Z-ordered deferred drawing
+    [ ] Start on UI Engine
+        [ ] Windows
+        [ ] Constraints (x, y, w, h: relative and absolute from various anchors)
+        [ ] Textboxes (with letter-by-letter capabilities)
+        [ ] Interactive widgets
     [ ] GFX (particles)
         [ ] SOA implementation for particle system (allowing SIMD)
         [ ] GPU particles?

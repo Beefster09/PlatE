@@ -44,6 +44,12 @@ GPU_Image* read_referenced_texture(FILE* stream, uint32_t filenamelen, const Dir
 const char* read_string(FILE* stream, unsigned int len, MemoryPool& pool);
 const char* read_string(FILE* stream, unsigned int len);
 
+template <class Header>
+inline const char* read_string(FILE* stream) {
+	static_assert(std::is_integral<Header>::value, "read_string<Header> is only compatible with int types");
+	return read_string(stream, read<Header>(stream));
+}
+
 #define check_header(stream, expected) __check_header__(stream, expected, sizeof(expected) - 1)
 inline bool __check_header__(FILE* stream, const char* expected, size_t len) {
 	assert(len > 0 && len < 32);

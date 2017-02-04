@@ -16,7 +16,33 @@
             "buttons": ["Jump", "Attack"]
         }
     ],
-    "collision" : {
+    "controllers": [
+        {
+            "name": "Menu1",
+            "type": "Menu",
+            "defaults": {
+                "Up": ["up", "W"],
+                "Down": ["down", "S"],
+                "Left": ["left", "A"],
+                "Right": ["right", "D"],
+                "OK": ["return", "space"],
+                "Cancel": "escape"
+            }
+        },
+        {
+            "name": "Player1",
+            "type": "Player",
+            "defaults": {
+                "x+": ["right", "D"],
+                "x-": ["left", "A"],
+                "y+": ["down", "S"],
+                "y-": ["up", "W"],
+                "Jump": "space",
+                "Attack": "LMB"
+            }
+        }
+    ],
+    "collision": {
         "types": [
             {
                 "name": "Hurtbox",
@@ -35,5 +61,6 @@
             "team2"
         ]
     },
-    "asset_dir": "assets"
+    "asset_dir": "assets",
+    "script_dir": "scripts"
 }

@@ -32,6 +32,10 @@ const RealInput RealInput::Empty = RealInput();
 static float get_axis_value(RealInput& input);
 static bool get_button_value(RealInput& input);
 
+static void bind_spec_pos(VirtualAxisState& axis, const char* spec);
+static void bind_spec_neg(VirtualAxisState& axis, const char* spec);
+static void bind_spec(VirtualButtonState& button, const char* spec);
+
 #pragma region Bookkeeping
 
 // Think of ControllerInstances as variable-size structs. They should never be constructed manually.
@@ -71,16 +75,12 @@ static ControllerInstance* instantiate_controller(const VirtualController* ctype
 	return cont;
 }
 
-ControllerInstance* create_controller(const char* vcname, const char* instname) {
-	const TypeEntry& type = *std::find_if(cont_types.begin(), cont_types.end(),
-		[vcname](const TypeEntry& entry) -> bool { return strcmp(entry.name, vcname) == 0; }
-	);
-
+ControllerInstance* create_controller(const VirtualController* vctype, const char* instname) {
 	const auto iter = std::find_if(controllers.begin(), controllers.end(),
 		[instname](const InstEntry& entry) -> bool { return strcmp(entry.name, instname) == 0; }
 	);
 
-	ControllerInstance* inst = instantiate_controller(type.type);
+	ControllerInstance* inst = instantiate_controller(vctype);
 	assert(inst != nullptr);
 	if (iter == controllers.end()) {
 		controllers.push_back({ copy(instname), inst });
@@ -124,6 +124,15 @@ VirtualController* create_controller_type(const char* name, Array<const char*> a
 	return type;
 }
 
+const VirtualController* get_controller_type_by_name(const char* name) {
+	auto type_iter = std::find_if(cont_types.begin(), cont_types.end(),
+		[name](const TypeEntry& entry) -> bool { return strcmp(entry.name, name) == 0; }
+	);
+
+	if (type_iter == cont_types.end()) return nullptr;
+	else return type_iter->type;
+}
+
 ControllerInstance* get_controller_by_name(const char* name) {
 	auto cont_iter = std::find_if(controllers.begin(), controllers.end(),
 		[name](const InstEntry& entry) -> bool { return strcmp(entry.name, name) == 0; }
@@ -140,13 +149,8 @@ ControllerInstance* get_controller_by_name(const char* name) {
 std::vector<ControllerInstance*> get_controllers_by_typename(const char* name) {
 	std::vector<ControllerInstance*> result;
 
-	auto type_iter = std::find_if(cont_types.begin(), cont_types.end(),
-		[name](const TypeEntry& entry) -> bool { return strcmp(entry.name, name) == 0; }
-	);
-
-	if (type_iter == cont_types.end()) return result;
-
-	const VirtualController* type = type_iter->type;
+	const VirtualController* type = get_controller_type_by_name(name);
+	if (type == nullptr) return result;
 
 	for (auto& entry : controllers) {
 		if (entry.inst->type == type) {
@@ -174,6 +178,37 @@ Result<> init_controller_types(FILE* stream) {
 			create_controller_type(name, axes, buttons);
 		}
 
+		return Result<>::success;
+	}
+	catch (Error& e) {
+		return e;
+	}
+}
+
+Result<> init_controllers(FILE* stream) {
+	try {
+		int n_controllers = read<uint16_t>(stream);
+
+		for (int i = 0; i < n_controllers; ++i) {
+			const char* name = read_string<uint16_t>(stream);
+			const char* tname = read_string<uint16_t>(stream);
+
+			const VirtualController* type = get_controller_type_by_name(tname);
+			if (type == nullptr) return Error(Errors::NoSuchControllerType, tname);
+
+			ControllerInstance* inst = create_controller(type, name);
+
+			auto n_axes = type->axis_names.size();
+			for (int axis = 0; axis < n_axes; ++axis) {
+				bind_spec_pos(inst->axes[axis], read_string<uint16_t>(stream));
+				bind_spec_neg(inst->axes[axis], read_string<uint16_t>(stream));
+			}
+
+			auto n_btns = type->button_names.size();
+			for (int btn = 0; btn < n_btns; ++btn) {
+				bind_spec(inst->buttons[btn], read_string<uint16_t>(stream));
+			}
+		}
 		return Result<>::success;
 	}
 	catch (Error& e) {
@@ -486,6 +521,72 @@ bool bind_axis(ControllerInstance* cont, int a_index, int sign, RealInput input,
 			}
 		}
 		return false;
+	}
+}
+
+static const char* read_real_input(const char* spec, RealInput& input) {
+	if (spec == nullptr) {
+		input.clear();
+		return nullptr;
+	}
+
+	char buffer[32];
+	const char* end = strchr(spec, ',');
+	const char* ret;
+	if (end == nullptr) {
+		strcpy(buffer, spec); // unnecessary, but is fine since this isn't run frequently
+		ret = nullptr;
+	}
+	else {
+		strncpy(buffer, spec, end - spec);
+		buffer[end - spec] = 0;
+		ret = end + 1;
+	}
+
+	if (strcmp(buffer, "LMB") == 0) {
+		input.set_mouse(SDL_BUTTON_LEFT);
+	}
+	else if (strcmp(buffer, "RMB") == 0) {
+		input.set_mouse(SDL_BUTTON_RIGHT);
+	}
+	else if (strcmp(buffer, "MMB") == 0) {
+		input.set_mouse(SDL_BUTTON_MIDDLE);
+	}
+	else if (strcmp(buffer, "MB4") == 0) {
+		input.set_mouse(SDL_BUTTON_X1);
+	}
+	else if (strcmp(buffer, "MB5") == 0) {
+		input.set_mouse(SDL_BUTTON_X2);
+	}
+	else {
+		SDL_Scancode key = SDL_GetScancodeFromName(buffer);
+		if (key != SDL_SCANCODE_UNKNOWN) {
+			input.set_key(key);
+		}
+		else {
+			ERR("Unrecognized key name '%s'\n", buffer);
+			input.clear();
+		}
+	}
+
+	return ret;
+}
+
+static void bind_spec_pos(VirtualAxisState& axis, const char* spec) {
+	for (int i = 0; i < 3; ++i) {
+		spec = read_real_input(spec, axis.bindings_positive[i]);
+	}
+}
+
+static void bind_spec_neg(VirtualAxisState& axis, const char* spec) {
+	for (int i = 0; i < 3; ++i) {
+		spec = read_real_input(spec, axis.bindings_negative[i]);
+	}
+}
+
+static void bind_spec(VirtualButtonState& button, const char* spec) {
+	for (int i = 0; i < 3; ++i) {
+		spec = read_real_input(spec, button.bindings[i]);
 	}
 }
 

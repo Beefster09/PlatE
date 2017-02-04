@@ -49,17 +49,17 @@ def main(indir = "data", outdir = "assets", *args,
     def build_one(infn, outfn, t):
         if force or needs_bake(infn, outfn):
             if do_backups:
-                mv(outfn, outfn + ".bk")
+                mv(outfn, outfn + ".bak")
 
             try:
                 if t == "bootloader":
-                    buildengine.bake(infn, outfn)
+                    buildengine.build(infn, outfn)
                 elif t == 'sprite':
-                    buildsprite.bake(infn, outfn)
+                    buildsprite.build(infn, outfn)
                 elif t == 'level':
-                    buildlevel.bake(infn, outfn)
+                    buildlevel.build(infn, outfn)
                 elif t == 'tileset':
-                    buildtileset.bake(infn, outfn)
+                    buildtileset.build(infn, outfn)
                 else:
                     raise Exception("Unsupported bake type")
 
@@ -67,9 +67,7 @@ def main(indir = "data", outdir = "assets", *args,
                     print ("Built {}: {} --> {}".format(t, infn, outfn))
 
                 if do_backups:
-                    rm(outfn + '.bk')
-                else:
-                    rm(outfn)
+                    rm(outfn + '.bak')
 
                 return 1
 
@@ -83,6 +81,8 @@ def main(indir = "data", outdir = "assets", *args,
                     traceback.print_exc()
                 if do_backups:
                     mv(outfn + '.bk', outfn)
+                else:
+                    rm(outfn)
                 return 0
 
         else:
@@ -98,6 +98,7 @@ def main(indir = "data", outdir = "assets", *args,
         if msglevel >= MSG_WARN:
             print ("WARNING: no engine.json in current directory")
 
+    n_processed = 1
     for root, dirs, files in os.walk(indir, followlinks=True):
         dirs[:] = [d for d in dirs if not d.startswith('.')]  # skip unix-style hidden folders
         for fn in files:
@@ -106,13 +107,14 @@ def main(indir = "data", outdir = "assets", *args,
                 infn = os.path.join(root, fn)
                 outfn = os.path.join(root.replace(indir, outdir, 1), match.group('basename') + '.' + match.group('type'))
                 os.makedirs(os.path.dirname(outfn), exist_ok=True)
+                n_processed += 1
                 n_built += build_one(infn, outfn, match.group('type'))
 
     if msglevel >= MSG_NORMAL:
         if n_built == 0:
             print ("Nothing to do.")
         else:
-            print ("Successfully built", n_built, "asset(s).")
+            print ("Successfully built {}/{} asset(s).".format(n_built, n_processed))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
