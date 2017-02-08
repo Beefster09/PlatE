@@ -213,6 +213,12 @@
     <ClCompile Include="lib\inih\ini.c">
       <Filter>Source Files\libs</Filter>
     </ClCompile>
+    <ClCompile Include="src\config.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\angelscript-sdk\addon\scriptbuilder\scriptbuilder.cpp">
+      <Filter>Source Files\libs\angelscript-addons</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\sprite.h">

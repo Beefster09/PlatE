@@ -225,6 +225,7 @@
   <ItemGroup>
     <ClCompile Include="lib\angelscript-sdk\addon\scriptany\scriptany.cpp" />
     <ClCompile Include="lib\angelscript-sdk\addon\scriptarray\scriptarray.cpp" />
+    <ClCompile Include="lib\angelscript-sdk\addon\scriptbuilder\scriptbuilder.cpp" />
     <ClCompile Include="lib\angelscript-sdk\addon\scriptdictionary\scriptdictionary.cpp" />
     <ClCompile Include="lib\angelscript-sdk\addon\scriptmath\scriptmath.cpp" />
     <ClCompile Include="lib\angelscript-sdk\addon\scriptmath\scriptmathcomplex.cpp" />
@@ -267,6 +268,7 @@
     <ClCompile Include="lib\angelscript-sdk\source\as_variablescope.cpp" />
     <ClCompile Include="lib\inih\ini.c" />
     <ClCompile Include="src\assetmanager.cpp" />
+    <ClCompile Include="src\config.cpp" />
     <ClCompile Include="src\cstrkey.cpp" />
     <ClCompile Include="src\direction.cpp" />
     <ClCompile Include="src\error.cpp" />

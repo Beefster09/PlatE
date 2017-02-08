@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2015 Andreas Jonsson
+   Copyright (c) 2003-2016 Andreas Jonsson
 
    This software is provided 'as-is', without any express or implied 
    warranty. In no event will the authors be held liable for any 
@@ -255,6 +255,7 @@
 #define TXT_TMPL_SUBTYPE_MUST_NOT_BE_READ_ONLY "Template subtype must not be read-only"
 #define TXT_TOO_MANY_JUMP_LABELS               "The function has too many jump labels to handle. Split the function into smaller ones."
 #define TXT_TOO_MANY_VALUES_FOR_LIST           "Too many values to match pattern"
+#define TXT_TYPE_s_CANNOT_BE_REFERENCE         "Type '%s' cannot be a reference"
 #define TXT_TYPE_s_NOT_AVAILABLE_FOR_MODULE    "Type '%s' is not available for this module"
 #define TXT_TYPE_s_NOT_TEMPLATE                "Type '%s' is not a template type"
 
@@ -294,7 +295,7 @@
 #define TXT_GC_REQUIRE_ADD_REL_GC_BEHAVIOUR              "A garbage collected type must have the addref, release, and all gc behaviours"
 #define TXT_SCOPE_REQUIRE_REL_BEHAVIOUR                  "A scoped reference type must have the release behaviour"
 #define TXT_REF_REQUIRE_ADD_REL_BEHAVIOUR                "A reference type must have the addref and release behaviours"
-#define TXT_NON_POD_REQUIRE_CONSTR_DESTR_BEHAVIOUR       "A non-pod value type must have the default constructor and destructor behaviours"
+#define TXT_NON_POD_REQUIRE_CONSTR_DESTR_BEHAVIOUR       "A non-pod value type must have at least one constructor and the destructor behaviours"
 #define TXT_CANNOT_PASS_TYPE_s_BY_VAL                    "Can't pass type '%s' by value unless the application type is informed in the registration"
 #define TXT_CANNOT_RET_TYPE_s_BY_VAL                     "Can't return type '%s' by value unless the application type is informed in the registration"
 // TODO: Should be something like "This platform requires that AngelScript knows the exact content of the type '%s' in order to pass by value to application in native calling convention"

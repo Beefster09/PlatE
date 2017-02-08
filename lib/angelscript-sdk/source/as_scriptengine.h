@@ -260,6 +260,7 @@ public:
 	void *CallObjectMethodRetPtr(void *obj, int param1, asCScriptFunction *func) const;
 	void  CallGlobalFunction(void *param1, void *param2, asSSystemFunctionInterface *func, asCScriptFunction *desc) const;
 	bool  CallGlobalFunctionRetBool(void *param1, void *param2, asSSystemFunctionInterface *func, asCScriptFunction *desc) const;
+	int   CallScriptObjectMethod(void *obj, int func);
 
 	void ConstructScriptObjectCopy(void *mem, void *obj, asCObjectType *type);
 
@@ -527,6 +528,7 @@ public:
 		// TODO: 3.0.0: Remove the privatePropAsProtected
 		bool   privatePropAsProtected;
 		bool   allowUnicodeIdentifiers;
+		int    heredocTrimMode;
 	} ep;
 
 	// This flag is to allow a quicker shutdown when releasing the engine

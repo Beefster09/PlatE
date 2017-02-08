@@ -65,8 +65,25 @@ struct asCExprValue
 	void SetConstantB(const asCDataType &dataType, asBYTE value);
 	void SetConstantQW(const asCDataType &dataType, asQWORD value);
 	void SetConstantDW(const asCDataType &dataType, asDWORD value);
+	void SetConstantW(const asCDataType &dataType, asWORD value);
 	void SetConstantF(const asCDataType &dataType, float value);
 	void SetConstantD(const asCDataType &dataType, double value);
+	void SetConstantB(asBYTE value);
+	void SetConstantW(asWORD value);
+	void SetConstantQW(asQWORD value);
+	void SetConstantDW(asDWORD value);
+	void SetConstantF(float value);
+	void SetConstantD(double value);
+	asBYTE  GetConstantB();
+	asWORD  GetConstantW();
+	asQWORD GetConstantQW();
+	asDWORD GetConstantDW();
+	float   GetConstantF();
+	double  GetConstantD();
+
+	void SetConstantData(const asCDataType &dataType, asQWORD value);
+	asQWORD GetConstantData();
+
 	void SetNullConstant();
 	void SetUndefinedFuncHandle(asCScriptEngine *engine);
 	void SetVoid();
@@ -83,15 +100,19 @@ struct asCExprValue
 	bool  isVariable : 1;
 	bool  isExplicitHandle : 1;
 	bool  isRefToLocal : 1; // The reference may be to a local variable
-	short dummy : 10;
+	bool  isHandleSafe : 1; // the life-time of the handle is guaranteed for the duration of the access
+	short dummy : 9;
 	short stackOffset;
+
+private:
+	// These values must not be accessed directly in order to avoid problems with endianess. 
+	// Use the appropriate accessor methods instead
 	union
 	{
 		asQWORD qwordValue;
 		double  doubleValue;
 		asDWORD dwordValue;
 		float   floatValue;
-		int     intValue;
 		asWORD  wordValue;
 		asBYTE  byteValue;
 	};
@@ -173,13 +194,15 @@ enum EConvCost
 {
 	asCC_NO_CONV               = 0,
 	asCC_CONST_CONV            = 1,
-	asCC_PRIMITIVE_SIZE_CONV   = 2,
-	asCC_SIGNED_CONV           = 3,
-	asCC_INT_FLOAT_CONV        = 4,
-	asCC_REF_CONV              = 5,
-	asCC_OBJ_TO_PRIMITIVE_CONV = 6,
-	asCC_TO_OBJECT_CONV        = 7,
-	asCC_VARIABLE_CONV         = 8
+	asCC_ENUM_SAME_SIZE_CONV   = 2,
+	asCC_ENUM_DIFF_SIZE_CONV   = 3,
+	asCC_PRIMITIVE_SIZE_CONV   = 4,
+	asCC_SIGNED_CONV           = 5,
+	asCC_INT_FLOAT_CONV        = 6,
+	asCC_REF_CONV              = 7,
+	asCC_OBJ_TO_PRIMITIVE_CONV = 8,
+	asCC_TO_OBJECT_CONV        = 9,
+	asCC_VARIABLE_CONV         = 10
 };
 
 class asCCompiler
@@ -225,14 +248,14 @@ protected:
 	int  CompileFunctionCall(asCScriptNode *node, asCExprContext *out, asCObjectType *objectType, bool objIsConst, const asCString &scope = "");
 	int  CompileConstructCall(asCScriptNode *node, asCExprContext *out);
 	int  CompileConversion(asCScriptNode *node, asCExprContext *out);
-	int  CompileOperator(asCScriptNode *node, asCExprContext *l, asCExprContext *r, asCExprContext *out, eTokenType opToken = ttUnrecognizedToken);
+	int  CompileOperator(asCScriptNode *node, asCExprContext *l, asCExprContext *r, asCExprContext *out, eTokenType opToken = ttUnrecognizedToken, bool leftToRight = true);
 	void CompileOperatorOnHandles(asCScriptNode *node, asCExprContext *l, asCExprContext *r, asCExprContext *out, eTokenType opToken = ttUnrecognizedToken);
 	void CompileMathOperator(asCScriptNode *node, asCExprContext *l, asCExprContext *r, asCExprContext *out, eTokenType opToken = ttUnrecognizedToken);
 	void CompileBitwiseOperator(asCScriptNode *node, asCExprContext *l, asCExprContext *r, asCExprContext *out, eTokenType opToken = ttUnrecognizedToken);
 	void CompileComparisonOperator(asCScriptNode *node, asCExprContext *l, asCExprContext *r, asCExprContext *out, eTokenType opToken = ttUnrecognizedToken);
 	void CompileBooleanOperator(asCScriptNode *node, asCExprContext *l, asCExprContext *r, asCExprContext *out, eTokenType opToken = ttUnrecognizedToken);
-	bool CompileOverloadedDualOperator(asCScriptNode *node, asCExprContext *l, asCExprContext *r, asCExprContext *out, bool isHandle = false, eTokenType opToken = ttUnrecognizedToken);
-	int  CompileOverloadedDualOperator2(asCScriptNode *node, const char *methodName, asCExprContext *l, asCExprContext *r, asCExprContext *out, bool specificReturn = false, const asCDataType &returnType = asCDataType::CreatePrimitive(ttVoid, false));
+	bool CompileOverloadedDualOperator(asCScriptNode *node, asCExprContext *l, asCExprContext *r, bool leftToRight, asCExprContext *out, bool isHandle = false, eTokenType opToken = ttUnrecognizedToken);
+	int  CompileOverloadedDualOperator2(asCScriptNode *node, const char *methodName, asCExprContext *l, asCExprContext *r, bool leftToRight, asCExprContext *out, bool specificReturn = false, const asCDataType &returnType = asCDataType::CreatePrimitive(ttVoid, false));
 
 	void CompileInitList(asCExprValue *var, asCScriptNode *node, asCByteCode *bc, int isVarGlobOrMem);
 	int  CompileInitListElement(asSListPatternNode *&patternNode, asCScriptNode *&valueNode, int bufferTypeId, short bufferVar, asUINT &bufferSize, asCByteCode &byteCode, int &elementsInSubList);

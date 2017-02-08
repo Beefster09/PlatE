@@ -32,9 +32,9 @@ const RealInput RealInput::Empty = RealInput();
 static float get_axis_value(RealInput& input);
 static bool get_button_value(RealInput& input);
 
-static void bind_spec_pos(VirtualAxisState& axis, const char* spec);
-static void bind_spec_neg(VirtualAxisState& axis, const char* spec);
-static void bind_spec(VirtualButtonState& button, const char* spec);
+static void bind_spec_pos(ControllerInstance* inst, int axis, const char* spec);
+static void bind_spec_neg(ControllerInstance* inst, int axis, const char* spec);
+static void bind_spec(ControllerInstance* inst, int button, const char* spec);
 
 #pragma region Bookkeeping
 
@@ -166,14 +166,14 @@ Result<> init_controller_types(FILE* stream) {
 		int n_controllers = read<uint16_t>(stream);
 
 		for (int i = 0; i < n_controllers; ++i) {
-			const char* name = read_string(stream, read<uint16_t>(stream));
+			const char* name = read_string<uint16_t>(stream);
 			Array<const char*> axes(read<uint16_t>(stream));
 			for (auto& n : axes) {
-				n = read_string(stream, read<uint16_t>(stream));
+				n = read_string<uint16_t>(stream);
 			}
 			Array<const char*> buttons(read<uint16_t>(stream));
 			for (auto& n : buttons) {
-				n = read_string(stream, read<uint16_t>(stream));
+				n = read_string<uint16_t>(stream);
 			}
 			create_controller_type(name, axes, buttons);
 		}
@@ -198,15 +198,17 @@ Result<> init_controllers(FILE* stream) {
 
 			ControllerInstance* inst = create_controller(type, name);
 
+			char buffer[256];
+
 			auto n_axes = type->axis_names.size();
 			for (int axis = 0; axis < n_axes; ++axis) {
-				bind_spec_pos(inst->axes[axis], read_string<uint16_t>(stream));
-				bind_spec_neg(inst->axes[axis], read_string<uint16_t>(stream));
+				bind_spec_pos(inst, axis, read_string<uint16_t>(stream, buffer));
+				bind_spec_neg(inst, axis, read_string<uint16_t>(stream, buffer));
 			}
 
 			auto n_btns = type->button_names.size();
 			for (int btn = 0; btn < n_btns; ++btn) {
-				bind_spec(inst->buttons[btn], read_string<uint16_t>(stream));
+				bind_spec(inst, btn, read_string<uint16_t>(stream, buffer));
 			}
 		}
 		return Result<>::success;
@@ -541,22 +543,35 @@ static const char* read_real_input(const char* spec, RealInput& input) {
 		strncpy(buffer, spec, end - spec);
 		buffer[end - spec] = 0;
 		ret = end + 1;
+		// skip over spaces
+		while (isspace(*ret)) {
+			++ret;
+		}
+		if (*ret == 0) {
+			ret = nullptr;
+		}
 	}
+	strlwr(buffer);
 
-	if (strcmp(buffer, "LMB") == 0) {
+	// TODO: joystick values
+	if (strcmp(buffer, "lmb") == 0) {
 		input.set_mouse(SDL_BUTTON_LEFT);
 	}
-	else if (strcmp(buffer, "RMB") == 0) {
+	else if (strcmp(buffer, "rmb") == 0) {
 		input.set_mouse(SDL_BUTTON_RIGHT);
 	}
-	else if (strcmp(buffer, "MMB") == 0) {
+	else if (strcmp(buffer, "mmb") == 0) {
 		input.set_mouse(SDL_BUTTON_MIDDLE);
 	}
-	else if (strcmp(buffer, "MB4") == 0) {
+	else if (strcmp(buffer, "mb4") == 0) {
 		input.set_mouse(SDL_BUTTON_X1);
 	}
-	else if (strcmp(buffer, "MB5") == 0) {
+	else if (strcmp(buffer, "mb5") == 0) {
 		input.set_mouse(SDL_BUTTON_X2);
+	}
+	else if (strcmp(buffer, "enter") == 0) {
+		// common synonym - makes fewer users/players want to cry
+		input.set_key(SDL_SCANCODE_RETURN);
 	}
 	else {
 		SDL_Scancode key = SDL_GetScancodeFromName(buffer);
@@ -572,21 +587,34 @@ static const char* read_real_input(const char* spec, RealInput& input) {
 	return ret;
 }
 
-static void bind_spec_pos(VirtualAxisState& axis, const char* spec) {
+static void bind_spec_pos(ControllerInstance* inst, int axis, const char* spec) {
+	RealInput inp;
 	for (int i = 0; i < 3; ++i) {
-		spec = read_real_input(spec, axis.bindings_positive[i]);
+		spec = read_real_input(spec, inp);
+		bind_axis(inst, axis, 1, inp, i);
 	}
 }
 
-static void bind_spec_neg(VirtualAxisState& axis, const char* spec) {
+static void bind_spec_neg(ControllerInstance* inst, int axis, const char* spec) {
+	RealInput inp;
 	for (int i = 0; i < 3; ++i) {
-		spec = read_real_input(spec, axis.bindings_negative[i]);
+		spec = read_real_input(spec, inp);
+		bind_axis(inst, axis, -1, inp, i);
 	}
 }
 
-static void bind_spec(VirtualButtonState& button, const char* spec) {
+static void bind_spec(ControllerInstance* inst, int button, const char* spec) {
+	RealInput inp;
 	for (int i = 0; i < 3; ++i) {
-		spec = read_real_input(spec, button.bindings[i]);
+		spec = read_real_input(spec, inp);
+		bind_button(inst, button, inp, i);
+	}
+}
+
+void bind_from_ini(const char* controller, const char* input, const char* spec) {
+	ControllerInstance* inst = get_controller_by_name(controller);
+	if (inst != nullptr) {
+		// TODO
 	}
 }
 

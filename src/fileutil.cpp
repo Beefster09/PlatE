@@ -121,6 +121,13 @@ const char* read_string(FILE* stream, unsigned int len) {
 	return str;
 }
 
+const char* read_string(FILE* stream, unsigned int len, char* str) {
+	if (fread(str, 1, len, stream) != len) return nullptr;
+
+	str[len] = 0;
+	return str;
+}
+
 GPU_Image* load_texture(const char* texname) {
 	GPU_Image* maybe = const_cast<GPU_Image*>(AssetManager::retrieve<GPU_Image>(texname));
 	if (maybe != nullptr) {

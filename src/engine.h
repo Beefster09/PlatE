@@ -11,17 +11,18 @@
 
 namespace Errors {
 	const error_data
-		ScriptCompileError = { 2000, "A script failed to compile." },
-		ScriptNoSuchModule = { 2010, "A script module does not exist. [yet]" },
-		ScriptNoSuchFunction = { 2011, "A certain module does not have a function with the specified name." },
-		ScriptFunctionDidNotReturn = {2020, "A script function was expected to return a value but it didn't."};
+		ScriptCompileError = { 2000, "Script failed to compile." },
+		ScriptNoSuchModule = { 2010, "Script module does not exist." },
+		ScriptNoSuchFunction = { 2011, "Script module does not have a function with the specified name." },
+		ScriptFunctionDidNotReturn = {2020, "Script function did not run to completion."};
 }
 
 constexpr float default_fps_min = 20;
 constexpr float default_fps_max = 120;
 
 namespace  Engine {
-	void init();
+	void init(const char* main_script);
+	void start();
 	void update(int delta_time);
 	void render(GPU_Target* context);
 	void event(const SDL_Event& event);
@@ -38,5 +39,5 @@ namespace  Engine {
 
 	bool travel(const std::string& levelname);
 
-	void load_main_script();
+	asIScriptEngine* getScriptEngine();
 }

@@ -1,9 +1,13 @@
 {
     "title": "PlatE Test Game",
+    "icon": "testicon.png",
     "screen": {
         "width": 800,
         "height": 480
     },
+    "main_script": "main.as",
+    "asset_dir": "assets",
+    "script_dir": "scripts",
     "controller_types": [
         {
             "name": "Menu",
@@ -60,7 +64,5 @@
             "team1",
             "team2"
         ]
-    },
-    "asset_dir": "assets",
-    "script_dir": "scripts"
+    }
 }

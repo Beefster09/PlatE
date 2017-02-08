@@ -7,13 +7,15 @@
 #include "fileutil.h"
 #include "rng.h"
 #include "input.h"
+#include "config.h"
 
 #include "angelscript.h"
-#include "scriptmath\scriptmath.h"
-#include "scriptstdstring\scriptstdstring.h"
-#include "scriptarray\scriptarray.h"
-#include "scriptdictionary\scriptdictionary.h"
-#include "scriptany\scriptany.h"
+#include "scriptmath/scriptmath.h"
+#include "scriptstdstring/scriptstdstring.h"
+#include "scriptarray/scriptarray.h"
+#include "scriptdictionary/scriptdictionary.h"
+#include "scriptany/scriptany.h"
+#include "scriptbuilder/scriptbuilder.h"
 
 namespace Engine {
 	// === GLOBAL VARIABLES ===
@@ -24,7 +26,10 @@ namespace Engine {
 	static asIScriptEngine* script_engine = nullptr;
 
 	static asIScriptFunction* scriptfunc_init = nullptr;
+	static asIScriptFunction* scriptfunc_start = nullptr;
 	static asIScriptFunction* scriptfunc_update = nullptr;
+
+	static CScriptBuilder script_builder;
 
 	static bool paused = false; // MAYBE: some sort of enum so that GUI stuff (optionally) works when paused
 	static uint32_t init_time = 0;
@@ -33,7 +38,7 @@ namespace Engine {
 	static float tick_remainder = 0.f;
 
 	// === Scripting interface ===
-	const char* MAIN_SCRIPT_FILENAME = "scripts/main.as"; // Subject to change
+	static void load_main_script(const char* main_script);
 
 	static void MessageCallback(const asSMessageInfo *msg, void *param)
 	{
@@ -66,7 +71,7 @@ namespace Engine {
 
 	// === Core functionality ===
 
-	void init() {
+	void init(const char* main_script) {
 #define check(EXPR) do {int r = (EXPR); assert(r >= 0);} while (0)
 		set_fps_range(default_fps_min, default_fps_max);
 		// init Scripting API
@@ -101,6 +106,8 @@ namespace Engine {
 		check(script_engine->RegisterFuncdef("void ErrorCallback(int, const string &in)"));
 
 		// Game types
+		RegisterConfigInterface(script_engine);
+
 		RegisterVector2(script_engine);
 		RegisterRandomTypes(script_engine);
 
@@ -130,14 +137,16 @@ namespace Engine {
 		// Now that the script engine is ready, we can initialize the entity system
 		entity_system = new EntitySystem();
 		check(script_engine->RegisterGlobalProperty("__EntitySystem__ EntitySystem", entity_system));
-#undef check
 
 		// Now onto customizable initialization
-		load_main_script();
+		load_main_script(main_script);
+	}
+#undef check
 
+	void start() {
 		auto ctx = script_engine->RequestContext();
 
-		ctx->Prepare(scriptfunc_init);
+		ctx->Prepare(scriptfunc_start);
 
 		int r = ctx->Execute();
 		if (r == asEXECUTION_FINISHED) {
@@ -145,7 +154,7 @@ namespace Engine {
 			script_engine->ReturnContext(ctx);
 		}
 		else {
-			ERR_RELEASE("Fatal error: global init script did not return.");
+			ERR_RELEASE("Fatal error: global start script did not return.");
 			abort();
 		}
 
@@ -214,51 +223,62 @@ namespace Engine {
 		return delay > 0 ? delay : 0;
 	}
 
-	Result<asIScriptModule*> Engine::load_script(const char* filename) {
-		auto res = open(filename, "r");
-		if (res) {
-			const char* script = read_all(res);
-			if (script == nullptr) return Errors::IncompleteFileRead;
+#define check(EXPR, ERROR) do {int r = (EXPR); if (r < 0) return ERROR;} while(0)
+	Result<asIScriptModule*> load_script(const char* filename) {
+		check(script_builder.StartNewModule(script_engine, filename), Errors::ScriptCompileError);
+		check(script_builder.AddSectionFromFile(filename), Errors::ScriptCompileError);
+		check(script_builder.BuildModule(), Errors::ScriptCompileError);
 
-			asIScriptModule* module = script_engine->GetModule(filename, asGM_ALWAYS_CREATE);
-			module->AddScriptSection("main", script, strlen(script));
+		// TODO: metadata things
 
-			int r = module->Build();
-			delete[] script;
-
-			if (r < 0) {
-				// there were errors
-				return Errors::ScriptCompileError;
-			}
-			else {
-				return module;
-			}
-		}
-		else return res.err;
+		return script_builder.GetModule();
 	}
+#undef check
 
-	void load_main_script() {
-		auto main_script = load_script(MAIN_SCRIPT_FILENAME);
+	void load_main_script(const char* main_script_filename) {
+		auto main_script = load_script(main_script_filename);
 		if (main_script) {
 			auto module = main_script.value;
 
-			scriptfunc_init = module->GetFunctionByDecl("void init()");
+			asIScriptFunction* init_func = module->GetFunctionByDecl("void init()");
 
+			if (init_func != nullptr) {
+				auto ctx = script_engine->RequestContext();
+
+				ctx->Prepare(init_func);
+
+				int r = ctx->Execute();
+				if (r == asEXECUTION_FINISHED) {
+					ctx->Unprepare();
+					script_engine->ReturnContext(ctx);
+				}
+				else {
+					ERR_RELEASE("Fatal error: void init() did not return.\n");
+					abort();
+				}
+			}
+			else {
+				ERR("init function not found. Ignoring.\n");
+			}
+
+			scriptfunc_start = module->GetFunctionByDecl("void start()");
 			scriptfunc_update = module->GetFunctionByDecl("void update(float)");
 
-			if (scriptfunc_init == nullptr) {
-				LOG_RELEASE("Fatal error: void init() is missing.\n");
+			if (scriptfunc_start == nullptr) {
+				ERR_RELEASE("Fatal error: void start() is missing.\n");
 			}
 
 			if (scriptfunc_update == nullptr) {
-				LOG_RELEASE("Fatal error: void update(float) is missing.\n");
+				ERR_RELEASE("Fatal error: void update(float) is missing.\n");
 			}
 		}
 		else {
-			perror("Fatal error: could not load main script!\n");
+			ERR_RELEASE("Fatal error: could not load main script!\n");
 			abort();
 		}
 	}
+
+	asIScriptEngine* getScriptEngine() { return script_engine; }
 
 	void pause() { paused = true; }
 	void resume() { paused = false; }

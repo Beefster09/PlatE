@@ -13,9 +13,10 @@
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
-#include "SDL_gpu.h"
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_timer.h>
+#include <SDL2/SDL_surface.h>
+#include "SDL_gpu.h"
 
 #define SDL_INIT_CUSTOM (SDL_INIT_EVERYTHING & ~SDL_INIT_VIDEO | SDL_INIT_EVENTS)
 
@@ -34,7 +35,8 @@
 int main(int argc, char* argv[]) {
 	if (SDL_Init(SDL_INIT_CUSTOM) >= 0) {
 		const char* title;
-		uint16_t scr_width, scr_height;
+		const char* iconfile;
+		uint16_t virtual_width, virtual_height;
 		try {
 #define check(EXPR, CODE) do {auto res = (EXPR); if (!res) return CODE;} while(0)
 			auto bootloader = open("engine.boot", "rb");
@@ -50,22 +52,25 @@ int main(int argc, char* argv[]) {
 				return EXIT_BOOTLOADER_BAD_HEADER;
 			}
 
-			title = read_string(stream, read<uint16_t>(stream));
-			scr_width = read<uint16_t>(stream);
-			scr_height = read<uint16_t>(stream);
+			title = read_string<uint16_t>(stream);
+			iconfile = read_string<uint16_t>(stream);
+
+			// size of the virtual screen at all physical resolutions
+			virtual_width = read<uint16_t>(stream);
+			virtual_height = read<uint16_t>(stream);
 
 			{
-				const char* asset_dir = read_string(stream, read<uint16_t>(stream));
+				char asset_dir[256];
+				read_string(stream, read<uint16_t>(stream), asset_dir);
 				if (!AssetManager::set_root_dir(asset_dir)) {
 					return EXIT_BOOTLOADER_ERROR;
 				}
-				delete[] asset_dir;
 			}
 
 			{
-				const char* script_dir = read_string(stream, read<uint16_t>(stream));
+				char script_dir[256];
+				read_string<uint16_t>(stream, script_dir);
 				// TODO: do something with it!
-				delete[] script_dir;
 			}
 
 			check(init_controller_types(stream), EXIT_BOOTLOADER_ERROR);
@@ -85,39 +90,34 @@ int main(int argc, char* argv[]) {
 
 		atexit(SDL_Quit);
 
+		Engine::init("scripts/main.as");
+
+		{
+			auto r = load_config("settings.ini", Engine::getScriptEngine());
+			if (!r) {
+				std::string err = std::to_string(r.err);
+				ERR("Error Loading Config: %s\n", err.c_str());
+			}
+		}
+		auto& global_config = get_global_config();
+		if (global_config.video.resolution_x == U16_DEFAULT) global_config.video.resolution_x = virtual_width;
+		if (global_config.video.resolution_y == U16_DEFAULT) global_config.video.resolution_y = virtual_height;
+
 		GPU_SetDebugLevel(GPU_DEBUG_LEVEL_MAX);
 
-		GPU_Target* screen = GPU_Init(scr_width, scr_height, 0);
+		GPU_Target* screen = GPU_Init(global_config.video.resolution_x, global_config.video.resolution_y, 0);
 		if (screen == nullptr) {
 			return EXIT_SDL_GPU_FAIL;
 		}
 		atexit(GPU_Quit);
+
+		GPU_SetVirtualResolution(screen, virtual_width, virtual_height);
+
 		// SDL_gpu apparently expects you to know its data structures instead of giving a proper function interface
 		SDL_Window* window = SDL_GetWindowFromID(screen->context->windowID);
+		SDL_Surface* icon = SDL_LoadBMP(iconfile);
 		SDL_SetWindowTitle(window, title);
-
-		//{
-		//	ControllerInstance* inst = create_controller("Menu", "test_controller");
-		//	RealInput input;
-
-		//	input.set_key(SDL_SCANCODE_UP);
-		//	bind_button(inst, 0, input);
-
-		//	input.set_key(SDL_SCANCODE_W);
-		//	bind_button(inst, 0, input);
-
-		//	input.set_key(SDL_SCANCODE_DOWN);
-		//	bind_button(inst, 1, input);
-
-		//	input.set_key(SDL_SCANCODE_S);
-		//	bind_button(inst, 1, input);
-
-		//	input.set_key(SDL_SCANCODE_RETURN);
-		//	bind_button(inst, 4, input);
-
-		//	input.set_key(SDL_SCANCODE_SPACE);
-		//	bind_button(inst, 4, input);
-		//}
+		if (icon != nullptr) SDL_SetWindowIcon(window, icon);
 
 		// Flush the events so the window will show
 		SDL_Event curEvent;
@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
-		Engine::init();
+		Engine::start();
 
 		uint32_t lastTime = SDL_GetTicks();
 		while (true) {

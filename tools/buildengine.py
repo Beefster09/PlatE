@@ -73,7 +73,7 @@ def check_duplicates(lst, *_dummy_, itemtype, context=None):
 
 def input_spec(inp):
     if isinstance(inp, list):
-        return ','.join(map(input_spec, inp))
+        return ', '.join(map(input_spec, inp))
     elif isinstance(inp, dict):
         return '???' #todo/later: for gamepads
     else:
@@ -98,6 +98,9 @@ def build(infn, outfn):
         f.write(MAGIC_NUMBER)
 
         write_str(f, engine['title'])
+        write_str(f, engine['icon'])
+
+        # Size of the virtual screen (at all physical resolutions)
         write_short(f, engine['screen']['width'])
         write_short(f, engine['screen']['height'])
 

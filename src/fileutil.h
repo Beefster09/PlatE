@@ -42,12 +42,19 @@ Hitbox read_hitbox(FILE* stream, MemoryPool& pool);
 Array<const Collider> read_colliders(FILE* stream, uint32_t n_colliders, MemoryPool& pool);
 GPU_Image* read_referenced_texture(FILE* stream, uint32_t filenamelen, const DirContext& context);
 const char* read_string(FILE* stream, unsigned int len, MemoryPool& pool);
+const char* read_string(FILE* stream, unsigned int len, char* buffer);
 const char* read_string(FILE* stream, unsigned int len);
 
 template <class Header>
 inline const char* read_string(FILE* stream) {
 	static_assert(std::is_integral<Header>::value, "read_string<Header> is only compatible with int types");
 	return read_string(stream, read<Header>(stream));
+}
+
+template <class Header>
+inline const char* read_string(FILE* stream, char* buffer) {
+	static_assert(std::is_integral<Header>::value, "read_string<Header> is only compatible with int types");
+	return read_string(stream, read<Header>(stream), buffer);
 }
 
 #define check_header(stream, expected) __check_header__(stream, expected, sizeof(expected) - 1)

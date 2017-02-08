@@ -58,8 +58,8 @@ BEGIN_AS_NAMESPACE
 
 // AngelScript version
 
-#define ANGELSCRIPT_VERSION        23100
-#define ANGELSCRIPT_VERSION_STRING "2.31.0"
+#define ANGELSCRIPT_VERSION        23102
+#define ANGELSCRIPT_VERSION_STRING "2.31.2"
 
 // Data types
 
@@ -143,6 +143,7 @@ enum asEEngineProp
 	asEP_DISALLOW_EMPTY_LIST_ELEMENTS       = 23,
 	asEP_PRIVATE_PROP_AS_PROTECTED          = 24,
 	asEP_ALLOW_UNICODE_IDENTIFIERS          = 25,
+	asEP_HEREDOC_TRIM_MODE                  = 26,
 
 	asEP_LAST_PROPERTY
 };
@@ -593,7 +594,7 @@ BEGIN_AS_NAMESPACE
 template<typename T>
 asUINT asGetTypeTraits()
 {
-#if defined(_MSC_VER) || defined(_LIBCPP_TYPE_TRAITS) || (__GNUC__ >= 5)
+#if defined(_MSC_VER) || defined(_LIBCPP_TYPE_TRAITS) || (__GNUC__ >= 5) || defined(__clang__)
 	// MSVC, XCode/Clang, and gnuc 5+
 	// C++11 compliant code
 	bool hasConstructor        = std::is_default_constructible<T>::value && !std::is_trivially_default_constructible<T>::value;

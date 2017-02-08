@@ -467,7 +467,7 @@ void asCModule::CallExit()
 			void **obj = (void**)(*it)->GetAddressOfValue();
 			if( *obj )
 			{
-				asCObjectType *ot = (*it)->type.GetTypeInfo()->CastToObjectType();
+				asCObjectType *ot = CastToObjectType((*it)->type.GetTypeInfo());
 
 				if( ot->flags & asOBJ_REF )
 				{
@@ -508,6 +508,29 @@ bool asCModule::HasExternalReferences(bool shuttingDown)
 	// Check all entiteis in the module for any external references.
 	// If there are any external references the module cannot be deleted yet.
 	
+	asCSymbolTableIterator<asCGlobalProperty> it = scriptGlobals.List();
+	while (it)
+	{
+		asCGlobalProperty *desc = *it;
+		if (desc->GetInitFunc() && desc->GetInitFunc()->externalRefCount.get())
+		{
+			if( !shuttingDown )
+				return true;
+			else
+			{
+				asCString msg;
+				msg.Format(TXT_EXTRNL_REF_TO_MODULE_s, name.AddressOf());
+				engine->WriteMessage("", 0, 0, asMSGTYPE_WARNING, msg.AddressOf());
+
+				// TODO: Use a better error message
+				asCString tmpName = "init " + desc->name;
+				msg.Format(TXT_PREV_FUNC_IS_NAMED_s_TYPE_IS_d, tmpName.AddressOf(), desc->GetInitFunc()->GetFuncType());
+				engine->WriteMessage("", 0, 0, asMSGTYPE_INFORMATION, msg.AddressOf());
+			}
+		}
+		it++;
+	}
+
 	for( asUINT n = 0; n < scriptFunctions.GetLength(); n++ )
 		if( scriptFunctions[n] && scriptFunctions[n]->externalRefCount.get() )
 		{
@@ -700,7 +723,8 @@ void asCModule::InternalReset()
 	for( n = 0; n < funcDefs.GetLength(); n++ )
 	{
 		asCFuncdefType *func = funcDefs[n];
-		if( func->funcdef->IsShared() )
+		asASSERT(func);
+		if( func->funcdef && func->funcdef->IsShared() )
 		{
 			// The funcdef is shared, so transfer ownership to another module that also uses it
 			if( engine->FindNewOwnerForSharedType(func, this) != this )
@@ -1042,7 +1066,7 @@ asITypeInfo *asCModule::GetObjectTypeByIndex(asUINT index) const
 asITypeInfo *asCModule::GetObjectTypeByName(const char *in_name) const
 {
 	asITypeInfo *ti = GetTypeInfoByName(in_name);
-	return reinterpret_cast<asCTypeInfo*>(ti)->CastToObjectType();
+	return CastToObjectType(reinterpret_cast<asCTypeInfo*>(ti));
 }
 #endif
 
@@ -1107,7 +1131,7 @@ int asCModule::GetTypeIdByDecl(const char *decl) const
 asITypeInfo *asCModule::GetObjectTypeByDecl(const char *decl) const
 {
 	asITypeInfo *ti = GetTypeInfoByDecl(decl);
-	return reinterpret_cast<asCTypeInfo*>(ti)->CastToObjectType();
+	return CastToObjectType(reinterpret_cast<asCTypeInfo*>(ti));
 }
 #endif
 
@@ -1150,7 +1174,7 @@ asITypeInfo *asCModule::GetEnumByIndex(asUINT index) const
 int asCModule::GetEnumValueCount(int enumTypeId) const
 {
 	asITypeInfo *ti = engine->GetTypeInfoById(enumTypeId);
-	asCEnumType *e = reinterpret_cast<asCTypeInfo*>(ti)->CastToEnumType();
+	asCEnumType *e = CastToEnumType(reinterpret_cast<asCTypeInfo*>(ti));
 	if (e == 0)
 		return asINVALID_TYPE;
 
@@ -1164,7 +1188,7 @@ int asCModule::GetEnumValueCount(int enumTypeId) const
 const char *asCModule::GetEnumValueByIndex(int enumTypeId, asUINT index, int *outValue) const
 {
 	asITypeInfo *ti = engine->GetTypeInfoById(enumTypeId);
-	asCEnumType *e = reinterpret_cast<asCTypeInfo*>(ti)->CastToEnumType();
+	asCEnumType *e = CastToEnumType(reinterpret_cast<asCTypeInfo*>(ti));
 	if (e == 0)
 		return 0;
 

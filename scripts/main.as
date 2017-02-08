@@ -63,7 +63,7 @@ void PrintErr(int code, const string &in desc) {
     println("Error #" + code + ": " + desc);
 }
 
-void init() {
+void start() {
     Engine::travel("levels/test.level");
 
     EntitySystem.spawn(Simple("sprites/test.sprite", Vector2(50, 400), Vector2(120, -350), Vector2(0, 500)), PrintErr);
