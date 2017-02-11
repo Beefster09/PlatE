@@ -456,8 +456,7 @@ static void SetEntitySpriteCompound(Entity* entity, const std::string& filename,
 		SetEntityAnimationByName(entity, animname);
 	}
 	else {
-		asIScriptContext* ctx = asGetActiveContext();
-		ctx->SetException(std::to_string(maybesprite.err).c_str());
+		ForwardErrorAsScriptException(maybesprite.err);
 	}
 }
 
@@ -468,8 +467,7 @@ static void SetEntitySpriteCompound(Entity* entity, const std::string& filename,
 		SetEntityAnimationByIndex(entity, animindex);
 	}
 	else {
-		asIScriptContext* ctx = asGetActiveContext();
-		ctx->SetException(std::to_string(maybesprite.err).c_str());
+		ForwardErrorAsScriptException(maybesprite.err);
 	}
 }
 

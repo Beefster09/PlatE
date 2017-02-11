@@ -100,12 +100,14 @@ int main(int argc, char* argv[]) {
 			}
 		}
 		auto& global_config = get_global_config();
-		if (global_config.video.resolution_x == U16_DEFAULT) global_config.video.resolution_x = virtual_width;
-		if (global_config.video.resolution_y == U16_DEFAULT) global_config.video.resolution_y = virtual_height;
+		if (is_default(global_config.video.width)) global_config.video.width = virtual_width;
+		if (is_default(global_config.video.height)) global_config.video.height = virtual_height;
+		printf("Volume: master-%d bgm-%d sfx-%d\n", global_config.audio.master_volume,
+				global_config.audio.bgm_volume, global_config.audio.sfx_volume);
 
 		GPU_SetDebugLevel(GPU_DEBUG_LEVEL_MAX);
 
-		GPU_Target* screen = GPU_Init(global_config.video.resolution_x, global_config.video.resolution_y, 0);
+		GPU_Target* screen = GPU_Init(global_config.video.width, global_config.video.height, 0);
 		if (screen == nullptr) {
 			return EXIT_SDL_GPU_FAIL;
 		}

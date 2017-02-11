@@ -229,9 +229,21 @@ namespace Engine {
 		check(script_builder.AddSectionFromFile(filename), Errors::ScriptCompileError);
 		check(script_builder.BuildModule(), Errors::ScriptCompileError);
 
-		// TODO: metadata things
+		asIScriptModule* module = script_builder.GetModule();
 
-		return script_builder.GetModule();
+		int n_vars = module->GetGlobalVarCount();
+		for (int i = 0; i < n_vars; ++i) {
+			const char* metadata = script_builder.GetMetadataStringForVar(i);
+
+			if (strcmp(metadata, "Config") == 0) {
+				addAutoVar(module, i);
+			}
+			else if (strcmp(metadata, "SaveGame") == 0) {
+				// TODO: do the thing
+			}
+		}
+
+		return module;
 	}
 #undef check
 

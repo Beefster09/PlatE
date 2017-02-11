@@ -52,7 +52,8 @@ namespace Errors {
 	};
 
 	const error_data
-		BadAlloc = { -9999, "Bad Allocation!" };
+		BadAlloc = { -100, "Bad Allocation!" },
+		Unknown = { -9999, "Unspecified Error"};
 }
 
 // Code ranges
@@ -115,5 +116,12 @@ namespace std {
 // AngelScript-interfacing utility functions
 
 void DispatchErrorCallback(asIScriptFunction* callback, const Error& err);
+
+inline void ForwardErrorAsScriptException(asIScriptContext* ctx, const Error& err) {
+	ctx->SetException(std::to_string(err).c_str());
+}
+inline void ForwardErrorAsScriptException(const Error& err) {
+	asGetActiveContext()->SetException(std::to_string(err).c_str());
+}
 
 std::string GetExceptionDetails(asIScriptContext* ctx);

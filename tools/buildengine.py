@@ -138,12 +138,12 @@ def build(infn, outfn):
             defaults = cont['defaults']
 
             for axis in ctype['axes']:
-                if axis + '+' not in defaults and axis + '-' not in defaults:
+                if '+' + axis not in defaults and '-' + axis not in defaults:
                     raise KeyError("Missing default for axis '{}' in controller '{}'".format(
                         axis, name
                     ))
-                write_str(f, input_spec(defaults.get(axis + '+', '')))
-                write_str(f, input_spec(defaults.get(axis + '-', '')))
+                write_str(f, input_spec(defaults.get('+' + axis, '')))
+                write_str(f, input_spec(defaults.get('-' + axis, '')))
 
             for button in ctype['buttons']:
                 if button not in defaults:

@@ -17,3 +17,4 @@ Debug
 ipch
 x64
 /engine.boot
+/settings.ini

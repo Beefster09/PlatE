@@ -64,6 +64,10 @@ struct RealInput {
 		return *reinterpret_cast<const uint64_t*>(this) == *reinterpret_cast<const uint64_t*>(&other);
 	}
 
+	inline bool operator != (const RealInput& other) const {
+		return *reinterpret_cast<const uint64_t*>(this) != *reinterpret_cast<const uint64_t*>(&other);
+	}
+
 	inline void set_key(SDL_Scancode key) {
 		type = KEYBOARD;
 		this->key = key;
@@ -101,10 +105,12 @@ public:
 	void operator() ();
 };
 
+typedef std::array<RealInput, 3> binding_set;
+
 /// The script-readable axis data
 struct VirtualAxisState {
-	std::array<RealInput, 3> bindings_positive;
-	std::array<RealInput, 3> bindings_negative;
+	binding_set bindings_positive;
+	binding_set bindings_negative;
 
 	float position;
 	float velocity; // Instantaneous velocity
@@ -112,7 +118,7 @@ struct VirtualAxisState {
 
 /// The script-readable button data
 struct VirtualButtonState {
-	std::array<RealInput, 3> bindings;
+	binding_set bindings;
 
 	ButtonEventCallback on_press;
 	ButtonEventCallback on_release;

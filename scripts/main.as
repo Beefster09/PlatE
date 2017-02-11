@@ -1,4 +1,10 @@
 
+[Config]
+int awesomeThing = 8;
+
+[Config]
+string thingy = "awesome";
+
 bool first = true;
 class Simple : EntityComponent {
     string sprite;
@@ -75,9 +81,9 @@ void start() {
     cont.OK.bind_on_release(minusOK);
     Controllers::Player1.Attack.bind_on_press(plusOK);
 
-    ChannelMask mtest = ChannelID::EntityDefault + ChannelID::team2 + ChannelID::TilemapDefault;
-    println(mtest);
-    println(ChannelID::EntityDefault);
+    println(thingy);
+
+    Config::save();
 
     Engine::pause();
 }
@@ -85,5 +91,9 @@ void start() {
 void update(float delta_seconds) {
     if (Engine::time > 1.5f) {
         Engine::resume();
+    }
+
+    if (Controllers::Player1.x.position != 0.f) {
+        println(Controllers::Player1.x.position);
     }
 }

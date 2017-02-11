@@ -16,16 +16,6 @@ namespace Errors {
 		BucketIllegalRemove = { 41, "Attempt to remove element from bucket that cannot be removed" };
 }
 
-template <typename T>
-struct unconst {
-	typedef T type;
-};
-
-template <typename T>
-struct unconst<const T> {
-	typedef T type;
-};
-
 // A runtime-fixed-sized array that knows how big it is.
 // Essentially a smarter version of a raw pointer.
 template <class T>

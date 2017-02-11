@@ -2,12 +2,19 @@
     "title": "PlatE Test Game",
     "icon": "testicon.png",
     "screen": {
-        "width": 800,
-        "height": 480
+        "width": 1280,
+        "height": 720
     },
     "main_script": "main.as",
     "asset_dir": "assets",
     "script_dir": "scripts",
+    "defaults": {
+        "fullscreen": false,
+        "master_volume": 100,
+        "sfx_volume": 100,
+        "bgm_volume": 100,
+        "stereo": true
+    },
     "controller_types": [
         {
             "name": "Menu",
@@ -37,10 +44,10 @@
             "name": "Player1",
             "type": "Player",
             "defaults": {
-                "x+": ["right", "D"],
-                "x-": ["left", "A"],
-                "y+": ["down", "S"],
-                "y-": ["up", "W"],
+                "+x": ["right", "D"],
+                "-x": ["left", "A"],
+                "+y": ["down", "S"],
+                "-y": ["up", "W"],
                 "Jump": "space",
                 "Attack": "LMB"
             }

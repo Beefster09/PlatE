@@ -48,13 +48,15 @@ static ControllerInstance* instantiate_controller(const VirtualController* ctype
 	size_t memsize = sizeof(ControllerInstance)
 		           + sizeof(VirtualAxisState)   * n_axes
 		           + sizeof(VirtualButtonState) * n_buttons;
-	void* memblock = operator new (memsize);
+	void* memblock = malloc(memsize);
 	// need to zero memory for axes and buttons since we won't immediately set everything yet.
 	memset(memblock, 0, memsize);
 
 	ControllerInstance* cont = (ControllerInstance*) memblock;
 	VirtualAxisState* axes = reinterpret_cast<VirtualAxisState*>(cont + 1);
 	VirtualButtonState* buttons = reinterpret_cast<VirtualButtonState*>(axes + n_axes);
+
+	assert((char*) (buttons + n_buttons) == (char*) memblock + memsize);
 
 	if (n_axes > 0) {
 		new(&cont->axes) Array<VirtualAxisState>(axes, n_axes);
@@ -614,7 +616,95 @@ static void bind_spec(ControllerInstance* inst, int button, const char* spec) {
 void bind_from_ini(const char* controller, const char* input, const char* spec) {
 	ControllerInstance* inst = get_controller_by_name(controller);
 	if (inst != nullptr) {
-		// TODO
+		const VirtualController* type = inst->type;
+		if (input[0] == '+' || input[0] == '-') {
+			const char* const* axis = std::find_if(type->axis_names.begin(), type->axis_names.end(),
+				[input](const char* axis) { return strcmp(input + 1, axis) == 0; });
+			if (axis != type->axis_names.end()) {
+				int axis_index = axis - type->axis_names.begin();
+				if (input[0] == '+') {
+					bind_spec_pos(inst, axis_index, spec);
+				}
+				else {
+					bind_spec_neg(inst, axis_index, spec);
+				}
+			}
+		}
+		else {
+			const char* const* button = std::find_if(type->button_names.begin(), type->button_names.end(),
+				[input](const char* button) { return strcmp(input, button) == 0; });
+			if (button != type->button_names.end()) {
+				int button_index = button - type->button_names.begin();
+				bind_spec(inst, button_index, spec);
+			}
+		}
+	}
+}
+
+static bool get_spec(char* buffer, const binding_set& bindings) {
+	buffer[0] = 0;
+	bool notfirst = false;
+	for (const auto& binding : bindings) {
+		if (binding.type == RealInput::NONE) {
+			continue;
+		}
+		if (notfirst) {
+			strcat(buffer, ", ");
+		}
+
+		switch (binding.type) {
+		case RealInput::KEYBOARD:
+			strcat(buffer, SDL_GetScancodeName(binding.key));
+			break;
+		case RealInput::MOUSE:
+			switch (binding.mbutton) {
+			case SDL_BUTTON_LEFT:
+				strcat(buffer, "lmb"); break;
+			case SDL_BUTTON_RIGHT:
+				strcat(buffer, "rmb"); break;
+			case SDL_BUTTON_MIDDLE:
+				strcat(buffer, "mmb"); break;
+			default:
+				{
+					char tmp[16];
+					sprintf(tmp, "mb%d", binding.mbutton);
+					strcat(buffer, "lmb"); break;
+				}
+				break;
+			}
+			break;
+		default:
+			continue;
+		}
+		notfirst = true;
+	}
+	return notfirst;
+}
+
+void dump_controller_config(FILE* stream) {
+	for (auto& entry : controllers) {
+		fprintf(stream, "\n[Input_%s]\n", entry.name);
+
+		char specbuf[120];
+
+		auto* inst = entry.inst;
+		auto* type = inst->type;
+		int n_axes = inst->axes.size();
+		for (int i = 0; i < n_axes; ++i) {
+			if (get_spec(specbuf, inst->axes[i].bindings_positive)) {
+				fprintf(stream, "+%s=%s\n", type->axis_names[i], specbuf);
+			}
+			if (get_spec(specbuf, inst->axes[i].bindings_negative)) {
+				fprintf(stream, "-%s=%s\n", type->axis_names[i], specbuf);
+			}
+		}
+
+		int n_btns = inst->buttons.size();
+		for (int i = 0; i < n_btns; ++i) {
+			if (get_spec(specbuf, inst->buttons[i].bindings)) {
+				fprintf(stream, "%s=%s\n", type->button_names[i], specbuf);
+			}
+		}
 	}
 }
 
