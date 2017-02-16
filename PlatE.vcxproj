@@ -270,7 +270,6 @@
     <ClCompile Include="src\assetmanager.cpp" />
     <ClCompile Include="src\config.cpp" />
     <ClCompile Include="src\cstrkey.cpp" />
-    <ClCompile Include="src\direction.cpp" />
     <ClCompile Include="src\error.cpp" />
     <ClCompile Include="src\input.cpp" />
     <ClCompile Include="src\result.cpp" />
@@ -325,6 +324,8 @@
     <ClInclude Include="lib\angelscript-sdk\source\as_tokenizer.h" />
     <ClInclude Include="lib\angelscript-sdk\source\as_typeinfo.h" />
     <ClInclude Include="lib\angelscript-sdk\source\as_variablescope.h" />
+    <ClInclude Include="src\arrays.h" />
+    <ClInclude Include="src\mempool.h" />
     <ClInclude Include="src\assetmanager.h" />
     <ClInclude Include="src\config.h" />
     <ClInclude Include="src\cstrkey.h" />
@@ -334,14 +335,13 @@
     <ClInclude Include="src\level.h" />
     <ClInclude Include="src\rng.h" />
     <ClInclude Include="src\util.h" />
-    <ClInclude Include="src\direction.h" />
     <ClInclude Include="src\result.h" />
     <ClInclude Include="src\entity.h" />
     <ClInclude Include="src\error.h" />
     <ClInclude Include="src\engine.h" />
     <ClInclude Include="src\hitbox.h" />
     <ClInclude Include="src\sprite.h" />
-    <ClInclude Include="src\storage.h" />
+    <ClInclude Include="src\buckets.h" />
     <ClInclude Include="src\tileset.h" />
     <ClInclude Include="src\transform.h" />
     <ClInclude Include="src\vectors.h" />

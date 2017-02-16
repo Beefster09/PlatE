@@ -9,7 +9,7 @@
 #include "hitbox.h"
 #include "result.h"
 #include "vectors.h"
-#include "storage.h"
+#include "buckets.h"
 #include "transform.h"
 #include "executor.h"
 
@@ -107,7 +107,6 @@ private:
 	EntityId next_id;
 
 public:
-	Executor executor;
 	bool ordered = false;
 
 	EntitySystem();

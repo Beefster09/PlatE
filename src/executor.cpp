@@ -1,11 +1,9 @@
 
 #include "executor.h"
 
-constexpr uint32_t ExecQueueInitSize = 256;
+Executor Executor::singleton(std::thread::hardware_concurrency());
 
 Executor::Executor(uint32_t num_threads) :
-	immediate(num_threads > 1? ExecQueueInitSize: 0),
-	deferred(ExecQueueInitSize),
 	single_threaded(num_threads <= 1)
 {
 	if (!single_threaded) {
@@ -17,51 +15,53 @@ Executor::Executor(uint32_t num_threads) :
 
 void Executor::operator() () {
 	while (true) {
-		Thunk thunk;
+		{
+			std::unique_lock<std::mutex> lock(batch.ready_m);
+			batch.ready.wait(lock, [this] { return batch.running; });
+		}
+		assert(batch.func != nullptr);
 
-		immediate.wait_dequeue(thunk);
+		running_threads++;
 
-		if (thunk) {
-			thunk();
+		int index;
+		while ((index = batch.item.fetch_add(1)) < batch.n_items) {
+			void* data = reinterpret_cast<void*>(batch.data_buffer + index * batch.item_size);
+			batch.func(batch.share_data, data);
 		}
 
-		
-		if (--n_immediate_thunks == 0) {
-			std::unique_lock<std::mutex> lock(complete_mutex);
-			complete.notify_all();
+		if (batch.item.fetch_sub(1) == 1) { // I am the last one
+			batch.running = false;
+			batch.complete.notify_all();
 		}
 	}
 }
 
-void Executor::exec(const Thunk& thunk) {
-	if (single_threaded) {
-		thunk();
-	}
-	else {
-		immediate.enqueue(thunk);
-		++n_immediate_thunks;
-	}
-}
+void Executor::run_batch() {
+	assert(!batch.running);
+	if (batch.func == nullptr || batch.n_items == 0) return;
 
-void Executor::wait() {
-	if (single_threaded) return;
+	batch.item.store(0);
 
-	std::unique_lock<std::mutex> lock(complete_mutex);
-	while (n_immediate_thunks > 0) {
-		complete.wait(lock);
+	batch.running = true;
+	batch.ready.notify_all();
+
+	{
+		std::unique_lock<std::mutex> lock(batch.complete_m);
+		batch.complete.wait(lock, [this] { return !batch.running; });
 	}
-}
 
-void Executor::defer(const Thunk& thunk) {
-	deferred.enqueue(thunk);
+	batch.func = nullptr;
+	batch.n_items = 0;
 }
 
 void Executor::run_deferred() {
-	Thunk thunk;
-	while (deferred.try_dequeue(thunk)) {
-		//printf("Running deferred thunk...\n");
-		if (thunk) {
-			thunk();
-		}
+	assert(!batch.running);
+	for (auto& entry : deferred) {
+		entry.func(entry.data);
 	}
+}
+
+void Executor::draw_one(GPU_Target* screen) {
+	drawing.next->func(screen, drawing.next->data);
+	drawing.next++;
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "SDL_gpu.h"
-#include "storage.h"
+#include "arrays.h"
 #include <cmath>
 #include "angelscript.h"
 

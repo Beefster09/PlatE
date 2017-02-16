@@ -4,7 +4,7 @@
 // Sprites contain only the metadata required to display things on screen and provide collision information.
 // This data is immutable when loaded.
 
-#include "storage.h"
+#include "arrays.h"
 #include "vectors.h"
 #include "hitbox.h"
 #include "result.h"
