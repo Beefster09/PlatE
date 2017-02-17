@@ -162,9 +162,8 @@ Result<> EntitySystem::destroy(EntityId id) {
 struct EntityUpdate_1 {
 	asIScriptEngine* engine;
 	const LevelInstance* level;
-	const float dt;
+	float dt;
 };
-
 static void entity_update_1(const EntityUpdate_1* shared, Entity* e) {
 	e->last_pos = e->position;
 
@@ -208,11 +207,11 @@ static void entity_update_1(const EntityUpdate_1* shared, Entity* e) {
 	entity_level_collision(e, shared->level);
 }
 
-struct EntityUpdate_2{
+struct EntityUpdate_2 {
 	const Entity* a;
 	const Entity* b;
 };
-static void entity_update_2(const _EMPTY_* shr, EntityUpdate_2* data) {
+static void entity_update_2(const void* shr, EntityUpdate_2* data) {
 	detect_collisions(data->a, data->b);
 }
 
@@ -224,7 +223,7 @@ static void entity_update_2(const _EMPTY_* shr, EntityUpdate_2* data) {
 void EntitySystem::update(asIScriptEngine* engine, LevelInstance* level, const float dt) {
 
 	// 'Dumb' update step- each entity behaves as if it's the only thing in existence [Parallelizable]
-	executor.set_batch_job(&entity_update_1, EntityUpdate_1{engine, level, dt});
+	executor.set_batch_job(&entity_update_1, EntityUpdate_1{engine, level, dt}, false);
 
 	for (Entity* e : entities) {
 		executor.submit(e);
@@ -235,7 +234,7 @@ void EntitySystem::update(asIScriptEngine* engine, LevelInstance* level, const f
 	executor.run_deferred();
 
 	// COLLISION DETECTION O_O
-	executor.set_batch_job(entity_update_2, _EMPTY_{});
+	executor.set_batch_job(entity_update_2);
 	EIter end = entities.end();
 	for (EIter aiter = entities.begin(); aiter != end; ++aiter) {
 		Entity* a = *aiter;

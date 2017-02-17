@@ -20,7 +20,7 @@ class MemoryPool {
 public:
 	MemoryPool(size_t poolsize) :
 		size(poolsize + (512 - poolsize % MEMORYPOOL_GRANULARITY)),
-		pool(operator new (size)) {
+		pool(operator new (poolsize + (512 - poolsize % MEMORYPOOL_GRANULARITY))) {
 		nextAlloc.store(reinterpret_cast<intptr_t>(pool));
 	}
 	MemoryPool(const MemoryPool& other) = delete;

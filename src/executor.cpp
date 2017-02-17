@@ -9,8 +9,27 @@ Executor::Executor(uint32_t num_threads) :
 	if (!single_threaded) {
 		for (int i = 0; i < num_threads; ++i) {
 			thread_pool.push_back(std::thread([&]() {(*this)();}));
+			thread_pool[i].detach(); // The slave thread will never return, so detach it.
 		}
 	}
+}
+
+Executor::JobBatch::JobBatch() {
+	func = nullptr;
+}
+
+Executor::DrawList::DrawList() :
+	mempool(EXEC_DATA_BUFFER_SIZE) {}
+
+Executor::MixedJobGroup::MixedJobGroup() :
+	mempool(EXEC_DATA_BUFFER_SIZE) {}
+
+Executor::~Executor() {
+	operator delete ((void*) batch.data_buffer);
+	delete[] drawing.entries;
+	delete[] deferred.entries;
+	drawing.mempool.free();
+	deferred.mempool.free();
 }
 
 void Executor::operator() () {
@@ -24,12 +43,20 @@ void Executor::operator() () {
 		running_threads++;
 
 		int index;
-		while ((index = batch.item.fetch_add(1)) < batch.n_items) {
-			void* data = reinterpret_cast<void*>(batch.data_buffer + index * batch.item_size);
-			batch.func(batch.share_data, data);
+		if (batch.store_values) {
+			while ((index = batch.item.fetch_add(1)) < batch.n_items) {
+				void* data = reinterpret_cast<void*>(batch.data_buffer + index * batch.item_size);
+				batch.func(batch.share_data, data);
+			}
+		}
+		else {
+			while ((index = batch.item.fetch_add(1)) < batch.n_items) {
+				void** data = reinterpret_cast<void**>(batch.data_buffer + index * batch.item_size);
+				batch.func(batch.share_data, *data);
+			}
 		}
 
-		if (batch.item.fetch_sub(1) == 1) { // I am the last one
+		if (running_threads.fetch_sub(1) == 1) { // I am the last one
 			batch.running = false;
 			batch.complete.notify_all();
 		}
@@ -59,6 +86,13 @@ void Executor::run_deferred() {
 	for (auto& entry : deferred) {
 		entry.func(entry.data);
 	}
+	deferred.mempool.clear();
+	deferred.n_entries.store(0);
+}
+
+void Executor::draw_clear() {
+	drawing.mempool.clear();
+	drawing.n_entries.store(0);
 }
 
 void Executor::draw_one(GPU_Target* screen) {

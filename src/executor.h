@@ -22,6 +22,7 @@ namespace Errors {
 constexpr size_t EXEC_DATA_BUFFER_SIZE = 1024 * 128; // 128 KiB - more than you should ever need
 constexpr size_t MAX_DEFERRED_CALLS = 8192;
 constexpr size_t MAX_DEFERRED_DRAWS = 4096;
+constexpr size_t SHARED_DATA_MAXSIZE = 256;
 
 // An execution context for master and slave threads to communicate
 // The master thread has to make all the SDL calls and manages things that MUST be run in sequence
@@ -33,12 +34,13 @@ private:
 	typedef void(*BatchFunc)(const void*, void*);
 	struct JobBatch {
 		BatchFunc func;
-		const void* share_data;
+		void* share_data = operator new(SHARED_DATA_MAXSIZE);
 
 		intptr_t const data_buffer = reinterpret_cast<intptr_t>(operator new (EXEC_DATA_BUFFER_SIZE));
 		size_t item_size;
 		std::atomic<int> item; // Index into the data array
 		int n_items = 0;
+		bool store_values = false;
 
 		std::condition_variable complete; // slave -> master signal
 		std::mutex complete_m;
@@ -92,27 +94,50 @@ private:
 	const bool single_threaded;
 
 	void operator() ();
-public:
+
 	Executor(uint32_t num_threads);
 	~Executor();
 
+public:
 	Executor(const Executor& other) = delete;
 	Executor(Executor&& other) = delete;
 
 	static Executor singleton;
 
 	template<typename SharedT, typename ItemT>
-	void set_batch_job(void(*func)(const SharedT*, ItemT*), const SharedT& share_data) {
+	void set_batch_job(void(*func)(const SharedT*, ItemT*), const SharedT& share_data, bool byValue = true) {
+		static_assert(sizeof(SharedT) <= SHARED_DATA_MAXSIZE, "Shared data too large");
 		assert(!batch.running);
 		batch.func = reinterpret_cast<BatchFunc>(func);
-		batch.share_data = reinterpret_cast<const void*>(&share_data);
-		batch.item_size = sizeof(ItemT);
+		*reinterpret_cast<SharedT*>(batch.share_data) = share_data;
+		batch.store_values = byValue;
+		if (byValue) {
+			batch.item_size = sizeof(ItemT);
+		}
+		else { // store pointers instead of values
+			batch.item_size = sizeof(ItemT*);
+		}
+		batch.n_items = 0;
+	}
+
+	// It's assumed that if you don't specify a type and give a struct that you won't use it.
+	template<typename ItemT>
+	void set_batch_job(void(*func)(const void*, ItemT*), bool byValue = true) {
+		assert(!batch.running);
+		batch.func = reinterpret_cast<BatchFunc>(func);
+		batch.store_values = byValue;
+		if (byValue) {
+			batch.item_size = sizeof(ItemT);
+		}
+		else { // store literal pointers
+			batch.item_size = sizeof(ItemT*);
+		}
 		batch.n_items = 0;
 	}
 
 	/// Submit an item to the batch
 	template<typename T>
-	void submit(T& data) {
+	void submit(const T& data) {
 		assert(!batch.running);
 		assert(sizeof(T) == batch.item_size);
 		reinterpret_cast<T*>(batch.data_buffer)[batch.n_items++] = data;
@@ -175,11 +200,8 @@ public:
 	}
 	void draw_one(GPU_Target*);
 
-	inline void draw_clear() {
-		drawing.n_entries.store(0);
-	}
+	void draw_clear();
 };
 
-struct _EMPTY_ {};
-
+// This reduces typing and makes transitioning over to the new system more seamless.
 #define executor Executor::singleton
