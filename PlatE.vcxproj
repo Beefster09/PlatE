@@ -105,6 +105,9 @@
       <AdditionalIncludeDirectories>lib\inih;lib\concurrentqueue;lib\sdl-gpu\include;lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\ifoun\Documents\Development\libs\SDL2-2.0.4\include\SDL2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
+      <CompileAsManaged>false</CompileAsManaged>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <PrecompiledHeaderFile />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -134,6 +137,12 @@
       <AdditionalIncludeDirectories>lib\inih;lib\concurrentqueue;lib\sdl-gpu\include;lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\ifoun\Documents\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalOptions>/volatile:iso %(AdditionalOptions)</AdditionalOptions>
+      <CompileAsManaged>false</CompileAsManaged>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <PrecompiledHeaderFile />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -165,6 +174,9 @@
       <AdditionalIncludeDirectories>lib\inih;lib\concurrentqueue;lib\sdl-gpu\include;lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\ifoun\Documents\Development\libs\SDL2-2.0.4\include\SDL2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
+      <CompileAsManaged>false</CompileAsManaged>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <PrecompiledHeaderFile />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -198,6 +210,11 @@
       <AdditionalIncludeDirectories>lib\inih;lib\concurrentqueue;lib\sdl-gpu\include;lib\angelscript-sdk\addon;lib\angelscript-sdk\include;C:\Users\ifoun\Documents\Development\libs\SDL2-2.0.4\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <StringPooling>true</StringPooling>
+      <AdditionalOptions>/volatile:iso %(AdditionalOptions)</AdditionalOptions>
+      <CompileAsManaged>false</CompileAsManaged>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <PrecompiledHeaderFile />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

@@ -11,9 +11,10 @@
     [ ] GFX (particles)
         [ ] SOA implementation for particle system (allowing SIMD)
         [ ] GPU particles?
+    [ ] Start on scripting documentation
 
 === High-Level 1.0 Features ===
-    [ ] Fast collision detection
+    [ ] Platforming Physics
         [X] Rectangle, Line, Circle Collision types
             [ ] Fully implement all collision interactions
             [ ] Optimize
@@ -28,8 +29,8 @@
         [ ] High-level checks
             [ ] On ground / in air
             [ ] Touching wall
-    [ ] Data-oriented sprite/entity framework (Similar to a particle system)
-        [ ] Parallel processing
+    [X] Data-oriented sprite/entity framework (Similar to a particle system)
+        [X] Parallel processing
     [ ] Particle system for effects
         [ ] Textured particles (for sparkles, smoke, etc...)
         [ ] Collision? (maybe environment only)
@@ -53,6 +54,8 @@
         [ ] Thread-safe
             [X] Per-frame entities updates limit scope to ONLY the currently processed entity
             [ ] Event updates allow access to all entities involved
+        [ ] Platforming-centric utility functions
+            [ ] Natural jumping parameters (like https://www.youtube.com/watch?v=hG9SzQxaCm8)
     [ ] Saving system that is easy to use and interface with
         [ ] Persistent data stores at both global scope and map scope.
         [ ] Forwards-compatible (for users) data structure (probably a hash table)

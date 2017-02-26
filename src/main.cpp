@@ -18,7 +18,7 @@
 #include <SDL2/SDL_surface.h>
 #include "SDL_gpu.h"
 
-#define SDL_INIT_CUSTOM (SDL_INIT_EVERYTHING & ~SDL_INIT_VIDEO | SDL_INIT_EVENTS)
+#define SDL_INIT_CUSTOM (SDL_INIT_EVERYTHING)
 
 #define BOOTLOADER_MAGIC_NUMBER "PlatEboot"
 
@@ -102,8 +102,9 @@ int main(int argc, char* argv[]) {
 		auto& global_config = get_global_config();
 		if (is_default(global_config.video.width)) global_config.video.width = virtual_width;
 		if (is_default(global_config.video.height)) global_config.video.height = virtual_height;
-		printf("Volume: master-%d bgm-%d sfx-%d\n", global_config.audio.master_volume,
-				global_config.audio.bgm_volume, global_config.audio.sfx_volume);
+		if (is_default(global_config.audio.master_volume)) global_config.audio.master_volume = 100;
+		if (is_default(global_config.audio.sfx_volume)) global_config.audio.sfx_volume = 100;
+		if (is_default(global_config.audio.sfx_volume)) global_config.audio.sfx_volume = 100;
 
 		GPU_SetDebugLevel(GPU_DEBUG_LEVEL_MAX);
 
