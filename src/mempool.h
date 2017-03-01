@@ -15,13 +15,13 @@ constexpr size_t ALIGNMENT = alignof(intmax_t);
 class MemoryPool {
 	void* const pool;
 	const size_t size;
-	std::atomic<intptr_t> nextAlloc;
+	intptr_t nextAlloc;
 
 public:
 	MemoryPool(size_t poolsize) :
 		size(poolsize + (512 - poolsize % MEMORYPOOL_GRANULARITY)),
 		pool(operator new (poolsize + (512 - poolsize % MEMORYPOOL_GRANULARITY))) {
-		nextAlloc.store(reinterpret_cast<intptr_t>(pool));
+		nextAlloc = reinterpret_cast<intptr_t>(pool);
 	}
 	MemoryPool(const MemoryPool& other) = delete;
 	~MemoryPool() {}
@@ -35,14 +35,11 @@ public:
 			block_size += ALIGNMENT - (block_size % ALIGNMENT);
 		}
 
-		intptr_t maybe = nextAlloc.load();
-		do {
-			// check to make sure the space is big enough
-			if (maybe - reinterpret_cast<intptr_t>(pool) + block_size > size) {
-				return nullptr;
-			}
-		// Use atomics to make sure nobody tried to modify it while we were checking space constraints
-		} while (!nextAlloc.compare_exchange_weak(maybe, maybe + block_size));
+		intptr_t maybe = nextAlloc;
+		if (maybe - reinterpret_cast<intptr_t>(pool) + block_size > size) {
+			return nullptr;
+		}
+		nextAlloc = maybe + block_size;
 		return reinterpret_cast<T*>(maybe);
 	}
 
@@ -60,7 +57,7 @@ public:
 	* Use with care.
 	*/
 	__forceinline void clear() {
-		nextAlloc.store(reinterpret_cast<intptr_t>(pool));
+		nextAlloc = reinterpret_cast<intptr_t>(pool);
 	}
 
 	/** Free everything allocated in this pool
@@ -72,16 +69,13 @@ public:
 	}
 
 	__forceinline size_t get_slack() {
-		return size - (nextAlloc.load() - reinterpret_cast<intptr_t>(pool));
+		return size - (nextAlloc - reinterpret_cast<intptr_t>(pool));
 	}
 
 	__forceinline size_t get_size() {
 		return size;
 	}
 };
-
-// I will probably separate these at some point for the sake of performance
-typedef MemoryPool AtomicMemoryPool;
 
 template <size_t size>
 /// Memory pool that is stored on the stack

@@ -5,7 +5,6 @@
 #include "result.h"
 
 #include <condition_variable>
-#include <atomic>
 #include <mutex>
 #include <thread>
 #include <vector>
@@ -40,18 +39,15 @@ private:
 
 		intptr_t const data_buffer = reinterpret_cast<intptr_t>(operator new (EXEC_DATA_BUFFER_SIZE));
 		size_t item_size;
-		std::atomic<int> item; // Index into the data array
 		int n_items = 0;
 
 		std::condition_variable complete; // slave -> master signal
 		std::condition_variable ready;    // master -> slave signal
-		std::mutex complete_m;
-		std::mutex ready_m;
+		std::mutex mutex;
 
 		bool store_values = false;
 
-		std::atomic<bool> running = false; // there is work to do in the batch
-		std::atomic<bool> done = false;    // there is no work left to do
+		bool done = false;    // there is no work left to do
 
 		JobBatch();
 	} batch;
@@ -64,10 +60,13 @@ private:
 			void* data;
 			int z_order;
 		};
+
+		std::mutex mutex;
+
+		MemoryPool mempool;
 		Entry* const entries = new Entry[MAX_DEFERRED_DRAWS];
-		std::atomic<int> n_entries;
 		const Entry* next; // used by master thread for iterating
-		AtomicMemoryPool mempool;
+		int n_entries;
 
 #ifndef NDEBUG
 		bool running;
@@ -87,11 +86,15 @@ private:
 			SingleFunc func;
 			void* data;
 		};
+
+		std::mutex mutex;
+
+		MemoryPool mempool;
 		Entry* const entries = new Entry[MAX_DEFERRED_CALLS];
-		std::atomic<int> n_entries;
-		AtomicMemoryPool mempool;
-		bool running; // true when the defer list is currently being run.
+		int n_entries;
+
 		// This prevents entries from being added when queued up from another deferred task.
+		bool running; // true when the defer list is currently being run.
 
 		MixedJobGroup();
 		inline const Entry* begin() const { return entries; }
@@ -101,8 +104,9 @@ private:
 	} deferred;
 
 	std::vector<std::thread> thread_pool;
-	std::atomic<int> running_threads;
-	const bool single_threaded;
+	unsigned int running_threads;
+	const int n_threads;
+	const unsigned int thread_mask;
 
 	void operator() (int me);
 
@@ -120,7 +124,7 @@ public:
 		static_assert(sizeof(SharedT) <= SHARED_DATA_MAXSIZE, "Shared data too large");
 		static_assert(std::is_pod<SharedT>::value, "Shared data type must be POD");
 		assert(std::is_pod<ItemT>::value || !byValue);
-		assert(!batch.running);
+		assert(running_threads == 0);
 		batch.func = reinterpret_cast<volatile BatchFunc>(func);
 		memcpy(batch.share_data, (void*) &share_data, sizeof(SharedT));
 		batch.store_values = byValue;
@@ -136,7 +140,7 @@ public:
 	// It's assumed that if you don't specify a type and give a struct that you won't use it.
 	template<typename ItemT>
 	void set_batch_job(void(*func)(const void*, ItemT*), bool byValue = true) {
-		assert(!batch.running);
+		assert(running_threads == 0);
 		batch.func = reinterpret_cast<volatile BatchFunc>(func);
 		batch.store_values = byValue;
 		if (byValue) {
@@ -151,7 +155,7 @@ public:
 	/// Submit an item to the batch
 	template<typename T>
 	void submit(const T& data) {
-		assert(!batch.running);
+		assert(running_threads == 0);
 		assert(sizeof(T) == batch.item_size);
 		memcpy(reinterpret_cast<void*>(batch.data_buffer + batch.item_size * batch.n_items), (void*) &data, batch.item_size);
 		++batch.n_items;
@@ -169,10 +173,11 @@ public:
 			return Result<>::success;
 		}
 		else {
-			int index = deferred.n_entries.fetch_add(1);
-			if (index >= MAX_DEFERRED_CALLS) {
+			std::unique_lock<std::mutex> lock(deferred.mutex);
+			if (deferred.n_entries >= MAX_DEFERRED_CALLS) {
 				return Errors::TooManyDeferredCalls;
 			}
+			int index = deferred.n_entries++;
 			T* dptr = deferred.mempool.alloc<T>();
 			if (dptr == nullptr) {
 				return Errors::BadAlloc;
@@ -193,10 +198,11 @@ public:
 	template<typename T>
 	void defer_draw(void(*func)(GPU_Target*, T*), T& data, int z_order) {
 		assert(!drawing.running);
-		int index = drawing.n_entries.fetch_add(1);
-		if (index >= MAX_DEFERRED_DRAWS) {
+		std::unique_lock<std::mutex> lock(drawing.mutex);
+		if (drawing.n_entries >= MAX_DEFERRED_DRAWS) {
 			return Errors::TooManyDeferredDraws;
 		}
+		int index = drawing.n_entries++;
 		T* dptr = mempool.alloc<T>();
 		if (dptr == nullptr) {
 			return Errors::BadAlloc;
