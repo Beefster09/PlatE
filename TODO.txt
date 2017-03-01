@@ -1,13 +1,5 @@
 === Up next ===
-    [X] Engine config/bootloader (Binary format: defines controller types, collider types, defaults, etc...)
-        [X] JSON-baking of config
-        [X] Reading the bootloader
-        [X] Initializing script variables created by the boot process
-        [ ] Enumerate controller instances
-        [ ] Defaults
-    [ ] Player-facing configuration (.ini files)
-        [ ] Controller config
-        [ ] Script exposure
+    [ ] Fix the bug where controller axis bindings are mysteriously reset sometime after the bootloader loads
     [ ] Tilemap-Entity depenetration
     [ ] Event dispatching (e.g. collisions)
     [ ] Z-ordered deferred drawing
@@ -19,9 +11,10 @@
     [ ] GFX (particles)
         [ ] SOA implementation for particle system (allowing SIMD)
         [ ] GPU particles?
+    [ ] Start on scripting documentation
 
 === High-Level 1.0 Features ===
-    [ ] Fast collision detection
+    [ ] Platforming Physics
         [X] Rectangle, Line, Circle Collision types
             [ ] Fully implement all collision interactions
             [ ] Optimize
@@ -36,15 +29,15 @@
         [ ] High-level checks
             [ ] On ground / in air
             [ ] Touching wall
-    [ ] Data-oriented sprite/entity framework (Similar to a particle system)
-        [ ] Parallel processing
+    [X] Data-oriented sprite/entity framework (Similar to a particle system)
+        [X] Parallel processing
     [ ] Particle system for effects
         [ ] Textured particles (for sparkles, smoke, etc...)
         [ ] Collision? (maybe environment only)
     [ ] Event system
-    [ ] JSON and binary assets
+    [X] JSON and binary assets
         [X] Building JSON assets into binary assets (external tool)
-    [ ] Resolution independence
+    [X] Resolution independence
     [ ] Looping music
     [ ] Positional sound effects
     [ ] GUI engine
@@ -61,6 +54,8 @@
         [ ] Thread-safe
             [X] Per-frame entities updates limit scope to ONLY the currently processed entity
             [ ] Event updates allow access to all entities involved
+        [ ] Platforming-centric utility functions
+            [ ] Natural jumping parameters (like https://www.youtube.com/watch?v=hG9SzQxaCm8)
     [ ] Saving system that is easy to use and interface with
         [ ] Persistent data stores at both global scope and map scope.
         [ ] Forwards-compatible (for users) data structure (probably a hash table)
@@ -74,5 +69,5 @@
         [X] Press/Release events
         [X] Binding conflict resolution (via silent auto-unbinding)
         [ ] Input history with sequence matching? (fightstick type stuff)
-        [ ] Configuration
+        [X] Configuration
     [ ] Basic editor (probably in a different programming language)

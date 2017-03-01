@@ -8,9 +8,9 @@
 #include <algorithm>
 #include <cmath>
 
-static void detect_collisions(Entity* a, Entity* b, Executor& executor);
+static void detect_collisions(const Entity* a, const Entity* b);
 static void move_to_contact_position(Entity* a, Entity* b);
-static void entity_level_collision(Entity* e, LevelInstance* level);
+static void entity_level_collision(Entity* e, const LevelInstance* level);
 
 Entity::Entity(EntityId id, asIScriptObject* behavior) : id(id) {
 	assert(behavior != nullptr);
@@ -100,7 +100,7 @@ void Entity::render(GPU_Target* screen) const {
 	render_colliders(screen, tx, frame->colliders);
 }
 
-EntitySystem::EntitySystem() : allocator(), entities(), executor(std::thread::hardware_concurrency()) {
+EntitySystem::EntitySystem() : allocator(), entities() {
 	next_id = 1000;
 }
 
@@ -159,6 +159,62 @@ Result<> EntitySystem::destroy(EntityId id) {
 	}
 }
 
+struct EntityUpdate_1 {
+	asIScriptEngine* engine;
+	const LevelInstance* level;
+	float dt;
+};
+static void entity_update_1(const EntityUpdate_1* shared, Entity* e) {
+	e->last_pos = e->position;
+
+	// Animations
+	if (e->animation_enabled && e->animation->frames[e->anim_frame].delay > 0.f) {
+		const auto& frames = e->animation->frames;
+		e->frame_time += shared->dt;
+		bool changed = false;
+		while (e->frame_time > frames[e->anim_frame].delay) {
+			e->frame_time -= frames[e->anim_frame].delay;
+			e->anim_frame = (e->anim_frame + 1) % frames.size();
+			changed = true;
+		}
+		if (changed) e->frame = frames[e->anim_frame].frame;
+	}
+
+	// Update via the script component
+	e->update(shared->engine, shared->dt);
+
+	// Apply velocity and acceleration
+	if (e->physics_enabled) {
+		const Vector2 expectedVel = e->velocity + shared->dt * e->acceleration;
+
+		e->velocity = expectedVel.clamped(e->vel_range);
+
+		// This makes acceleration work consistently at all framerates
+		Vector2 error = e->acceleration * shared->dt;
+		const Vector2 diff = expectedVel - e->velocity;
+		if (diff.x != 0.f) {
+			error.x += diff.x * diff.x / e->acceleration.x;
+		}
+		if (diff.y != 0.f) {
+			error.y += diff.y * diff.y / e->acceleration.y;
+		}
+		error *= 0.5f;
+
+		e->position += shared->dt * e->velocity - error;
+	}
+
+	// Level overlap
+	entity_level_collision(e, shared->level);
+}
+
+struct EntityUpdate_2 {
+	const Entity* a;
+	const Entity* b;
+};
+static void entity_update_2(const void* shr, EntityUpdate_2* data) {
+	detect_collisions(data->a, data->b);
+}
+
 // High level algorithm:
 // Run update scripts, which are allowed to spawn entities
 // Move entities and advance animations in parallel
@@ -167,56 +223,18 @@ Result<> EntitySystem::destroy(EntityId id) {
 void EntitySystem::update(asIScriptEngine* engine, LevelInstance* level, const float dt) {
 
 	// 'Dumb' update step- each entity behaves as if it's the only thing in existence [Parallelizable]
+	executor.set_batch_job(&entity_update_1, EntityUpdate_1{engine, level, dt}, false);
+
 	for (Entity* e : entities) {
-		executor.exec([e, engine, dt, level]() {
-			e->last_pos = e->position;
-
-			// Animations
-			if (e->animation_enabled && e->animation->frames[e->anim_frame].delay > 0.f) {
-				const auto& frames = e->animation->frames;
-				e->frame_time += dt;
-				bool changed = false;
-				while (e->frame_time > frames[e->anim_frame].delay) {
-					e->frame_time -= frames[e->anim_frame].delay;
-					e->anim_frame = (e->anim_frame + 1) % frames.size();
-					changed = true;
-				}
-				if (changed) e->frame = frames[e->anim_frame].frame;
-			}
-
-			// Update via the script component
-			e->update(engine, dt);
-
-			// Apply velocity and acceleration
-			if (e->physics_enabled) {
-				const Vector2 expectedVel = e->velocity + dt * e->acceleration;
-
-				e->velocity = expectedVel.clamped(e->vel_range);
-
-				// This makes acceleration work smoothly at all framerates
-				Vector2 error = e->acceleration * dt;
-				const Vector2 diff = expectedVel - e->velocity;
-				if (diff.x != 0.f) {
-					error.x += diff.x * diff.x / e->acceleration.x;
-				}
-				if (diff.y != 0.f) {
-					error.y += diff.y * diff.y / e->acceleration.y;
-				}
-				error *= 0.5f;
-
-				e->position += dt * e->velocity - error;
-			}
-
-			// Level overlap
-			entity_level_collision(e, level);
-		});
+		executor.submit(e);
 	}
 
-	executor.wait();
+	executor.run_batch();
 
 	executor.run_deferred();
 
 	// COLLISION DETECTION O_O
+	executor.set_batch_job(entity_update_2);
 	EIter end = entities.end();
 	for (EIter aiter = entities.begin(); aiter != end; ++aiter) {
 		Entity* a = *aiter;
@@ -224,12 +242,11 @@ void EntitySystem::update(asIScriptEngine* engine, LevelInstance* level, const f
 		for (EIter biter = aiter + 1; biter != end; ++biter) {
 			Entity* b = *biter;
 
-			executor.exec([a, b, this]() {
-				detect_collisions(a, b, this->executor);
-			});
+			executor.submit(EntityUpdate_2{a, b});
 		}
 	}
 
+	executor.run_batch();
 	executor.run_deferred();
 }
 
@@ -332,7 +349,15 @@ static void move_to_contact_position(Entity* a, Entity* b) {
 	}
 }
 
-static void detect_collisions(Entity* a, Entity* b, Executor& executor) {
+struct EntityPair {
+	Entity* a;
+	Entity* b;
+};
+static void move_to_contact_wrapper(EntityPair* d) {
+	move_to_contact_position(d->a, d->b);
+}
+
+static void detect_collisions(const Entity* a, const Entity* b) {
 	Transform aTx = a->get_transform();
 	Vector2 aDis = a->position - a->last_pos;
 	Transform bTx = b->get_transform();
@@ -342,9 +367,7 @@ static void detect_collisions(Entity* a, Entity* b, Executor& executor) {
 		a->animation->solidity.hitbox, aTx, aDis,
 		b->animation->solidity.hitbox, bTx, bDis
 	)) {
-		executor.defer([a, b]() {
-			move_to_contact_position(a, b);
-		});
+		executor.defer(move_to_contact_wrapper, EntityPair{ const_cast<Entity*>(a), const_cast<Entity*>(b) });
 	}
 
 	for (const Collider& collA : a->frame->colliders) {
@@ -369,7 +392,7 @@ static void detect_collisions(Entity* a, Entity* b, Executor& executor) {
 	}
 }
 
-static void entity_level_collision(Entity* e, LevelInstance* level) {
+static void entity_level_collision(Entity* e, const LevelInstance* level) {
 	if (level == nullptr || e == nullptr) return;
 	if (!e->solid || e->animation->solidity.hitbox.type == Hitbox::NONE) return; // Ignore disabled/empty hitboxes
 
@@ -471,32 +494,43 @@ static void SetEntitySpriteCompound(Entity* entity, const std::string& filename,
 	}
 }
 
+struct EntitySpawn {
+	EntitySystem* system;
+	asIScriptObject* component;
+	asIScriptFunction* callback;
+};
+static void spawn_wrapper(EntitySpawn* d) {
+	auto res = d->system->spawn(d->component);
+	if (d->callback != nullptr) {
+		if (!res) {
+			DispatchErrorCallback(d->callback, res.err);
+		}
+		d->callback->Release();
+	}
+}
 static void SpawnDeferred(EntitySystem* system, asIScriptObject* component, asIScriptFunction* callback) {
 	if (callback != nullptr) callback->AddRef();
 
-	system->executor.defer([system, component, callback]() {
-		auto res = system->spawn(component);
-		if (callback != nullptr) {
-			if (!res) {
-				DispatchErrorCallback(callback, res.err);
-			}
-			callback->Release();
-		}
-	});
+	executor.defer(spawn_wrapper, EntitySpawn{ system, component, callback });
 }
 
+struct EntityDestroy {
+	Entity* ent;
+	asIScriptFunction* callback;
+};
+static void destroy_wrapper(EntityDestroy* d) {
+	auto res = d->ent->system->destroy(d->ent);
+	if (d->callback != nullptr) {
+		if (!res) {
+			DispatchErrorCallback(d->callback, res.err);
+		}
+		d->callback->Release();
+	}
+}
 static void DestroyDeferred(Entity* ent, asIScriptFunction* callback) {
 	if (callback != nullptr) callback->AddRef();
 
-	ent->system->executor.defer([ent, callback]() {
-		auto res = ent->system->destroy(ent);
-		if (callback != nullptr) {
-			if (!res) {
-				DispatchErrorCallback(callback, res.err);
-			}
-			callback->Release();
-		}
-	});
+	executor.defer(destroy_wrapper, EntityDestroy{ ent, callback });
 }
 
 static int GetSpriteZOrder(Entity* ent) {

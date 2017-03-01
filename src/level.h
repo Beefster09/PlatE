@@ -3,7 +3,7 @@
 #include "result.h"
 #include "tileset.h"
 #include "vectors.h"
-#include "storage.h"
+#include "arrays.h"
 #include "hitbox.h"
 #include "entity.h"
 #include "error.h"

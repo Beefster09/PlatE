@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include "vectors.h"
+#include "arrays.h"
 #include "util.h"
 
 /// 3x3 Transformation matrix that assumes homogeneous column vectors and a [0 0 1] bottom row.

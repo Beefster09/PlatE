@@ -447,15 +447,6 @@ void RegisterConfigInterface(asIScriptEngine* engine) {
 	check(engine->RegisterGlobalFunction("void load()", asFUNCTION(ReloadConfig), asCALL_CDECL));
 	check(engine->RegisterGlobalFunction("void save()", asFUNCTION(SaveConfig), asCALL_CDECL));
 
-	//check(engine->RegisterObjectType("__Config__", 0, asOBJ_REF | asOBJ_NOCOUNT));
-	//check(engine->RegisterObjectProperty("__Config__", "const uint16 resolutionX", asOFFSET(Configuration, video.width)));
-	//check(engine->RegisterObjectProperty("__Config__", "const uint16 resolutionY", asOFFSET(Configuration, video.height)));
-	//check(engine->RegisterObjectProperty("__Config__", "const uint16 fullscreen", asOFFSET(Configuration, video.width)));
-	//check(engine->RegisterObjectProperty("__Config__", "const uint16 resolutionX", asOFFSET(Configuration, video.width)));
-	//check(engine->RegisterObjectProperty("__Config__", "const uint16 resolutionX", asOFFSET(Configuration, video.width)));
-
-	//check(engine->RegisterGlobalProperty("__Config__ global", &global_config));
-
 	check(engine->SetDefaultNamespace(""));
 }
 

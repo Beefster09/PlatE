@@ -5,10 +5,9 @@
 #include <SDL2/SDL_rect.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_render.h>
-#include "direction.h"
 #include "result.h"
 #include "vectors.h"
-#include "storage.h"
+#include "arrays.h"
 #include "transform.h"
 #include "SDL_gpu.h"
 #include <cstdio>

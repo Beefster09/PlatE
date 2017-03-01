@@ -1,6 +1,6 @@
 #pragma once
 
-#include "storage.h"
+#include "arrays.h"
 #include "hitbox.h"
 #include "assetmanager.h"
 #include "SDL2\SDL_render.h"

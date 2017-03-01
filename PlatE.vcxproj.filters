@@ -42,9 +42,6 @@
     <ClCompile Include="src\entity.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\direction.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\engine.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -233,16 +230,10 @@
     <ClInclude Include="src\entity.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\direction.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\engine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\vectors.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\storage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\level.h">
@@ -390,6 +381,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mempool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\arrays.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\buckets.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -85,13 +85,13 @@ void start() {
 
     Config::save();
 
-    Engine::pause();
+    //Engine::pause();
 }
 
 void update(float delta_seconds) {
-    if (Engine::time > 1.5f) {
+    /*if (Engine::time > 1.5f) {
         Engine::resume();
-    }
+    }*/
 
     if (Controllers::Player1.x.position != 0.f) {
         println(Controllers::Player1.x.position);

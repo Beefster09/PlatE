@@ -1,50 +1,231 @@
 #pragma once
 
-#include "blockingconcurrentqueue.h"
-#include "concurrentqueue.h"
+#include "mempool.h"
+#include "error.h"
+#include "result.h"
 
 #include <condition_variable>
-#include <atomic>
 #include <mutex>
 #include <thread>
-
 #include <vector>
-#include <functional>
+#include <algorithm>
 
+#include "SDL_gpu.h"
+
+namespace Errors {
+	const error_data
+		TooManyDeferredCalls = { 70, "Executor has reached its limit on number of calls" },
+		TooManyDeferredDraws = { 71, "Executor has reached its limit on number of draw calls" };
+}
+
+constexpr size_t EXEC_DATA_BUFFER_SIZE = 1024 * 128; // 128 KiB - more than you should ever need
+constexpr size_t MAX_DEFERRED_CALLS = 8192;
+constexpr size_t MAX_DEFERRED_DRAWS = 4096;
+constexpr size_t SHARED_DATA_MAXSIZE = 256;
+
+// LOOK HERE FIRST WHEN DEALING WITH CONCURRENCY BUGS
+
+// An execution context for master and slave threads to communicate
+// The master thread has to make all the SDL calls and manages things that MUST be run in sequence
+// Slaves do physics and scripting and other things where only reading is required or where they have non-overlapping data
+// The master and slaves should never be running at the same time.
 class Executor {
-	typedef std::function<void()> Thunk;
-	typedef moodycamel::BlockingConcurrentQueue<Thunk, moodycamel::ConcurrentQueueDefaultTraits> BlockingQueue;
-	typedef moodycamel::ConcurrentQueue<Thunk, moodycamel::ConcurrentQueueDefaultTraits> Queue;
 private:
-	BlockingQueue immediate;
-	Queue deferred;
+	// One producer (master), Many consumers (slaves)
+	typedef void(*BatchFunc)(const void*, void*);
+	struct JobBatch {
+		BatchFunc func;
+		void* const share_data = operator new(SHARED_DATA_MAXSIZE);
 
-	std::condition_variable complete; // triggers when async finishes
-	std::mutex complete_mutex;
+		intptr_t const data_buffer = reinterpret_cast<intptr_t>(operator new (EXEC_DATA_BUFFER_SIZE));
+		size_t item_size;
+		int n_items = 0;
 
-	std::atomic<int> n_immediate_thunks = 0;
+		std::condition_variable complete; // slave -> master signal
+		std::condition_variable ready;    // master -> slave signal
+		std::mutex mutex;
+
+		bool store_values = false;
+
+		bool done = false;    // there is no work left to do
+
+		JobBatch();
+	} batch;
+
+	// Many producers (slaves), One consumer (master)
+	typedef void(*DrawFunc)(GPU_Target*, void*);
+	struct DrawList {
+		struct Entry {
+			DrawFunc func;
+			void* data;
+			int z_order;
+		};
+
+		std::mutex mutex;
+
+		MemoryPool mempool;
+		Entry* const entries = new Entry[MAX_DEFERRED_DRAWS];
+		const Entry* next; // used by master thread for iterating
+		int n_entries;
+
+#ifndef NDEBUG
+		bool running;
+#endif
+
+		DrawList();
+		inline const Entry* begin() const { return entries; }
+		inline const Entry* end() const { return entries + n_entries; }
+		inline Entry* begin() { return entries; }
+		inline Entry* end() { return entries + n_entries; }
+	} drawing;
+
+	// Many producers (slaves), One consumer (master)
+	typedef void(*SingleFunc)(void*);
+	struct MixedJobGroup {
+		struct Entry {
+			SingleFunc func;
+			void* data;
+		};
+
+		std::mutex mutex;
+
+		MemoryPool mempool;
+		Entry* const entries = new Entry[MAX_DEFERRED_CALLS];
+		int n_entries;
+
+		// This prevents entries from being added when queued up from another deferred task.
+		bool running; // true when the defer list is currently being run.
+
+		MixedJobGroup();
+		inline const Entry* begin() const { return entries; }
+		inline const Entry* end() const { return entries + n_entries; }
+		inline Entry* begin() { return entries; }
+		inline Entry* end() { return entries + n_entries; }
+	} deferred;
 
 	std::vector<std::thread> thread_pool;
+	unsigned int running_threads;
+	const int n_threads;
+	const unsigned int thread_mask;
 
-	const bool single_threaded;
+	void operator() (int me);
 
-	void operator() ();
-public:
 	Executor(uint32_t num_threads);
-	~Executor() {} // RAII has me covered
+	~Executor();
 
+public:
 	Executor(const Executor& other) = delete;
 	Executor(Executor&& other) = delete;
 
-	/// Exec Thunk in another thread [eventually]
-	void exec(const Thunk&);
+	static Executor singleton;
 
-	/// Wait for threads to run all the Thunks in the async queue
-	void wait();
+	template<typename SharedT, typename ItemT>
+	void set_batch_job(void(*func)(const SharedT*, ItemT*), const SharedT& share_data, bool byValue = true) {
+		static_assert(sizeof(SharedT) <= SHARED_DATA_MAXSIZE, "Shared data too large");
+		static_assert(std::is_pod<SharedT>::value, "Shared data type must be POD");
+		assert(std::is_pod<ItemT>::value || !byValue);
+		assert(running_threads == 0);
+		batch.func = reinterpret_cast<volatile BatchFunc>(func);
+		memcpy(batch.share_data, (void*) &share_data, sizeof(SharedT));
+		batch.store_values = byValue;
+		if (byValue) {
+			batch.item_size = sizeof(ItemT);
+		}
+		else { // store pointers instead of values
+			batch.item_size = sizeof(ItemT*);
+		}
+		batch.n_items = 0;
+	}
 
-	/// Put Thunk in deferred queue to be run when you say so
-	void defer(const Thunk&);
+	// It's assumed that if you don't specify a type and give a struct that you won't use it.
+	template<typename ItemT>
+	void set_batch_job(void(*func)(const void*, ItemT*), bool byValue = true) {
+		assert(running_threads == 0);
+		batch.func = reinterpret_cast<volatile BatchFunc>(func);
+		batch.store_values = byValue;
+		if (byValue) {
+			batch.item_size = sizeof(ItemT);
+		}
+		else { // store literal pointers
+			batch.item_size = sizeof(ItemT*);
+		}
+		batch.n_items = 0;
+	}
 
-	/// Run all Thunks currently in the deferred queue (synchronous)
+	/// Submit an item to the batch
+	template<typename T>
+	void submit(const T& data) {
+		assert(running_threads == 0);
+		assert(sizeof(T) == batch.item_size);
+		memcpy(reinterpret_cast<void*>(batch.data_buffer + batch.item_size * batch.n_items), (void*) &data, batch.item_size);
+		++batch.n_items;
+	}
+
+	/// Run the batch and wait for it to complete
+	void run_batch();
+
+	/// Add a call to the deferred group or run it this was called from some call descendant of a call to run_deferred()
+	template<typename T>
+	Result<> defer(void(*func)(T*), T& data) {
+		if (deferred.running) {
+			// This was called from a run_deferred() call, so we can just run right now
+			func(&data);
+			return Result<>::success;
+		}
+		else {
+			std::unique_lock<std::mutex> lock(deferred.mutex);
+			if (deferred.n_entries >= MAX_DEFERRED_CALLS) {
+				return Errors::TooManyDeferredCalls;
+			}
+			int index = deferred.n_entries++;
+			T* dptr = deferred.mempool.alloc<T>();
+			if (dptr == nullptr) {
+				return Errors::BadAlloc;
+			}
+			*dptr = data;
+			deferred.entries[index] = MixedJobGroup::Entry{
+				reinterpret_cast<SingleFunc>(func),
+				dptr
+			};
+			return Result<>::success;
+		}
+	}
+
+	/// Run all calls currently in the deferred queue
 	void run_deferred();
+
+	/// Add a drawing call to the drawing list
+	template<typename T>
+	void defer_draw(void(*func)(GPU_Target*, T*), T& data, int z_order) {
+		assert(!drawing.running);
+		std::unique_lock<std::mutex> lock(drawing.mutex);
+		if (drawing.n_entries >= MAX_DEFERRED_DRAWS) {
+			return Errors::TooManyDeferredDraws;
+		}
+		int index = drawing.n_entries++;
+		T* dptr = mempool.alloc<T>();
+		if (dptr == nullptr) {
+			return Errors::BadAlloc;
+		}
+		*dptr = data;
+		drawing.entries[index] = DrawList::Entry{
+			reinterpret_cast<DrawFunc>(func),
+			dptr,
+			z_order
+		};
+		return Result<>::success;
+	}
+
+	void draw_begin();
+	void draw_end();
+
+	inline int peek_draw_z() {
+		return drawing.next->z_order;
+	}
+	inline bool has_draw() { return drawing.next < drawing.end(); }
+
+	void draw_one(GPU_Target*);
 };
+
+// This reduces typing and makes transitioning over to the new system more seamless.
+#define executor Executor::singleton

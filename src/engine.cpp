@@ -167,7 +167,7 @@ namespace Engine {
 
 		update_inputs(delta_seconds);
 
-		entity_system->executor.run_deferred();
+		executor.run_deferred();
 
 		if (!paused) {
 			entity_system->update(script_engine, active_level, delta_seconds);
